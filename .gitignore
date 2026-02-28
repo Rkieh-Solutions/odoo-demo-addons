@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+._*
+*.swp
+*.swo
+
+# Odoo / build artifacts
+*.log
+
+# Bytecode / caches anywhere
+**/__pycache__/
