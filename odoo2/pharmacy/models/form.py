@@ -14,7 +14,6 @@ class PharmacyForm(models.Model):
 
     active = fields.Boolean(default=True)
 
-    _name_unique = models.Constraint(
-        'UNIQUE(name)',
-        'Form name must be unique.',
-    )
+    _sql_constraints = [
+        ('name_unique', 'UNIQUE(name)', 'Form name must be unique.'),
+    ]

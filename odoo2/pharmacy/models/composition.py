@@ -15,8 +15,6 @@ class PharmacyComposition(models.Model):
     active = fields.Boolean(default=True)
     color = fields.Integer(string='Color Index')
 
-    # Odoo 19: SQL constraints are defined as Constraint attributes
-    _name_unique = models.Constraint(
-        'UNIQUE(name)',
-        'Ingredient name must be unique.'
-    )
+    _sql_constraints = [
+        ('name_unique', 'UNIQUE(name)', 'Ingredient name must be unique.'),
+    ]

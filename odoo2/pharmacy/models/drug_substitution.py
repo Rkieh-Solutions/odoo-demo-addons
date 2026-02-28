@@ -61,7 +61,6 @@ class PharmacySubstituteWizard(models.TransientModel):
     _name = 'pharmacy.substitute'
     _description = 'Drug Substitution'
 
-    original_sale_line_id = fields.Integer(string='Original Line ID')
     product_id = fields.Many2one('product.product', string='Product', readonly=True)
     
     match_mode = fields.Selection([
@@ -73,17 +72,10 @@ class PharmacySubstituteWizard(models.TransientModel):
     limit = fields.Integer(string='Limit', default=20)
     line_ids = fields.One2many('pharmacy.substitute.line', 'wizard_id', string='Substitutes')
     
-    @api.onchange('original_sale_line_id', 'product_id', 'match_mode', 'in_stock_only', 'limit')
+    @api.onchange('product_id', 'match_mode', 'in_stock_only', 'limit')
     def _onchange_options(self):
         self.line_ids = [(5, 0, 0)]
         product = self.product_id
-        if not product and self.original_sale_line_id:
-            # Handle possible NewId or Integer
-            line_id = self.original_sale_line_id
-            line = self.env['sale.order.line'].browse(line_id)
-            if not line.exists() and hasattr(line_id, 'origin'):
-                line = self.env['sale.order.line'].browse(line_id.origin)
-            product = line.product_id
             
         if not product:
             return
@@ -111,89 +103,27 @@ class PharmacySubstituteLine(models.TransientModel):
 
     def action_replace(self):
         self.ensure_one()
-        line_id = self.wizard_id.original_sale_line_id
-        if not line_id:
-            raise ValidationError("Original line ID missing.")
-        
-        target_product_id = self.product_id.id
-        target_product_name = self.product_id.display_name
-
-        # Try to write to the database (only works if record is already saved)
-        line = self.env['sale.order.line'].sudo().browse(line_id)
-        if line.exists() and isinstance(line_id, int):
-            try:
-                line.write({'product_id': target_product_id})
-            except Exception:
-                # If write fails (e.g. constraints), we still proceed to client replacement
-                pass
-            
+        # Removal of sale.order.line logic as this is now POS focused
         return {
             'type': 'ir.actions.client',
-            'tag': 'substitute_replace',
+            'tag': 'display_notification',
             'params': {
-                'product_id': target_product_id,
-                'product_name': target_product_name,
-                'sale_line_id': line_id, # Pass the original ID (could be NewId)
+                'title': 'Feature info',
+                'message': 'Substitution is handled directly in the POS interface.',
+                'type': 'info',
+                'sticky': False,
             }
         }
 
     def action_add_new(self):
         self.ensure_one()
-        line_id = self.wizard_id.original_sale_line_id
-        if not line_id:
-            raise ValidationError("Original line ID missing.")
-             
-        orig = self.env['sale.order.line'].sudo().browse(line_id)
-        if not orig.exists():
-            raise ValidationError("Sale order line not found.")
-            
-        new_line = orig.copy({
-            'order_id': orig.order_id.id, 
-            'product_id': self.product_id.id
-        })
-        
         return {
             'type': 'ir.actions.client',
-            'tag': 'substitute_replace',
+            'tag': 'display_notification',
             'params': {
-                'product_id': self.product_id.id,
-                'product_name': self.product_id.display_name,
-            }
-        }
-
-class SaleOrderLineSubstitution(models.Model):
-    _inherit = "sale.order.line"
-
-    composition_text = fields.Char(related="product_id.product_tmpl_id.composition_text", store=True)
-
-    def action_open_substitute_wizard(self):
-        """Opens the search wizard to give options (auto-replace disabled per user request)."""
-        self.ensure_one()
-        if not self.product_id:
-            raise ValidationError("Please select a product first.")
-
-        # Get real ID even if it's a NewId record
-        real_id = self._origin.id if hasattr(self, '_origin') and self._origin else self.id
-        if not isinstance(real_id, int) and hasattr(real_id, 'origin'):
-            real_id = real_id.origin
-        
-        # If still no real ID, we must save first, but we can try to do it automatically
-        if not real_id:
-             self.env.cr.execute("SAVEPOINT sub_save") # Protect the transaction
-             try:
-                 self.flush_recordset() # Try to push current changes
-                 real_id = self._origin.id
-             except Exception:
-                 self.env.cr.execute("ROLLBACK TO SAVEPOINT sub_save")
-
-        return {
-            'name': 'Find Substitutes',
-            'type': 'ir.actions.act_window',
-            'res_model': 'pharmacy.substitute',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {
-                'default_original_sale_line_id': real_id,
-                'default_product_id': self.product_id.id,
+                'title': 'Feature info',
+                'message': 'Adding new items is handled directly in the POS interface.',
+                'type': 'info',
+                'sticky': False,
             }
         }

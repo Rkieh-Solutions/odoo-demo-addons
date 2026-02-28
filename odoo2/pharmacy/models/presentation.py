@@ -9,8 +9,6 @@ class PharmacyPresentation(models.Model):
     name = fields.Char(string='Presentation', required=True, index=True)
     active = fields.Boolean(default=True)
 
-    # Odoo 19: SQL constraints are defined as Constraint attributes
-    _name_unique = models.Constraint(
-        'UNIQUE(name)',
-        'Presentation name must be unique.'
-    )
+    _sql_constraints = [
+        ('name_unique', 'UNIQUE(name)', 'Presentation name must be unique.'),
+    ]

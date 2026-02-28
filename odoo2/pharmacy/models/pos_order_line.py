@@ -29,18 +29,16 @@ class PosOrderLine(models.Model):
             ('lot_id', '!=', False),
         ]
 
-        groups = self.sudo().env['stock.quant']._read_group(
+        groups = self.env['stock.quant'].sudo()._read_group(
             domain=domain,
             groupby=['lot_id'],
             aggregates=['quantity:sum']
         )
 
         result = []
-        for lot_recordset, total_quantity in groups:
-            if lot_recordset:
-                # lot_recordset is usually a solitary record because of groupby ['lot_id']
-                lot = self.env['stock.lot'].sudo().browse(lot_recordset.id)
-                
+        for lot, quantity_sum in groups:
+            if lot:
+                # Odoo 17+ returns recordsets in _read_group
                 # Convert datetime to string for reliable JSON-RPC transmission
                 exp_date = lot.expiration_date
                 exp_date_str = exp_date.strftime('%Y-%m-%d %H:%M:%S') if exp_date else False

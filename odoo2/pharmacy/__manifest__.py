@@ -12,13 +12,12 @@
         - Rx Only drug management.
     """,
     'author': 'Rkiehsoloutions',
-    'depends': ['base', 'product', 'stock', 'sale', 'sale_stock', 'purchase', 'purchase_stock', 'point_of_sale', 'product_expiry'],
+    'depends': ['base', 'product', 'stock', 'purchase', 'purchase_stock', 'point_of_sale', 'product_expiry'],
     'data': [
         'security/ir.model.access.csv',
         'views/menus.xml',
         'wizard/pharmacy_substitute_wizard_views.xml',
         'views/product_template_views.xml',
-        'views/sale_order_wizard_views.xml',
         'views/atc_views.xml',
         'views/composition_views.xml',
         'views/form_views.xml',
