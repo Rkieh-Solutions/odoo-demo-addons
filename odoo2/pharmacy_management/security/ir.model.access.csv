@@ -1,4 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_product_template_pharmacy,product.template.pharmacy,product.model_product_template,base.group_user,1,1,1,1
 access_pharmacy_composition_user,pharmacy.composition user,model_pharmacy_composition,base.group_user,1,1,1,0
 access_pharmacy_form,pharmacy.form,model_pharmacy_form,base.group_user,1,1,1,1
 access_pharmacy_stratum,pharmacy.stratum,model_pharmacy_stratum,base.group_user,1,1,1,1

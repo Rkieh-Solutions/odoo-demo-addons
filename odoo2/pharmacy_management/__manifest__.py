@@ -1,7 +1,7 @@
 {
-    'name': 'Pharmacy Extension',
-    'version': '17.0.1.0.2',
-    'category': 'Industries',
+    'name': 'Pharmacy Extension Final',
+    'version': '1.0.1',
+    'category': 'Sales',
     'summary': 'Advanced Pharmacy Management with Box/Envelope Inventory',
     'description': """
         Advanced Pharmaceutical Management System:
@@ -28,18 +28,18 @@
     ],
     'assets': {
         'web.assets_backend': [
-            'pharmacy/static/src/js/substitute_handler.js',
+            'pharmacy_management/static/src/js/substitute_handler.js',
         ],
         'point_of_sale.assets_pos': [
-            'pharmacy/static/src/css/pharmacy_pos.css',
-            'pharmacy/static/src/js/SubstanceSearchPopup.js',
-            'pharmacy/static/src/js/pos_extension.js',
-            'pharmacy/static/src/js/select_lot_popup_patch.js',
-            'pharmacy/static/src/js/pos_store_patch.js',
-            'pharmacy/static/src/js/order_payment_validation_patch.js',
-            'pharmacy/static/src/xml/SubstanceSearchPopup.xml',
-            'pharmacy/static/src/xml/pos_templates.xml',
-            'pharmacy/static/src/xml/select_lot_popup_extension.xml',
+            'pharmacy_management/static/src/css/pharmacy_pos.css',
+            'pharmacy_management/static/src/js/SubstanceSearchPopup.js',
+            'pharmacy_management/static/src/js/pos_extension.js',
+            'pharmacy_management/static/src/js/select_lot_popup_patch.js',
+            'pharmacy_management/static/src/js/pos_store_patch.js',
+            'pharmacy_management/static/src/js/order_payment_validation_patch.js',
+            'pharmacy_management/static/src/xml/SubstanceSearchPopup.xml',
+            'pharmacy_management/static/src/xml/pos_templates.xml',
+            'pharmacy_management/static/src/xml/select_lot_popup_extension.xml',
         ],
     },
     'installable': True,
