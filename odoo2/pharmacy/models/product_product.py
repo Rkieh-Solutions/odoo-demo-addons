@@ -6,13 +6,15 @@ class ProductProduct(models.Model):
     @api.model
     def _load_pos_data_fields(self, config_id):
         fields = super()._load_pos_data_fields(config_id)
-        # Add qty_available for stock alerts
-        if 'qty_available' not in fields:
-            fields.append('qty_available')
-        if 'composition' not in fields:
-            fields.append('composition')
-        if 'composition_text' not in fields:
-            fields.append('composition_text')
+        extra = [
+            'code', 'atc_id', 'is_box_product', 'composition', 'composition_text',
+            'qty_available', 'standard_price', 'list_price',
+            'envelopes_per_box', 'envelope_price', 'envelope_qty', 'box_qty',
+            'envelope_child_id', 'parent_box_id'
+        ]
+        for f in extra:
+            if f not in fields:
+                fields.append(f)
         return fields
 
     @api.model

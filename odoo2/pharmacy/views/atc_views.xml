@@ -5,13 +5,13 @@
         <field name="name">pharmacy.atc.tree</field>
         <field name="model">pharmacy.atc</field>
         <field name="arch" type="xml">
-            <list sample="1">
+            <tree sample="1">
                 <field name="name"/>
                 <field name="description"/>
                 <field name="level" optional="show"/>
                 <field name="parent_id" optional="hide"/>
                 <field name="active" widget="boolean_toggle"/>
-            </list>
+            </tree>
         </field>
     </record>
 
@@ -41,10 +41,10 @@
                     <notebook>
                         <page string="Child ATC Codes" name="children">
                             <field name="child_ids">
-                                <list>
+                                <tree>
                                     <field name="name"/>
                                     <field name="description"/>
-                                </list>
+                                </tree>
                             </field>
                         </page>
                     </notebook>

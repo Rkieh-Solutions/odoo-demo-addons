@@ -46,7 +46,7 @@ class PosOrderLine(models.Model):
                 result.append({
                     'id': lot.id,
                     'name': lot.name,
-                    'product_qty': total_quantity,
+                    'product_qty': quantity_sum,
                     'expiration_date': exp_date_str,
                 })
 

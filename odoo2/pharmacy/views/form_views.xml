@@ -6,9 +6,11 @@
     <field name="name">pharmacy.form.list</field>
     <field name="model">pharmacy.form</field>
     <field name="arch" type="xml">
-      <list editable="bottom">
+      <tree editable="bottom">
         <field name="name"/>
-      </list>
+        <field name="description"/>
+        <field name="active" widget="boolean_toggle"/>
+      </tree>
     </field>
   </record>
 
