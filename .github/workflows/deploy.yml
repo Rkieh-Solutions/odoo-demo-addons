@@ -1,0 +1,62 @@
+name: Deploy Odoo Demo Addons
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (for diff)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed instance folders
+        id: changes
+        run: |
+          set -e
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            BEFORE="$(git rev-list --max-parents=0 HEAD)"
+          fi
+
+          CHANGED="$(git diff --name-only "$BEFORE" "$AFTER" || true)"
+          echo "$CHANGED"
+
+          restart=""
+          echo "$CHANGED" | grep -qE '^odoo1/' && restart="$restart odoo1"
+          echo "$CHANGED" | grep -qE '^odoo2/' && restart="$restart odoo2"
+          echo "$CHANGED" | grep -qE '^odoo3/' && restart="$restart odoo3"
+          echo "$CHANGED" | grep -qE '^odoo4/' && restart="$restart odoo4"
+
+          restart="$(echo "$restart" | xargs || true)"
+          echo "restart=$restart" >> $GITHUB_OUTPUT
+
+      - name: Deploy on server (pull + restart)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+            cd /opt/odoo/custom-addons
+            sudo -u odoo git fetch --all
+            sudo -u odoo git reset --hard origin/main
+
+            RESTART="${{ steps.changes.outputs.restart }}"
+            echo "Restart: $RESTART"
+
+            if [ -n "$RESTART" ]; then
+              for s in $RESTART; do
+                systemctl restart "$s"
+                systemctl is-active "$s"
+              done
+            else
+              echo "No instance folder changes; skipping restart."
+            fi
