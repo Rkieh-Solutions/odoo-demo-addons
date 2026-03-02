@@ -32,7 +32,7 @@
         'web.assets_backend': [
             'pharmacy_management/static/src/js/substitute_handler.js',
         ],
-        'point_of_sale.assets_pos': [
+        'point_of_sale.assets': [
             'pharmacy_management/static/src/css/pharmacy_pos.css',
             'pharmacy_management/static/src/js/SubstanceSearchPopup.js',
             'pharmacy_management/static/src/js/pos_extension.js',
