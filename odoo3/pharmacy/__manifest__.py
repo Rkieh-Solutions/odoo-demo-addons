@@ -1,6 +1,6 @@
 {
     'name': 'Pharmacy Extension',
-    'version': '20.0.1.0.0',
+    'version': '17.0.1.0.0',
     'category': 'Industries',
     'summary': 'Advanced Pharmacy Management with Box/Envelope Inventory',
     'description': """
@@ -44,7 +44,7 @@
         ],
     },
     'installable': True,
-    'application': False,
+    'application': True,
     'auto_install': False,
     'license': 'LGPL-3',
 }
