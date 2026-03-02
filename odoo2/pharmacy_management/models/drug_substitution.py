@@ -68,27 +68,70 @@ class PharmacySubstituteLine(models.TransientModel):
 
     def action_replace(self):
         self.ensure_one()
+        line_id = self.wizard_id.original_sale_line_id
+        if not line_id:
+            # POS context or missing ID
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Feature info',
+                    'message': 'Substitution is typically handled directly in the POS interface.',
+                    'type': 'info',
+                    'sticky': False,
+                }
+            }
+        
+        target_product_id = self.product_id.id
+        target_product_name = self.product_id.display_name
+
+        line = self.env['sale.order.line'].sudo().browse(line_id)
+        if line.exists() and isinstance(line_id, int):
+            try:
+                line.write({'product_id': target_product_id})
+            except Exception:
+                pass
+            
         return {
             'type': 'ir.actions.client',
-            'tag': 'display_notification',
+            'tag': 'substitute_replace',
             'params': {
-                'title': 'Feature info',
-                'message': 'Substitution is handled directly in the POS interface.',
-                'type': 'info',
-                'sticky': False,
+                'product_id': target_product_id,
+                'product_name': target_product_name,
+                'sale_line_id': line_id,
             }
         }
 
     def action_add_new(self):
         self.ensure_one()
+        line_id = self.wizard_id.original_sale_line_id
+        if not line_id:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Feature info',
+                    'message': 'Adding new items is handled directly in the POS interface.',
+                    'type': 'info',
+                    'sticky': False,
+                }
+            }
+             
+        orig = self.env['sale.order.line'].sudo().browse(line_id)
+        if not orig.exists():
+            raise ValidationError("Sale order line not found.")
+            
+        new_line = orig.copy({
+            'order_id': orig.order_id.id, 
+            'product_id': self.product_id.id
+        })
+        
         return {
             'type': 'ir.actions.client',
-            'tag': 'display_notification',
+            'tag': 'substitute_replace',
             'params': {
-                'title': 'Feature info',
-                'message': 'Adding new items is handled directly in the POS interface.',
-                'type': 'info',
-                'sticky': False,
+                'product_id': self.product_id.id,
+                'product_name': self.product_id.display_name,
             }
         }
 
@@ -96,6 +139,7 @@ class PharmacySubstituteWizard(models.TransientModel):
     _name = 'pharmacy.substitute'
     _description = 'Drug Substitution'
 
+    original_sale_line_id = fields.Integer(string='Original Line ID')
     product_id = fields.Many2one('product.product', string='Product', readonly=True)
     
     match_mode = fields.Selection([
@@ -107,10 +151,15 @@ class PharmacySubstituteWizard(models.TransientModel):
     limit = fields.Integer(string='Limit', default=20)
     line_ids = fields.One2many('pharmacy.substitute.line', 'wizard_id', string='Substitutes')
     
-    @api.onchange('product_id', 'match_mode', 'in_stock_only', 'limit')
+    @api.onchange('original_sale_line_id', 'product_id', 'match_mode', 'in_stock_only', 'limit')
     def _onchange_options(self):
         self.line_ids = [(5, 0, 0)]
         product = self.product_id
+        if not product and self.original_sale_line_id:
+            line = self.env['sale.order.line'].browse(self.original_sale_line_id)
+            if not line.exists() and hasattr(self.original_sale_line_id, 'origin'):
+                line = self.env['sale.order.line'].browse(self.original_sale_line_id.origin)
+            product = line.product_id
             
         if not product:
             return
@@ -126,3 +175,31 @@ class PharmacySubstituteWizard(models.TransientModel):
                 'qty_available': data['qty_available'],
             }))
         self.line_ids = lines
+
+class SaleOrderLineSubstitution(models.Model):
+    _inherit = "sale.order.line"
+
+    composition_text = fields.Char(related="product_id.product_tmpl_id.composition_text", store=True)
+
+    def action_open_substitute_wizard(self):
+        """Opens the search wizard to give options (auto-replace disabled per user request)."""
+        self.ensure_one()
+        if not self.product_id:
+            raise ValidationError("Please select a product first.")
+
+        # Get real ID even if it's a NewId record
+        real_id = self._origin.id if hasattr(self, '_origin') and self._origin else self.id
+        if not isinstance(real_id, int) and hasattr(real_id, 'origin'):
+            real_id = real_id.origin
+
+        return {
+            'name': 'Find Substitutes',
+            'type': 'ir.actions.act_window',
+            'res_model': 'pharmacy.substitute',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_original_sale_line_id': real_id,
+                'default_product_id': self.product_id.id,
+            }
+        }

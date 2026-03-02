@@ -105,5 +105,20 @@
         </field>
     </record>
 
+    <!-- POS Form View Inheritance -->
+    <record id="product_template_view_form_normalized_pos_pharmacy" model="ir.ui.view">
+        <field name="name">product.template.view.form.normalized.pharmacy</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="point_of_sale.product_template_view_form_normalized_pos"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='pos_categ_ids']" position="after">
+                <field name="is_box_product"/>
+                <field name="envelope_child_id" invisible="not is_box_product"/>
+                <field name="parent_box_id" invisible="not parent_box_id" readonly="1"/>
+                <field name="composition" widget="many2many_tags" string="Ingredients &amp; Composition" placeholder="Add ingredients for substitution..."/>
+            </xpath>
+        </field>
+    </record>
+
 
 </odoo>

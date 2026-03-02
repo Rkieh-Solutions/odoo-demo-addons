@@ -20,6 +20,5 @@ class ResPartner(models.Model):
     def name_create(self, name):
         """Block creation of junk partners during lookups (e.g. from Odoo standard CSV import)."""
         if not _clean(name):
-            # Returning False prevents Odoo from creating a junk partner like '#REF!'
             return False
         return super().name_create(name)

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_inherit_pharmacy" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.pharmacy</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_id']" position="after">
+                <button name="action_open_substitute_wizard" 
+                        type="object" 
+                        icon="fa-search-plus" 
+                        title="Find Substitutes"
+                        invisible="not product_id"/>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_uom_qty']" position="after">
+                <field name="is_envelope" invisible="not parent_box_id and not envelope_child_id"/>
+                <field name="parent_box_id" invisible="1"/>
+                <field name="envelope_child_id" invisible="1"/>
+                <button name="action_open_box" 
+                        string="Open Box" 
+                        type="object" 
+                        class="btn-link"
+                        invisible="not need_open_box"/>
+                <field name="need_open_box" invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
