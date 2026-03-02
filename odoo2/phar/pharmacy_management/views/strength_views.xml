@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Strength Tree View -->
+    <record id="view_pharmacy_strength_tree" model="ir.ui.view">
+        <field name="name">pharmacy.strength.tree</field>
+        <field name="model">pharmacy.strength</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" sample="1">
+                <field name="name"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Strength Form View -->
+    <record id="view_pharmacy_strength_form" model="ir.ui.view">
+        <field name="name">pharmacy.strength.form</field>
+        <field name="model">pharmacy.strength</field>
+        <field name="arch" type="xml">
+            <form string="Drug Strength">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Strength Search View -->
+    <record id="view_pharmacy_strength_search" model="ir.ui.view">
+        <field name="name">pharmacy.strength.search</field>
+        <field name="model">pharmacy.strength</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Strength Action -->
+    <record id="action_pharmacy_strength" model="ir.actions.act_window">
+        <field name="name">Strengths</field>
+        <field name="res_model">pharmacy.strength</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new Strength classification.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Item -->
+    <menuitem id="menu_pharmacy_strength"
+              name="Strengths"
+              parent="menu_pharmacy_config"
+              action="action_pharmacy_strength"
+              sequence="30"/>
+</odoo>

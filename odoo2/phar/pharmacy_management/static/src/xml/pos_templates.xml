@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <!-- Add Open Box button to the Actions popup menu -->
+    <t t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
+        <xpath expr="//div[contains(@class, 'control-buttons')]" position="inside">
+            <button t-att-class="buttonClass"
+                    t-on-click="() => this.onClickOpenBox()">
+                <i class="fa fa-archive me-1" role="img" aria-label="Open Box" title="Open Box" />
+                Open Box
+            </button>
+            <button t-att-class="buttonClass"
+                    t-on-click="() => this.onClickFindSubstitutes()">
+                <i class="fa fa-search-plus me-1" role="img" aria-label="Find Substitutes" title="Find Substitutes" />
+                Substitutes
+            </button>
+        </xpath>
+    </t>
+
+    <t t-name="pharmacy_management.ProductCard" t-inherit="point_of_sale.ProductCard" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('product-name')]" position="after">
+            <div t-if="props.product.composition_text" class="product-ingredients mt-1 text-muted small lh-1 overflow-hidden" 
+                 style="font-size: 0.65rem; max-height: 2em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                <t t-esc="props.product.composition_text"/>
+            </div>
+        </xpath>
+    </t>
+</templates>

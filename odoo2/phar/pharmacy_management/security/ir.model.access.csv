@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_product_template_pharmacy,product.template.pharmacy,product.model_product_template,base.group_user,1,1,1,1
+access_pharmacy_composition_user,pharmacy.composition user,model_pharmacy_composition,base.group_user,1,1,1,0
+access_pharmacy_form,pharmacy.form,model_pharmacy_form,base.group_user,1,1,1,1
+access_pharmacy_stratum,pharmacy.stratum,model_pharmacy_stratum,base.group_user,1,1,1,1
+access_pharmacy_strength,pharmacy.strength,model_pharmacy_strength,base.group_user,1,1,1,1
+access_pharmacy_presentation,pharmacy.presentation,model_pharmacy_presentation,base.group_user,1,1,1,1
+access_pharmacy_atc,pharmacy.atc,model_pharmacy_atc,base.group_user,1,1,1,1
+access_pharmacy_substitute,pharmacy.substitute,model_pharmacy_substitute,base.group_user,1,1,1,1
+access_pharmacy_substitute_line,pharmacy.substitute.line,model_pharmacy_substitute_line,base.group_user,1,1,1,1
+access_sale_order_open_box_wizard,sale.order.open.box.wizard,model_sale_order_open_box_wizard,base.group_user,1,1,1,1
