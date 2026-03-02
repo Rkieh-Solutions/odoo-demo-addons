@@ -99,7 +99,7 @@
         <field name="inherit_id" ref="product.product_template_search_view"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='name']" position="after">
-                <field name="code" string="Code" filter_domain="[('code', 'ilike', self)]"/>
+                <field name="code" string="Code"/>
                 <field name="atc_id" string="ATC Code"/>
                 <field name="form_id" string="Form"/>
                 <field name="strength_id" string="Strength"/>

@@ -481,33 +481,40 @@ class ProductTemplate(models.Model):
         return res
 
     def write(self, vals):
-        # Handle Margin/Price updates
-        if "pharmacy_margin_input" in vals or "standard_price" in vals:
+        # Prevent recursion if standard_price or pharmacy_margin_input is updated via logic below
+        if self.env.context.get("skip_margin_sync"):
+            return super().write(vals)
+
+        # 1. Handle price/margin logic
+        if any(f in vals for f in ["pharmacy_margin_input", "standard_price", "list_price"]):
             for rec in self:
-                # Use a fresh dict to avoid type inference issues
-                upd = dict(vals)
-                margin = rec.pharmacy_margin
+                upd = vals.copy()
+                
+                # Input-based margin sync
                 if "pharmacy_margin_input" in vals:
-                    # Ensure string format for parser
                     val_input = str(vals.get("pharmacy_margin_input", ""))
                     margin = self._parse_margin(val_input)
-                
-                upd["pharmacy_margin"] = margin
-                cost = vals.get("standard_price", rec.standard_price)
-                upd["list_price"] = self._compute_sale(cost, margin)
-                super(ProductTemplate, rec).write(upd)
-            return True
-
-        if "list_price" in vals:
-            for rec in self:
-                upd = dict(vals)
-                cost = rec.standard_price or 0.0
-                sale = vals.get("list_price", 0.0) or 0.0
-                if cost > 0:
-                    margin = self._compute_margin_from_price(cost, sale)
                     upd["pharmacy_margin"] = margin
-                    upd["pharmacy_margin_input"] = str(margin)
-                super(ProductTemplate, rec).write(upd)
+                    cost = vals.get("standard_price", rec.standard_price)
+                    upd["list_price"] = self._compute_sale(cost, margin)
+                
+                # Sale price-based margin sync
+                elif "list_price" in vals:
+                    cost = vals.get("standard_price", rec.standard_price) or 0.0
+                    sale = vals.get("list_price", 0.0) or 0.0
+                    if cost > 0:
+                        margin = self._compute_margin_from_price(cost, sale)
+                        upd["pharmacy_margin"] = margin
+                        upd["pharmacy_margin_input"] = str(margin)
+
+                # Cost-based price sync (if margin already exists)
+                elif "standard_price" in vals:
+                    margin = rec.pharmacy_margin
+                    cost = vals.get("standard_price", 0.0) or 0.0
+                    if cost > 0 and margin > 0:
+                        upd["list_price"] = self._compute_sale(cost, margin)
+
+                super(ProductTemplate, rec.with_context(skip_margin_sync=True)).write(upd)
             return True
 
         return super().write(vals)

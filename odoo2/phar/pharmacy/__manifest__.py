@@ -1,6 +1,6 @@
 {
     'name': 'Pharmacy Extension',
-    'version': '19.0.1.0',
+    'version': '17.0.1.1.0',
     'category': 'Pharmacy',
     'summary': 'Advanced Pharmacy Management with Box/Envelope Inventory',
     'description': """
@@ -14,6 +14,7 @@
     'author': 'Rkiehsoloutions',
     'depends': ['base', 'product', 'stock', 'sale', 'sale_stock', 'purchase', 'purchase_stock', 'point_of_sale', 'product_expiry'],
     'data': [
+        'data/ir_module_category_data.xml',
         'security/ir.model.access.csv',
         'views/menus.xml',
         'wizard/pharmacy_substitute_wizard_views.xml',
@@ -30,7 +31,7 @@
         'web.assets_backend': [
             'pharmacy/static/src/js/substitute_handler.js',
         ],
-        'point_of_sale._assets_pos': [
+        'point_of_sale.assets': [
             'pharmacy/static/src/css/pharmacy_pos.css',
             'pharmacy/static/src/js/SubstanceSearchPopup.js',
             'pharmacy/static/src/js/pos_extension.js',
@@ -44,6 +45,7 @@
     },
     'installable': True,
     'application': True,
+    'web_icon': 'pharmacy,static/description/icon.png',
     'auto_install': False,
     'license': 'LGPL-3',
 }
