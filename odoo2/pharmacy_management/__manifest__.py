@@ -1,6 +1,6 @@
 {
     'name': 'Pharmacy Extension',
-    'version': '1.0.2',
+    'version': '1.0.3',
     'category': 'Sales',
     'summary': 'Advanced Pharmacy Management with Box/Envelope Inventory',
     'description': """

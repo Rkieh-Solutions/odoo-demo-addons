@@ -4,13 +4,13 @@
         <field name="name">pharmacy.substitute.line.tree</field>
         <field name="model">pharmacy.substitute.line</field>
         <field name="arch" type="xml">
-            <tree decoration-success="qty_available > 0" decoration-danger="qty_available == 0" create="false" delete="false" edit="false">
+            <list decoration-success="qty_available > 0" decoration-danger="qty_available == 0" create="false" delete="false" edit="false">
                 <field name="product_id"/>
                 <field name="composition_text"/>
                 <field name="qty_available"/>
                 <button name="action_replace" string="Replace Original" type="object" icon="fa-exchange"/>
                 <button name="action_add_new" string="Add to Order" type="object" icon="fa-plus"/>
-            </tree>
+            </list>
         </field>
     </record>
 
