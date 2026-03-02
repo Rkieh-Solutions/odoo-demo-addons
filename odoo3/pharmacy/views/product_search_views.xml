@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <record id="product_template_search_inherit_composition" model="ir.ui.view">
+    <field name="name">product.template.search.inherit.composition</field>
+    <field name="model">product.template</field>
+    <field name="inherit_id" ref="product.product_template_search_view"/>
+    <field name="arch" type="xml">
+
+      <xpath expr="//search" position="inside">
+        <field name="code" string="Code" filter_domain="[('code', 'ilike', self)]"/>
+        <field name="form_id" string="Form"/>
+        <field name="strength_id" string="Strength"/>
+        <field name="presentation_id" string="Presentation"/>
+        <field name="atc_id" string="ATC Code"/>
+        <field name="stratum_id" string="Stratum"/>
+        <field name="composition_text" string="Ingredient"/>
+
+        <filter name="composition_filter"
+                string="Has Ingredient"
+                domain="[('composition', '!=', False)]"/>
+
+        <separator/>
+        <filter name="group_by_form" string="Form"
+                context="{'group_by': 'form_id'}"/>
+        <filter name="group_by_strength" string="Strength"
+                context="{'group_by': 'strength_id'}"/>
+        <filter name="group_by_presentation" string="Presentation"
+                context="{'group_by': 'presentation_id'}"/>
+        <filter name="group_by_atc" string="ATC Code"
+                context="{'group_by': 'atc_id'}"/>
+        <filter name="group_by_stratum" string="Stratum"
+                context="{'group_by': 'stratum_id'}"/>
+        <filter name="group_by_composition" string="Composition"
+                context="{'group_by': 'composition_text'}"/>
+      </xpath>
+
+    </field>
+  </record>
+</odoo>
