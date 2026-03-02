@@ -37,6 +37,10 @@ patch(ControlButtons.prototype, {
 
         try {
             await this.orm.call("product.template", "action_open_new_box", [parentTmplId]);
+
+            // Sync with backend to get fresh stock
+            await this.pos.data.syncModels(["product.product"]);
+
             this.notification.add(_t("📦 Box opened! Stock updated."), { type: "success" });
             if (this.props.close) this.props.close();
         } catch (error) {

@@ -74,14 +74,14 @@ class ProductTemplate(models.Model):
     )
 
     # --- Clinical / Pharmacy Extension Fields (from pharmacy_extension) ---
-    pharmacy_code = fields.Char(
+    code = fields.Char(
         string="Code",
         required=False,
         copy=False,
         index=True,
         help="Unique numeric product identifier (e.g. 10574). Stored as text to preserve leading zeros.",
     )
-    code = fields.Char(string="Code (Alias)", related="pharmacy_code", store=True, readonly=False)
+    pharmacy_code = fields.Char(string="Code (Alias)", related="code", store=True, readonly=False)
 
     composition = fields.Many2many(
         comodel_name="pharmacy.composition",
@@ -164,22 +164,22 @@ class ProductTemplate(models.Model):
     _sql_constraints = [
         (
             'pharmacy_code_uniq',
-            'unique(pharmacy_code)',
+            'unique(code)',
             'A product with this code already exists. The code must be unique.',
         ),
     ]
 
     # --- Constraints & Compuates ---
 
-    @api.constrains('pharmacy_code')
+    @api.constrains('code')
     def _check_unique_code(self):
         for rec in self:
-            if not rec.pharmacy_code:
+            if not rec.code:
                 continue
-            domain = [('pharmacy_code', '=', rec.pharmacy_code), ('id', '!=', rec.id)]
+            domain = [('code', '=', rec.code), ('id', '!=', rec.id)]
             if self.search_count(domain) > 0:
                 raise ValidationError(
-                    f"The code '{rec.pharmacy_code}' is already assigned to another product. "
+                    f"The code '{rec.code}' is already assigned to another product. "
                     "Each product must have a unique code."
                 )
 
@@ -322,7 +322,7 @@ class ProductTemplate(models.Model):
         data = new_data
 
         try:
-            code_idx = fields.index("pharmacy_code")
+            code_idx = fields.index("code")
         except ValueError:
             code_idx = -1
 
@@ -411,7 +411,7 @@ class ProductTemplate(models.Model):
                 skipped += 1
                 continue
 
-            product = self.search([("pharmacy_code", "=", product_code)], limit=1)
+            product = self.search([("code", "=", product_code)], limit=1)
             if not product:
                 skipped += 1
                 _logger.warning("import_moh_csv: product code '%s' not found.", product_code)
