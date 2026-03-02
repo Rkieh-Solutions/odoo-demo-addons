@@ -26,8 +26,6 @@
               sequence="10"/>
 
     <!-- Configuration Section (in standard Inventory / Configuration) -->
-    <menuitem id="menu_pharmacy_config"
-              name="Pharmacy"
-              parent="stock.menu_stock_config_settings"
-              sequence="60"/>
+    <!-- NOTE: menu_pharmacy_config removed - it had no action and no child items -->
+
 </odoo>

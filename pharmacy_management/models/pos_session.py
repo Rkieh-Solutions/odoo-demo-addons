@@ -11,7 +11,7 @@ class ProductTemplatePos(models.Model):
             'phm_code', 'atc_id', 'is_box_product', 'composition', 'composition_text',
             'qty_available', 'standard_price', 'list_price',
             'envelopes_per_box', 'envelope_price', 'envelope_qty', 'box_qty',
-            'envelope_child_id', 'parent_box_id'
+            'envelope_child_id', 'parent_box_id', 'form_id', 'strength_id', 'presentation_id'
         ])
         return params
 
@@ -26,6 +26,6 @@ class ProductProductPos(models.Model):
             'phm_code', 'atc_id', 'is_box_product', 'composition', 'composition_text',
             'qty_available', 'standard_price', 'list_price',
             'envelopes_per_box', 'envelope_price', 'envelope_qty', 'box_qty',
-            'envelope_child_id', 'parent_box_id'
+            'envelope_child_id', 'parent_box_id', 'form_id', 'strength_id', 'presentation_id'
         ])
         return params

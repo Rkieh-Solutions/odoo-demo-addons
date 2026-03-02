@@ -462,18 +462,6 @@ class ProductTemplate(models.Model):
 
 
     @api.model
-    def _loader_params_product_product(self):
-        params = super()._loader_params_product_product()
-        # Add pharmacy fields to the POS loading parameters
-        params['search_params']['fields'].extend([
-            'phm_code', 'atc_id', 'is_box_product', 'composition', 'composition_text',
-            'qty_available', 'standard_price', 'list_price',
-            'envelopes_per_box', 'envelope_price', 'envelope_qty', 'box_qty',
-            'envelope_child_id', 'parent_box_id', 'form_id', 'strength_id', 'presentation_id'
-        ])
-        return params
-
-    @api.model
     def _load_pos_data_read(self, records, config):
         res = super()._load_pos_data_read(records, config)
         # Use a map for efficiency and ensure we get the float value directly
@@ -483,33 +471,43 @@ class ProductTemplate(models.Model):
         return res
 
     def write(self, vals):
-        # Handle Margin/Price updates
-        if "pharmacy_margin_input" in vals or "standard_price" in vals:
+        # Only intercept writes that actually involve pharmacy margin/price recalculation.
+        # IMPORTANT: Do NOT intercept unrelated writes (e.g. Odoo internal writes during
+        # install/upgrade) — that would break module management operations.
+
+        if "pharmacy_margin_input" in vals or (
+            "standard_price" in vals and any(
+                rec.pharmacy_margin for rec in self
+            )
+        ):
+            result = True
             for rec in self:
-                # Use a fresh dict to avoid type inference issues
                 upd = dict(vals)
-                margin = rec.pharmacy_margin
                 if "pharmacy_margin_input" in vals:
-                    # Ensure string format for parser
-                    val_input = str(vals.get("pharmacy_margin_input", ""))
-                    margin = self._parse_margin(val_input)
-                
-                upd["pharmacy_margin"] = margin
-                cost = vals.get("standard_price", rec.standard_price)
-                upd["list_price"] = self._compute_sale(cost, margin)
-                super(ProductTemplate, rec).write(upd)
-            return True
+                    margin = self._parse_margin(str(vals.get("pharmacy_margin_input", "")))
+                else:
+                    margin = rec.pharmacy_margin
+                cost = vals.get("standard_price", rec.standard_price) or 0.0
+                # Only update list_price when both cost and margin are meaningful
+                if cost > 0 and margin > 0:
+                    upd["pharmacy_margin"] = margin
+                    upd["list_price"] = self._compute_sale(cost, margin)
+                elif "pharmacy_margin_input" in vals:
+                    upd["pharmacy_margin"] = margin
+                result = super(ProductTemplate, rec).write(upd) and result
+            return result
 
         if "list_price" in vals:
+            result = True
             for rec in self:
                 upd = dict(vals)
                 cost = rec.standard_price or 0.0
                 sale = vals.get("list_price", 0.0) or 0.0
-                if cost > 0:
+                if cost > 0 and sale > 0:
                     margin = self._compute_margin_from_price(cost, sale)
                     upd["pharmacy_margin"] = margin
                     upd["pharmacy_margin_input"] = str(margin)
-                super(ProductTemplate, rec).write(upd)
-            return True
+                result = super(ProductTemplate, rec).write(upd) and result
+            return result
 
         return super().write(vals)
