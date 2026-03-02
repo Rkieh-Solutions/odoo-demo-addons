@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="view_pharmacy_substitute_line_tree" model="ir.ui.view">
+        <field name="name">pharmacy.substitute.line.tree</field>
+        <field name="model">pharmacy.substitute.line</field>
+        <field name="arch" type="xml">
+            <tree decoration-success="qty_available > 0" decoration-danger="qty_available == 0" create="false" delete="false" edit="false">
+                <field name="product_id"/>
+                <field name="composition_text"/>
+                <field name="qty_available"/>
+                <button name="action_replace" string="Replace Original" type="object" icon="fa-exchange"/>
+                <button name="action_add_new" string="Add to Order" type="object" icon="fa-plus"/>
+            </tree>
+        </field>
+    </record>
+
     <record id="view_pharmacy_substitute_form" model="ir.ui.view">
         <field name="name">pharmacy.substitute.form</field>
         <field name="model">pharmacy.substitute</field>
@@ -17,15 +31,7 @@
                 </group>
                 <notebook>
                     <page string="Substitutes">
-                        <field name="line_ids" readonly="1">
-                            <tree decoration-success="qty_available > 0" decoration-danger="qty_available == 0">
-                                <field name="product_id"/>
-                                <field name="composition_text"/>
-                                <field name="qty_available"/>
-                                <button name="action_replace" string="Replace Original" type="object" icon="fa-exchange"/>
-                                <button name="action_add_new" string="Add to Order" type="object" icon="fa-plus"/>
-                            </tree>
-                        </field>
+                        <field name="line_ids" readonly="1"/>
                     </page>
                 </notebook>
                 <footer>

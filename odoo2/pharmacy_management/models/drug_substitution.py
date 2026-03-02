@@ -57,6 +57,41 @@ class ProductTemplateSubstitution(models.Model):
         _logger.info("Substitution: Returning %s results", len(results))
         return results
 
+class PharmacySubstituteLine(models.TransientModel):
+    _name = 'pharmacy.substitute.line'
+    _description = 'Substitution Candidate'
+
+    wizard_id = fields.Many2one('pharmacy.substitute')
+    product_id = fields.Many2one('product.product', string='Product')
+    composition_text = fields.Char(string='Ingredients')
+    qty_available = fields.Float(string='Stock')
+
+    def action_replace(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Feature info',
+                'message': 'Substitution is handled directly in the POS interface.',
+                'type': 'info',
+                'sticky': False,
+            }
+        }
+
+    def action_add_new(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Feature info',
+                'message': 'Adding new items is handled directly in the POS interface.',
+                'type': 'info',
+                'sticky': False,
+            }
+        }
+
 class PharmacySubstituteWizard(models.TransientModel):
     _name = 'pharmacy.substitute'
     _description = 'Drug Substitution'
@@ -91,39 +126,3 @@ class PharmacySubstituteWizard(models.TransientModel):
                 'qty_available': data['qty_available'],
             }))
         self.line_ids = lines
-
-class PharmacySubstituteLine(models.TransientModel):
-    _name = 'pharmacy.substitute.line'
-    _description = 'Substitution Candidate'
-
-    wizard_id = fields.Many2one('pharmacy.substitute')
-    product_id = fields.Many2one('product.product', string='Product')
-    composition_text = fields.Char(string='Ingredients')
-    qty_available = fields.Float(string='Stock')
-
-    def action_replace(self):
-        self.ensure_one()
-        # Removal of sale.order.line logic as this is now POS focused
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'Feature info',
-                'message': 'Substitution is handled directly in the POS interface.',
-                'type': 'info',
-                'sticky': False,
-            }
-        }
-
-    def action_add_new(self):
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'Feature info',
-                'message': 'Adding new items is handled directly in the POS interface.',
-                'type': 'info',
-                'sticky': False,
-            }
-        }
