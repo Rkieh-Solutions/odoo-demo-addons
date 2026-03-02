@@ -99,8 +99,25 @@
         <field name="inherit_id" ref="product.product_template_search_view"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='name']" position="after">
-                <field name="code"/>
+                <field name="code" string="Code" filter_domain="[('code', 'ilike', self)]"/>
+                <field name="atc_id" string="ATC Code"/>
+                <field name="form_id" string="Form"/>
+                <field name="strength_id" string="Strength"/>
+                <field name="presentation_id" string="Presentation"/>
+                <field name="stratum_id" string="Stratum"/>
+                <field name="composition_text" string="Ingredient"/>
+                
+                <separator/>
                 <filter string="Box Products" name="box_products" domain="[('is_box_product', '=', True)]"/>
+                <filter name="composition_filter" string="Has Ingredient" domain="[('composition', '!=', False)]"/>
+                
+                <separator/>
+                <filter name="group_by_form" string="Form" context="{'group_by': 'form_id'}"/>
+                <filter name="group_by_strength" string="Strength" context="{'group_by': 'strength_id'}"/>
+                <filter name="group_by_presentation" string="Presentation" context="{'group_by': 'presentation_id'}"/>
+                <filter name="group_by_atc" string="ATC Code" context="{'group_by': 'atc_id'}"/>
+                <filter name="group_by_stratum" string="Stratum" context="{'group_by': 'stratum_id'}"/>
+                <filter name="group_by_composition" string="Composition" context="{'group_by': 'composition_text'}"/>
             </xpath>
         </field>
     </record>

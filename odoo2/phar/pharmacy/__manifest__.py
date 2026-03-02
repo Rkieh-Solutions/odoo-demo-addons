@@ -23,7 +23,6 @@
         'views/composition_views.xml',
         'views/form_views.xml',
         'views/presentation_views.xml',
-        'views/product_search_views.xml',
         'views/stratum_views.xml',
         'views/strength_views.xml',
     ],
