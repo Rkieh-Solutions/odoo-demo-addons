@@ -3,12 +3,13 @@
 import { patch } from "@web/core/utils/patch";
 import { ControlButtons } from "@point_of_sale/app/screens/product_screen/control_buttons/control_buttons";
 import { useService } from "@web/core/utils/hooks";
-import { SubstanceSearchPopup } from "@pharmacy/js/SubstanceSearchPopup";
+import { SubstanceSearchPopup } from "@pharmacy_management/js/SubstanceSearchPopup";
 import { _t } from "@web/core/l10n/translation";
 
 // Add "Open Box" and "Find Substitutes" handlers to the ControlButtons (Actions popup)
 patch(ControlButtons.prototype, {
     setup() {
+        console.log("Pharmacy Management: ControlButtons patch setup");
         super.setup();
         this.orm = useService("orm");
         this.notification = useService("notification");
