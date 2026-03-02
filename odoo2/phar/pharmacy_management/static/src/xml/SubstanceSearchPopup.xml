@@ -26,7 +26,7 @@
                         <div class="d-flex flex-column overflow-hidden me-2 flex-grow-1">
                             <strong class="text-truncate fs-6" t-esc="item.product.display_name"/>
                             <div class="d-flex align-items-center gap-2">
-                                <span t-if="item.product.code" class="badge bg-light text-dark border p-1" style="font-size: 0.7rem;" t-esc="item.product.code"/>
+                                <span t-if="item.product.phm_code" class="badge bg-light text-dark border p-1" style="font-size: 0.7rem;" t-esc="item.product.phm_code"/>
                                 <small class="text-muted text-truncate" t-esc="item.product.composition_text or 'No substance data'"/>
                             </div>
                         </div>

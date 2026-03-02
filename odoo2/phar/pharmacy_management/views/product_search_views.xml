@@ -7,7 +7,7 @@
     <field name="arch" type="xml">
 
       <xpath expr="//search" position="inside">
-        <field name="code" string="Code" filter_domain="[('code', 'ilike', self)]"/>
+        <field name="phm_code" string="Code" filter_domain="[('phm_code', 'ilike', self)]"/>
         <field name="form_id" string="Form"/>
         <field name="strength_id" string="Strength"/>
         <field name="presentation_id" string="Presentation"/>

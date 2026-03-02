@@ -8,7 +8,7 @@ class ProductProduct(models.Model):
         params = super()._loader_params_product_product()
         # Ensure consistency with template fields
         extra = [
-            'pharmacy_code', 'code', 'atc_id', 'is_box_product', 'composition', 'composition_text',
+            'phm_code', 'atc_id', 'is_box_product', 'composition', 'composition_text',
             'qty_available', 'standard_price', 'list_price',
             'envelopes_per_box', 'envelope_price', 'envelope_qty', 'box_qty',
             'envelope_child_id', 'parent_box_id'

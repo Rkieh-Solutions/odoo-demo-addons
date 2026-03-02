@@ -73,15 +73,14 @@ class ProductTemplate(models.Model):
         help="Quantity of full boxes on hand."
     )
 
-    # --- Clinical / Pharmacy Extension Fields (from pharmacy_extension) ---
-    code = fields.Char(
+    # --- Clinical / Pharmacy Extension Fields ---
+    phm_code = fields.Char(
         string="Code",
         required=False,
         copy=False,
         index=True,
         help="Unique numeric product identifier (e.g. 10574). Stored as text to preserve leading zeros.",
     )
-    pharmacy_code = fields.Char(string="Code (Alias)", related="code", store=True, readonly=False)
 
     composition = fields.Many2many(
         comodel_name="pharmacy.composition",
@@ -163,23 +162,23 @@ class ProductTemplate(models.Model):
 
     _sql_constraints = [
         (
-            'pharmacy_code_uniq',
-            'unique(code)',
+            'phm_code_uniq',
+            'unique(phm_code)',
             'A product with this code already exists. The code must be unique.',
         ),
     ]
 
     # --- Constraints & Compuates ---
 
-    @api.constrains('code')
+    @api.constrains('phm_code')
     def _check_unique_code(self):
         for rec in self:
-            if not rec.code:
+            if not rec.phm_code:
                 continue
-            domain = [('code', '=', rec.code), ('id', '!=', rec.id)]
+            domain = [('phm_code', '=', rec.phm_code), ('id', '!=', rec.id)]
             if self.search_count(domain) > 0:
                 raise ValidationError(
-                    f"The code '{rec.code}' is already assigned to another product. "
+                    f"The code '{rec.phm_code}' is already assigned to another product. "
                     "Each product must have a unique code."
                 )
 
@@ -322,7 +321,7 @@ class ProductTemplate(models.Model):
         data = new_data
 
         try:
-            code_idx = fields.index("code")
+            code_idx = fields.index("phm_code")
         except ValueError:
             code_idx = -1
 
@@ -411,7 +410,7 @@ class ProductTemplate(models.Model):
                 skipped += 1
                 continue
 
-            product = self.search([("code", "=", product_code)], limit=1)
+            product = self.search([("phm_code", "=", product_code)], limit=1)
             if not product:
                 skipped += 1
                 _logger.warning("import_moh_csv: product code '%s' not found.", product_code)
@@ -467,7 +466,7 @@ class ProductTemplate(models.Model):
         params = super()._loader_params_product_product()
         # Add pharmacy fields to the POS loading parameters
         params['search_params']['fields'].extend([
-            'pharmacy_code', 'code', 'atc_id', 'is_box_product', 'composition', 'composition_text',
+            'phm_code', 'atc_id', 'is_box_product', 'composition', 'composition_text',
             'qty_available', 'standard_price', 'list_price',
             'envelopes_per_box', 'envelope_price', 'envelope_qty', 'box_qty',
             'envelope_child_id', 'parent_box_id', 'form_id', 'strength_id', 'presentation_id'

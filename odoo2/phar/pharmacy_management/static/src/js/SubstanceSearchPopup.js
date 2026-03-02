@@ -126,7 +126,7 @@ export class SubstanceSearchPopup extends Component {
             const composition = String(product.composition_text || "").toLowerCase();
             const barcode = String(product.barcode || "").toLowerCase();
             const ref = String(product.default_code || "").toLowerCase();
-            const pharmacyRef = String(product.code || "").toLowerCase();
+            const pharmacyRef = String(product.phm_code || "").toLowerCase();
 
             return name.includes(term) ||
                 composition.includes(term) ||
