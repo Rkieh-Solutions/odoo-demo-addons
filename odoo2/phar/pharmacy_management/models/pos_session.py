@@ -5,33 +5,27 @@ class ProductTemplatePos(models.Model):
     _inherit = 'product.template'
 
     @api.model
-    def _load_pos_data_fields(self, config_id):
-        fields = super()._load_pos_data_fields(config_id)
-        extra = [
+    def _loader_params_product_template(self):
+        params = super()._loader_params_product_template()
+        params['search_params']['fields'].extend([
             'code', 'atc_id', 'is_box_product', 'composition', 'composition_text',
             'qty_available', 'standard_price', 'list_price',
             'envelopes_per_box', 'envelope_price', 'envelope_qty', 'box_qty',
             'envelope_child_id', 'parent_box_id'
-        ]
-        for f in extra:
-            if f not in fields:
-                fields.append(f)
-        return fields
+        ])
+        return params
 
 class ProductProductPos(models.Model):
     """Expose custom pharmacy fields to the POS frontend (variant level)."""
     _inherit = 'product.product'
 
     @api.model
-    def _load_pos_data_fields(self, config):
-        fields = super()._load_pos_data_fields(config)
-        extra = [
+    def _loader_params_product_product(self):
+        params = super()._loader_params_product_product()
+        params['search_params']['fields'].extend([
             'code', 'atc_id', 'is_box_product', 'composition', 'composition_text',
             'qty_available', 'standard_price', 'list_price',
             'envelopes_per_box', 'envelope_price', 'envelope_qty', 'box_qty',
             'envelope_child_id', 'parent_box_id'
-        ]
-        for f in extra:
-            if f not in fields:
-                fields.append(f)
-        return fields
+        ])
+        return params

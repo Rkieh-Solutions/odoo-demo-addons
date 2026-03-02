@@ -4,8 +4,9 @@ class ProductProduct(models.Model):
     _inherit = 'product.product'
 
     @api.model
-    def _load_pos_data_fields(self, config_id):
-        fields = super()._load_pos_data_fields(config_id)
+    def _loader_params_product_product(self):
+        params = super()._loader_params_product_product()
+        # Ensure consistency with template fields
         extra = [
             'pharmacy_code', 'code', 'atc_id', 'is_box_product', 'composition', 'composition_text',
             'qty_available', 'standard_price', 'list_price',
@@ -13,9 +14,9 @@ class ProductProduct(models.Model):
             'envelope_child_id', 'parent_box_id'
         ]
         for f in extra:
-            if f not in fields:
-                fields.append(f)
-        return fields
+            if f not in params['search_params']['fields']:
+                params['search_params']['fields'].append(f)
+        return params
 
     @api.model
     def _load_pos_data_read(self, records, config):

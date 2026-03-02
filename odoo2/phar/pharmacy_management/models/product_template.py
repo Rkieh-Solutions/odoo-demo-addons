@@ -81,7 +81,7 @@ class ProductTemplate(models.Model):
         index=True,
         help="Unique numeric product identifier (e.g. 10574). Stored as text to preserve leading zeros.",
     )
-    code = fields.Char(string="Code (Alias)", copy=False)
+    code = fields.Char(string="Code (Alias)", related="pharmacy_code", store=True, readonly=False)
 
     composition = fields.Many2many(
         comodel_name="pharmacy.composition",
@@ -463,19 +463,16 @@ class ProductTemplate(models.Model):
 
 
     @api.model
-    def _load_pos_data_fields(self, config_id):
-        fields = super()._load_pos_data_fields(config_id)
-        # Ensure all pharmacy fields are available in POS
-        extra = [
+    def _loader_params_product_product(self):
+        params = super()._loader_params_product_product()
+        # Add pharmacy fields to the POS loading parameters
+        params['search_params']['fields'].extend([
             'pharmacy_code', 'code', 'atc_id', 'is_box_product', 'composition', 'composition_text',
             'qty_available', 'standard_price', 'list_price',
             'envelopes_per_box', 'envelope_price', 'envelope_qty', 'box_qty',
             'envelope_child_id', 'parent_box_id', 'form_id', 'strength_id', 'presentation_id'
-        ]
-        for f in extra:
-            if f not in fields:
-                fields.append(f)
-        return fields
+        ])
+        return params
 
     @api.model
     def _load_pos_data_read(self, records, config):

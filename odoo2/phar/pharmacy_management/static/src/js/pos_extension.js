@@ -7,7 +7,6 @@ import { SubstanceSearchPopup } from "@pharmacy_management/js/SubstanceSearchPop
 import { _t } from "@web/core/l10n/translation";
 
 console.log("Pharmacy Management: Loading pos_extension.js");
-alert("Pharmacy Management JS IS LOADING!!!");
 
 // Add "Open Box" and "Find Substitutes" handlers to the ControlButtons (Actions popup)
 patch(ControlButtons.prototype, {
@@ -18,7 +17,6 @@ patch(ControlButtons.prototype, {
         this.dialog = useService("dialog");
     },
     async onClickOpenBox() {
-        alert("Open Box clicked!");
         console.log("Pharmacy Management: onClickOpenBox called");
         const order = this.pos.getOrder();
         const selectedLine = order ? order.getSelectedOrderline() : null;
@@ -47,7 +45,6 @@ patch(ControlButtons.prototype, {
         }
     },
     async onClickFindSubstitutes() {
-        alert("Find Substitutes clicked!");
         console.log("Pharmacy Management: onClickFindSubstitutes called");
         this.dialog.add(SubstanceSearchPopup, {
             title: _t("Find Substance / Substitute"),
