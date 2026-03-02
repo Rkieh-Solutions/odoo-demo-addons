@@ -7,7 +7,6 @@
         <field name="arch" type="xml">
             <list editable="bottom" sample="1">
                 <field name="name"/>
-                <field name="description"/>
                 <field name="active" widget="boolean_toggle"/>
             </list>
         </field>

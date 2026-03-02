@@ -8,7 +8,6 @@
     <field name="arch" type="xml">
       <list editable="bottom">
         <field name="name"/>
-        <field name="description"/>
         <field name="active" widget="boolean_toggle"/>
       </list>
     </field>
@@ -19,14 +18,14 @@
     <field name="name">pharmacy.form.form</field>
     <field name="model">pharmacy.form</field>
     <field name="arch" type="xml">
-      <form>
-        <sheet>
-          <group>
-            <field name="name"/>
-            <field name="active" invisible="1"/>
-          </group>
-        </sheet>
-      </form>
+            <form string="Drug Form">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
     </field>
   </record>
 
