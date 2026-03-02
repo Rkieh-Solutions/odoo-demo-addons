@@ -74,7 +74,7 @@ class ProductTemplate(models.Model):
     )
 
     # --- Clinical / Pharmacy Extension Fields (from pharmacy_extension) ---
-    code = fields.Char(
+    pharmacy_code = fields.Char(
         string="Code",
         required=False,
         copy=False,
@@ -162,23 +162,23 @@ class ProductTemplate(models.Model):
 
     _sql_constraints = [
         (
-            'code_uniq',
-            'unique(code)',
+            'pharmacy_code_uniq',
+            'unique(pharmacy_code)',
             'A product with this code already exists. The code must be unique.',
         ),
     ]
 
     # --- Constraints & Compuates ---
 
-    @api.constrains('code')
+    @api.constrains('pharmacy_code')
     def _check_unique_code(self):
         for rec in self:
-            if not rec.code:
+            if not rec.pharmacy_code:
                 continue
-            domain = [('code', '=', rec.code), ('id', '!=', rec.id)]
+            domain = [('pharmacy_code', '=', rec.pharmacy_code), ('id', '!=', rec.id)]
             if self.search_count(domain) > 0:
                 raise ValidationError(
-                    f"The code '{rec.code}' is already assigned to another product. "
+                    f"The code '{rec.pharmacy_code}' is already assigned to another product. "
                     "Each product must have a unique code."
                 )
 
@@ -321,7 +321,7 @@ class ProductTemplate(models.Model):
         data = new_data
 
         try:
-            code_idx = fields.index("code")
+            code_idx = fields.index("pharmacy_code")
         except ValueError:
             code_idx = -1
 
@@ -405,12 +405,12 @@ class ProductTemplate(models.Model):
 
         for raw_row in reader:
             row = {k.strip().lower(): _clean(v) for k, v in raw_row.items()}
-            product_code = row.get("code", "")
+            product_code = row.get("code", "")  # Keep "code" for CSV key if it's the header
             if not product_code:
                 skipped += 1
                 continue
 
-            product = self.search([("code", "=", product_code)], limit=1)
+            product = self.search([("pharmacy_code", "=", product_code)], limit=1)
             if not product:
                 skipped += 1
                 _logger.warning("import_moh_csv: product code '%s' not found.", product_code)

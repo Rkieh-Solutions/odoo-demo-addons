@@ -8,7 +8,7 @@
         <field name="arch" type="xml">
             <!-- General Information: Code, ATC, Registration No., Margin (from extension) -->
             <xpath expr="//group[@name='group_general']" position="inside">
-                <field name="code" string="Code"/>
+                <field name="pharmacy_code" string="Code"/>
                 <field name="atc_id" options="{'no_create': True, 'no_open': True}"/>
                 <field name="registration_number" string="Registration No."/>
                 <label for="pharmacy_margin_input" string="Margin (%)"/>
@@ -78,7 +78,7 @@
         <field name="inherit_id" ref="product.product_template_tree_view"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='name']" position="before">
-                <field name="code" string="Code" optional="show"/>
+                <field name="pharmacy_code" string="Code" optional="show"/>
             </xpath>
             <xpath expr="//field[@name='name']" position="after">
                 <field name="is_box_product" optional="show"/>
@@ -99,7 +99,7 @@
         <field name="inherit_id" ref="product.product_template_search_view"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='name']" position="after">
-                <field name="code" string="Code"/>
+                <field name="pharmacy_code" string="Code"/>
                 <field name="atc_id" string="ATC Code"/>
                 <field name="form_id" string="Form"/>
                 <field name="strength_id" string="Strength"/>
