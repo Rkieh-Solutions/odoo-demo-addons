@@ -81,7 +81,7 @@ class ProductTemplate(models.Model):
         index=True,
         help="Unique numeric product identifier (e.g. 10574). Stored as text to preserve leading zeros.",
     )
-    code = fields.Char(string="Code (Alias)", related='pharmacy_code', readonly=False)
+    code = fields.Char(string="Code (Alias)", copy=False)
 
     composition = fields.Many2many(
         comodel_name="pharmacy.composition",
