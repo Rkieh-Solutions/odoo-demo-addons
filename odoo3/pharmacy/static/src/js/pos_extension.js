@@ -10,6 +10,7 @@ import { _t } from "@web/core/l10n/translation";
 patch(ControlButtons.prototype, {
     setup() {
         this._super(...arguments);
+        console.log("Pharmacy ControlButtons patched and setup");
         this.orm = useService("orm");
         this.notification = useService("notification");
         this.dialog = useService("dialog");
