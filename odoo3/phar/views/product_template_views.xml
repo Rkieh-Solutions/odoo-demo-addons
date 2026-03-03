@@ -19,7 +19,7 @@
             </xpath>
 
             <xpath expr="//notebook" position="inside">
-                <!-- Pharmacy Tab (Box/Envelope Management) -->
+                <!-- Unified Pharmacy Tab -->
                 <page name="pharmacy" string="Pharmacy">
                     <group>
                         <group name="group_pharmacy_config" string="Relationship Configuration">
@@ -37,35 +37,36 @@
                             <field name="parent_box_id" readonly="1"/>
                         </group>
                     </group>
-                </page>
-
-                <!-- Drug Details Tab (from extension) -->
-                <page string="Drug Details" name="pharmacy_drug_details">
-                  <group>
+                    
                     <group string="Pharmaceutical Properties" name="drug_properties">
-                        <field name="form_id" options="{'no_create': True, 'no_open': True}"/>
-                        <field name="strength_id" options="{'no_create': True, 'no_open': True}"/>
-                        <field name="presentation_id" options="{'no_create': True, 'no_open': True}"/>
-                        <field name="stratum_id" options="{'no_create': True, 'no_open': True}"/>
+                        <group>
+                            <field name="form_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="strength_id" options="{'no_create': True, 'no_open': True}"/>
+                        </group>
+                        <group>
+                            <field name="presentation_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="stratum_id" options="{'no_create': True, 'no_open': True}"/>
+                        </group>
                     </group>
-                  </group>
-                  <group string="Ingredients &amp; Composition">
-                    <field name="composition"
-                           widget="many2many_tags"
-                           options="{'color_field': 'color', 'no_create_edit': True}"
-                           nolabel="1"
-                           placeholder="Add ingredients..."/>
-                  </group>
-                </page>
 
-                <!-- MOH / Regulatory Tab (from extension) -->
-                <page string="MOH / Regulatory" name="pharmacy_moh_regulatory">
-                  <group string="MOH / Regulatory">
-                    <group>
-                      <field name="agent_id"/>
-                      <field name="responsible_party_id"/>
+                    <group string="Ingredients &amp; Composition">
+                        <field name="composition"
+                               widget="many2many_tags"
+                               options="{'color_field': 'color', 'no_create_edit': True}"
+                               nolabel="1"
+                               placeholder="Add ingredients..."/>
                     </group>
-                  </group>
+
+                    <group string="MOH / Regulatory">
+                        <group>
+                            <field name="registration_number"/>
+                            <field name="atc_id" options="{'no_create': True, 'no_open': True}"/>
+                        </group>
+                        <group>
+                            <field name="agent_id"/>
+                            <field name="responsible_party_id"/>
+                        </group>
+                    </group>
                 </page>
             </xpath>
         </field>
