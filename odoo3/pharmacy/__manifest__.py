@@ -45,6 +45,7 @@
     },
     'installable': True,
     'application': True,
+    'web_icon': 'pharmacy_management,static/description/icon.png',
     'auto_install': False,
     'license': 'LGPL-3',
 }

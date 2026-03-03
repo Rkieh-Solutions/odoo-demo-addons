@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Move Pharmacy Root under Inventory (removes dashboard icon) -->
-    <menuitem id="menu_pharmacy_inventory" 
+    <!-- Pharmacy Root as Dashboard App -->
+    <menuitem id="menu_pharmacy_root" 
               name="Pharmacy" 
-              parent="stock.menu_stock_root" 
+              web_icon="pharmacy_management,static/description/icon.png"
               sequence="100"/>
+
+    <menuitem id="menu_pharmacy_inventory" 
+              name="Operations" 
+              parent="menu_pharmacy_root" 
+              sequence="10"/>
 
     <menuitem id="menu_pharmacy_products" 
               name="Products" 
