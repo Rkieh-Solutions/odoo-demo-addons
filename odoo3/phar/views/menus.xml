@@ -3,7 +3,7 @@
     <!-- Pharmacy Root as Dashboard App -->
     <menuitem id="menu_pharmacy_root" 
               name="Pharmacy" 
-              web_icon="pharmacy,static/description/icon.png"
+              web_icon="phar,static/description/icon.png"
               sequence="1"/>
 
     <!-- Integrated Menus -->
