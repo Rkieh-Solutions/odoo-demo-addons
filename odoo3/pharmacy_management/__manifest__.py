@@ -2,6 +2,7 @@
     'name': 'Pharmacy Management',
     'version': '17.0.1.1.0',
     'category': 'Point of Sale',
+    'sequence': 1,
     'summary': 'Advanced Pharmacy Management with Box/Envelope Inventory',
     'description': """
         Advanced Pharmaceutical Management System:
@@ -12,7 +13,7 @@
         - Rx Only drug management.
     """,
     'author': 'Rkiehsoloutions',
-    'depends': ['base', 'product', 'stock', 'sale', 'sale_stock', 'purchase', 'purchase_stock', 'point_of_sale', 'product_expiry'],
+    'depends': ['base', 'product', 'stock', 'sale', 'sale_stock', 'purchase', 'purchase_stock', 'point_of_sale'],
     'data': [
         'security/ir.model.access.csv',
         'views/menus.xml',
@@ -29,23 +30,23 @@
     ],
     'assets': {
         'web.assets_backend': [
-            'pharmacy/static/src/js/substitute_handler.js',
+            'pharmacy_management/static/src/js/substitute_handler.js',
         ],
-        'point_of_sale._assets_pos': [
-            'pharmacy/static/src/css/pharmacy_pos.css',
-            'pharmacy/static/src/js/SubstanceSearchPopup.js',
-            'pharmacy/static/src/js/pos_extension.js',
-            'pharmacy/static/src/js/select_lot_popup_patch.js',
-            'pharmacy/static/src/js/pos_store_patch.js',
-            'pharmacy/static/src/js/order_payment_validation_patch.js',
-            'pharmacy/static/src/xml/SubstanceSearchPopup.xml',
-            'pharmacy/static/src/xml/pos_templates.xml',
-            'pharmacy/static/src/xml/select_lot_popup_extension.xml',
+        'point_of_sale.assets': [
+            'pharmacy_management/static/src/css/pharmacy_pos.css',
+            'pharmacy_management/static/src/js/SubstanceSearchPopup.js',
+            'pharmacy_management/static/src/js/pos_extension.js',
+            'pharmacy_management/static/src/js/select_lot_popup_patch.js',
+            'pharmacy_management/static/src/js/pos_store_patch.js',
+            'pharmacy_management/static/src/js/order_payment_validation_patch.js',
+            'pharmacy_management/static/src/xml/SubstanceSearchPopup.xml',
+            'pharmacy_management/static/src/xml/pos_templates.xml',
+            'pharmacy_management/static/src/xml/select_lot_popup_extension.xml',
         ],
     },
     'installable': True,
     'application': True,
-    'web_icon': 'pharmacy,static/description/icon.png',
+    'web_icon': 'pharmacy_management,static/description/icon.png',
     'auto_install': False,
     'license': 'LGPL-3',
 }
