@@ -170,17 +170,17 @@ class ProductTemplate(models.Model):
 
     # --- Constraints & Compuates ---
 
-    # @api.constrains('code')
-    # def _check_unique_code(self):
-    #     for rec in self:
-    #         if not rec.code:
-    #             continue
-    #         domain = [('code', '=', rec.code), ('id', '!=', rec.id)]
-    #         if self.search_count(domain) > 0:
-    #             raise ValidationError(
-    #                 f"The code '{rec.code}' is already assigned to another product. "
-    #                 "Each product must have a unique code."
-    #             )
+    @api.constrains('code')
+    def _check_unique_code(self):
+        for rec in self:
+            if not rec.code:
+                continue
+            domain = [('code', '=', rec.code), ('id', '!=', rec.id)]
+            if self.search_count(domain) > 0:
+                raise ValidationError(
+                    f"The code '{rec.code}' is already assigned to another product. "
+                    "Each product must have a unique code."
+                )
 
     @api.depends('qty_available', 'envelope_child_id.qty_available', 'parent_box_id.qty_available')
     def _compute_envelope_qty(self):

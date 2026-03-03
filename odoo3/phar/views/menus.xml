@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Phar Root as Dashboard App -->
+    <menuitem id="menu_phar_root" 
+              name="phar" 
+              web_icon="phar,static/description/icon.png"
+              sequence="1"/>
+
+    <!-- Integrated Menus -->
+    
+    <!-- 1. Under Inventory / Operations -->
+    <menuitem id="menu_phar_stock_ops" 
+              name="phar Operations" 
+              parent="stock.menu_stock_warehouse_mgmt" 
+              action="product.product_template_action_all"
+              sequence="51"/>
+
+    <!-- 2. Under POS / Products -->
+    <menuitem id="menu_phar_pos_products"
+              name="phar Products"
+              parent="point_of_sale.menu_pos_products"
+              action="product.product_template_action_all"
+              sequence="21"/>
+
+    <!-- Configuration Section -->
+    <menuitem id="menu_phar_config" 
+              name="phar" 
+              parent="stock.menu_stock_config_settings" 
+              sequence="61"/>
+</odoo>
