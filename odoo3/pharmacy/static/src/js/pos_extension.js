@@ -3,14 +3,13 @@
 import { patch } from "@web/core/utils/patch";
 import { ControlButtons } from "@point_of_sale/app/screens/product_screen/control_buttons/control_buttons";
 import { useService } from "@web/core/utils/hooks";
-import { SubstanceSearchPopup } from "@pharmacy/pos/substance_search_popup/substance_search_popup";
+import { SubstanceSearchPopup } from "@phar/js/SubstanceSearchPopup";
 import { _t } from "@web/core/l10n/translation";
 
 // Add "Open Box" and "Find Substitutes" handlers to the ControlButtons (Actions popup)
 patch(ControlButtons.prototype, {
     setup() {
-        this._super(...arguments);
-        console.log("Pharmacy ControlButtons patched and setup");
+        super.setup();
         this.orm = useService("orm");
         this.notification = useService("notification");
         this.dialog = useService("dialog");
@@ -39,7 +38,6 @@ patch(ControlButtons.prototype, {
                 this.notification.add(result.params.message, { type: "danger" });
             } else {
                 this.notification.add(_t("📦 Box opened successfully! Stock has been updated."), { type: "success" });
-                // Trigger a sync or refresh if possible, though Odoo POS usually handles basic stock updates via bus
             }
             if (this.props.close) this.props.close();
         } catch (error) {
