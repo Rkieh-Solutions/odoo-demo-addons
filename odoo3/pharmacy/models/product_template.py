@@ -160,13 +160,13 @@ class ProductTemplate(models.Model):
         readonly=True,
     )
 
-    _sql_constraints = [
-        (
-            'code_uniq',
-            'unique(code)',
-            'A product with this code already exists. The code must be unique.',
-        ),
-    ]
+    # _sql_constraints = [
+    #     (
+    #         'code_uniq',
+    #         'unique(code)',
+    #         'A product with this code already exists. The code must be unique.',
+    #     ),
+    # ]
 
     # --- Constraints & Compuates ---
 
