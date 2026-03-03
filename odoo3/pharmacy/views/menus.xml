@@ -3,21 +3,26 @@
     <!-- Pharmacy Root as Dashboard App -->
     <menuitem id="menu_pharmacy_root" 
               name="Pharmacy" 
-              web_icon="pharmacy_management,static/description/icon.png"
+              web_icon="pharmacy,static/description/icon.png"
               sequence="100"/>
 
-    <menuitem id="menu_pharmacy_inventory" 
-              name="Operations" 
-              parent="menu_pharmacy_root" 
-              sequence="10"/>
+    <!-- Integrated Menus -->
+    
+    <!-- 1. Under Inventory / Operations -->
+    <menuitem id="menu_pharmacy_stock_ops" 
+              name="Pharmacy Operations" 
+              parent="stock.menu_stock_warehouse_mgmt" 
+              action="product.product_template_action_all"
+              sequence="50"/>
 
-    <menuitem id="menu_pharmacy_products" 
-              name="Products" 
-              parent="menu_pharmacy_inventory" 
-              action="product.product_template_action_all" 
-              sequence="10"/>
+    <!-- 2. Under POS / Products -->
+    <menuitem id="menu_pharmacy_pos_products"
+              name="Pharmacy Products"
+              parent="point_of_sale.menu_pos_products"
+              action="product.product_template_action_all"
+              sequence="20"/>
 
-    <!-- Configuration Section (in standard Inventory / Configuration) -->
+    <!-- Configuration Section -->
     <menuitem id="menu_pharmacy_config" 
               name="Pharmacy" 
               parent="stock.menu_stock_config_settings" 
