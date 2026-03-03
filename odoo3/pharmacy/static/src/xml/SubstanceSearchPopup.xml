@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
-    <t t-name="pharmacy_management.SubstanceSearchPopup">
+    <t t-name="pharmacy.SubstanceSearchPopup">
         <Dialog title="props.title" footer="false" size="'md'">
             <div class="substance-search-popup d-flex flex-column gap-3">
                 <div class="search-box input-group">
