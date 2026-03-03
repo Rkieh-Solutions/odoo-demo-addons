@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <!-- Add Open Box button to the Actions popup menu -->
-    <t t-name="phar.ControlButtons" t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
+    <t t-name="pharmacy.ControlButtons" t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
         <xpath expr="//div[hasclass('control-buttons-modal')]" position="inside">
             <button t-att-class="buttonClass"
                     t-on-click="() => this.onClickOpenBox()">
@@ -16,7 +16,7 @@
         </xpath>
     </t>
 
-    <t t-name="phar.ProductCard" t-inherit="point_of_sale.ProductCard" t-inherit-mode="extension">
+    <t t-name="pharmacy.ProductCard" t-inherit="point_of_sale.ProductCard" t-inherit-mode="extension">
         <xpath expr="//div[hasclass('product-name')]" position="after">
             <div t-if="props.product.composition_text" class="product-ingredients mt-1 text-muted small lh-1 overflow-hidden" 
                  style="font-size: 0.65rem; max-height: 2em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
