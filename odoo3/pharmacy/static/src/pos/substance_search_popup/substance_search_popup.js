@@ -18,7 +18,7 @@ export class SubstanceSearchPopup extends Component {
     };
 
     setup() {
-        console.log("Pharmacy Extension: SubstanceSearchPopup setup");
+        console.log("Pharmacy: SubstanceSearchPopup setup (Ported)");
         this.pos = usePos();
         this.state = useState({
             searchTerm: "",
@@ -37,7 +37,7 @@ export class SubstanceSearchPopup extends Component {
             this.state.originalProductName = selectedLine.product_id.display_name;
             const product = selectedLine.product_id;
 
-            console.log(`Pharmacy Extension: Finding alternatives for ${this.state.originalProductName}`, product.composition);
+            console.log(`Pharmacy: Finding alternatives for ${this.state.originalProductName}`, product.composition);
             this.findAlternatives(product);
         }
 
@@ -53,7 +53,7 @@ export class SubstanceSearchPopup extends Component {
      * Matches by "overlap" (at least one common ingredient).
      */
     findAlternatives(product) {
-        const allProducts = this.pos.data.models["product.product"];
+        const allProducts = this.pos.models["product.product"];
         const targetComposition = product.composition || [];
 
         if (targetComposition.length > 0) {
@@ -102,9 +102,9 @@ export class SubstanceSearchPopup extends Component {
 
     formatPrice(price) {
         try {
-            return this.pos.env.utils.formatCurrency(price);
+            return this.env.utils.formatCurrency(price);
         } catch (e) {
-            console.error("Pharmacy Extension: Error formatting price", e);
+            console.error("Pharmacy: Error formatting price", e);
             return String(price);
         }
     }
@@ -116,7 +116,7 @@ export class SubstanceSearchPopup extends Component {
             return;
         }
 
-        const allProducts = this.pos.data.models["product.product"];
+        const allProducts = this.pos.models["product.product"];
 
         const filtered = allProducts.filter(product => {
             if (!product.available_in_pos) return false;
