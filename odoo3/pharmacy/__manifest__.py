@@ -1,7 +1,7 @@
 {
-    'name': 'Pharmacy Management',
+    'name': 'pharmacy',
     'version': '17.0.3.0.0',
-    'category': 'Pharmacy',
+    'category': 'phar',
     'sequence': 1,
     'summary': 'Advanced Pharmacy Management with Box/Envelope Inventory',
     'description': """
