@@ -1,6 +1,6 @@
 {
     'name': 'phar',
-    'version': '19.0.1.0.0',
+    'version': '20.0.1.0.0',
     'category': 'Industry',
     'summary': 'Advanced Pharmacy Management with Box/Envelope Inventory',
     'description': """
