@@ -9,7 +9,7 @@ import { _t } from "@web/core/l10n/translation";
 // Add "Open Box" and "Find Substitutes" handlers to the ControlButtons (Actions popup)
 patch(ControlButtons.prototype, {
     setup() {
-        super.setup();
+        this._super(...arguments);
         this.orm = useService("orm");
         this.notification = useService("notification");
         this.dialog = useService("dialog");

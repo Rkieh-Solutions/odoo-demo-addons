@@ -2,12 +2,12 @@
 <templates id="template" xml:space="preserve">
     <!-- Add Open Box button to the Actions popup menu -->
     <t t-name="pharmacy.ControlButtons" t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
-        <xpath expr="//t[@t-if='props.showRemainingButtons']/div/button[hasclass('o_pricelist_button')]" position="before">
-            <button class="control-button" t-on-click="() => this.onClickOpenBox()">
+        <xpath expr="//div[hasclass('control-buttons')]" position="inside">
+            <button class="control-button w-100 mb-2" t-on-click="() => this.onClickOpenBox()">
                 <i class="fa fa-archive me-2" role="img" aria-label="Open Box" title="Open Box" />
                 Open Box
             </button>
-            <button class="control-button" t-on-click="() => this.onClickFindSubstitutes()">
+            <button class="control-button w-100 mb-2" t-on-click="() => this.onClickFindSubstitutes()">
                 <i class="fa fa-flask me-2" role="img" aria-label="Find Substitutes" title="Find Substitutes" />
                 Find Substitutes
             </button>
