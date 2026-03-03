@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<odoo>
-    <menuitem id="menu_phar_root" 
-              name="Phar" 
-              web_icon="phar,static/description/icon.png"
-              sequence="2"/>
-</odoo>
