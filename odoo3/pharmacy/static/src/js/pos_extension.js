@@ -34,12 +34,17 @@ patch(ControlButtons.prototype, {
         }
 
         try {
-            await this.orm.call("product.template", "action_open_new_box", [parentTmplId]);
-            this.notification.add(_t("📦 Box opened! Stock updated."), { type: "success" });
+            const result = await this.orm.call("product.template", "action_open_new_box", [parentTmplId]);
+            if (result && result.params && result.params.type === 'danger') {
+                this.notification.add(result.params.message, { type: "danger" });
+            } else {
+                this.notification.add(_t("📦 Box opened successfully! Stock has been updated."), { type: "success" });
+                // Trigger a sync or refresh if possible, though Odoo POS usually handles basic stock updates via bus
+            }
             if (this.props.close) this.props.close();
         } catch (error) {
             console.error("Open Box Error:", error);
-            this.notification.add(_t("Failed to open box."), { type: "danger" });
+            this.notification.add(_t("Failed to open box. Please check if the product is correctly configured."), { type: "danger" });
         }
     },
     async onClickFindSubstitutes() {
