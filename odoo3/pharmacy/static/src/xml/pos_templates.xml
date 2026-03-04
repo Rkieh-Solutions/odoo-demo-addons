@@ -2,7 +2,7 @@
 <templates id="template" xml:space="preserve">
     <!-- Add Open Box button to the Actions popup menu -->
     <t t-name="phar.ControlButtons" t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
-        <xpath expr="//div[hasclass('control-buttons-modal')]/NoteButton[1]" position="before">
+        <xpath expr="//NoteButton" position="before">
             <button t-att-class="buttonClass"
                     t-on-click="() => this.onClickOpenBox()">
                 <i class="fa fa-archive me-1" role="img" aria-label="Open Box" title="Open Box" />

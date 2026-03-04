@@ -16,8 +16,8 @@
                     <span class="text-muted" invisible="not pharmacy_margin">(Actual: <field name="pharmacy_margin" class="oe_inline"/>%)</span>
                 </div>
             </xpath>
-
-            <xpath expr="//notebook" position="inside">
+            <!-- Tab: Pharmacy Management -->
+            <xpath expr="//sheet/notebook" position="inside">
                 <!-- Pharmacy Management Tab -->
                 <page name="pharmacy_management" string="Pharmacy Management">
                     <group>
@@ -88,19 +88,17 @@
     </record>
 
     <!-- Combined Search View -->
-<!--
     <record id="product_template_search_view_pharmacy" model="ir.ui.view">
         <field name="name">product.template.search.pharmacy</field>
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_search_view"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='name']" position="after">
-                <field name="code"/>
+                <field name="code" string="Code" filter_domain="[('code', 'ilike', self)]"/>
                 <filter string="Box Products" name="box_products" domain="[('is_box_product', '=', True)]"/>
             </xpath>
         </field>
     </record>
--->
 
     <!-- POS Form View Inheritance removed for Odoo 20 compatibility: no custom fields added to avoid parseFieldNode errors -->
 
