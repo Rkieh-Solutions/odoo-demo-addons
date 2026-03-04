@@ -1,9 +1,7 @@
-from odoo import api, fields, models
+from odoo import api, models
 
 class ProductProduct(models.Model):
     _inherit = 'product.product'
-
-    code = fields.Char(related='product_tmpl_id.code', string="Code", store=True, index=True)
 
     @api.model
     def _load_pos_data_fields(self, config_id):
