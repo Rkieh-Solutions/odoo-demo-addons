@@ -3,7 +3,7 @@
 import { patch } from "@web/core/utils/patch";
 import { ControlButtons } from "@point_of_sale/app/screens/product_screen/control_buttons/control_buttons";
 import { useService } from "@web/core/utils/hooks";
-import { SubstanceSearchPopup } from "@phar/js/SubstanceSearchPopup";
+import { SubstanceSearchPopup } from "@pharmacy/pos/substance_search_popup/substance_search_popup";
 import { _t } from "@web/core/l10n/translation";
 
 // Add "Open Box" and "Find Substitutes" handlers to the ControlButtons (Actions popup)
@@ -33,12 +33,16 @@ patch(ControlButtons.prototype, {
         }
 
         try {
-            await this.orm.call("product.template", "action_open_new_box", [parentTmplId]);
-            this.notification.add(_t("📦 Box opened! Stock updated."), { type: "success" });
+            const result = await this.orm.call("product.template", "action_open_new_box", [parentTmplId]);
+            if (result && result.params && result.params.type === 'danger') {
+                this.notification.add(result.params.message, { type: "danger" });
+            } else {
+                this.notification.add(_t("📦 Box opened successfully! Stock has been updated."), { type: "success" });
+            }
             if (this.props.close) this.props.close();
         } catch (error) {
             console.error("Open Box Error:", error);
-            this.notification.add(_t("Failed to open box."), { type: "danger" });
+            this.notification.add(_t("Failed to open box. Please check if the product is correctly configured."), { type: "danger" });
         }
     },
     async onClickFindSubstitutes() {

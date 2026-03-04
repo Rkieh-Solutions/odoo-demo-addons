@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+<!-- Temporarily commented out to allow upgrade
   <record id="product_template_search_inherit_composition" model="ir.ui.view">
     <field name="name">product.template.search.inherit.composition</field>
     <field name="model">product.template</field>
@@ -36,4 +37,5 @@
 
     </field>
   </record>
+-->
 </odoo>
