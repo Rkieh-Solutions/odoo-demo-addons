@@ -3,7 +3,6 @@
 import { Component, useState, onRendered, useRef } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { usePos } from "@point_of_sale/app/hooks/pos_hook";
-import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
 
 /**
@@ -11,7 +10,7 @@ import { _t } from "@web/core/l10n/translation";
  * It finds alternatives based on shared ingredients (overlap).
  */
 export class SubstanceSearchPopup extends Component {
-    static template = "phar.SubstanceSearchPopup";
+    static template = "pharmacy.SubstanceSearchPopup";
     static components = { Dialog };
     static props = {
         title: { type: String, optional: true },
@@ -21,8 +20,6 @@ export class SubstanceSearchPopup extends Component {
     setup() {
         console.log("Pharmacy Extension: SubstanceSearchPopup setup");
         this.pos = usePos();
-        this.orm = useService("orm");
-        this.notification = useService("notification");
         this.state = useState({
             searchTerm: "",
             products: [], // Will store { product, formatted_price }
@@ -94,25 +91,6 @@ export class SubstanceSearchPopup extends Component {
             // Fallback to text search if IDs not available
             this.state.searchTerm = product.composition_text;
             this.updateSearchResults();
-        }
-    }
-
-    async onOpenBox(product) {
-        let parentTmplId = product.product_tmpl_id;
-        if (typeof parentTmplId === 'object') parentTmplId = parentTmplId.id;
-
-        try {
-            const result = await this.orm.call("product.template", "action_open_new_box", [parentTmplId]);
-            if (result && result.params && result.params.type === 'danger') {
-                this.notification.add(result.params.message, { type: "danger" });
-            } else {
-                this.notification.add(_t("📦 Box opened! Stock updated for %s", product.display_name), { type: "success" });
-                // Note: Qty update might need a manual refresh or a new data fetch in Odoo 17/18
-                // For simplicity, we just notify the user.
-            }
-        } catch (error) {
-            console.error("Open Box Error:", error);
-            this.notification.add(_t("Failed to open box."), { type: "danger" });
         }
     }
 

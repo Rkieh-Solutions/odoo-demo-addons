@@ -3,7 +3,7 @@
 import { patch } from "@web/core/utils/patch";
 import { ControlButtons } from "@point_of_sale/app/screens/product_screen/control_buttons/control_buttons";
 import { useService } from "@web/core/utils/hooks";
-import { SubstanceSearchPopup } from "@phar/js/SubstanceSearchPopup";
+import { SubstanceSearchPopup } from "@pharmacy/pos/substance_search_popup/substance_search_popup";
 import { _t } from "@web/core/l10n/translation";
 
 // Add "Open Box" and "Find Substitutes" handlers to the ControlButtons (Actions popup)

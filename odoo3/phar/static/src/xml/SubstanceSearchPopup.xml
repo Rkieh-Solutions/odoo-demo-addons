@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
-    <t t-name="phar.SubstanceSearchPopup">
+    <t t-name="pharmacy.SubstanceSearchPopup">
         <Dialog title="props.title" footer="false" size="'md'">
             <div class="substance-search-popup d-flex flex-column gap-3">
                 <div class="search-box input-group">
@@ -30,12 +30,6 @@
                         <div class="d-flex align-items-center gap-3 flex-shrink-0">
                             <span class="badge bg-soft-info text-info border border-info px-2 py-1" t-esc="item.formatted_price"/>
                             <div class="btn-group shadow-sm">
-                                <button t-if="item.product.qty_available &lt;= 0 and (item.product.is_box_product or item.product.parent_box_id)" 
-                                        class="btn btn-outline-info btn-sm"
-                                        t-on-click="() => this.onOpenBox(item.product)"
-                                        title="Open a new box for this product">
-                                    <i class="fa fa-archive"/>
-                                </button>
                                 <button t-if="state.selectedLine" class="btn btn-outline-warning btn-sm border-end-0 px-3" 
                                         t-on-click="() => this.replaceLine(item.product)" 
                                         title="Replace selected item">

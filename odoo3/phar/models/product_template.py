@@ -170,17 +170,17 @@ class ProductTemplate(models.Model):
 
     # --- Constraints & Compuates ---
 
-    @api.constrains('code')
-    def _check_unique_code(self):
-        for rec in self:
-            if not rec.code:
-                continue
-            domain = [('code', '=', rec.code), ('id', '!=', rec.id)]
-            if self.search_count(domain) > 0:
-                raise ValidationError(
-                    f"The code '{rec.code}' is already assigned to another product. "
-                    "Each product must have a unique code."
-                )
+    # @api.constrains('code')
+    # def _check_unique_code(self):
+    #     for rec in self:
+    #         if not rec.code:
+    #             continue
+    #         domain = [('code', '=', rec.code), ('id', '!=', rec.id)]
+    #         if self.search_count(domain) > 0:
+    #             raise ValidationError(
+    #                 f"The code '{rec.code}' is already assigned to another product. "
+    #                 "Each product must have a unique code."
+    #             )
 
     @api.depends('qty_available', 'envelope_child_id.qty_available', 'parent_box_id.qty_available')
     def _compute_envelope_qty(self):
@@ -463,33 +463,32 @@ class ProductTemplate(models.Model):
     @api.model
     def _load_pos_data_fields(self, config):
         fields = super()._load_pos_data_fields(config)
-        # Technical pharmacy fields required by POS JS
-        extra = [
-            'is_box_product', 
-            'envelopes_per_box', 
-            'envelope_price',
-            'envelope_qty', 
-            'box_qty', 
-            'envelope_child_id', 
-            'parent_box_id',
-            'composition', 
-            'composition_text',
-            'code',
-            'qty_available'
-        ]
-        for f in extra:
-            if f not in fields:
-                fields.append(f)
+        if 'qty_available' not in fields:
+            fields.append('qty_available')
+        if 'composition' not in fields:
+            fields.append('composition')
+        if 'composition_text' not in fields:
+            fields.append('composition_text')
+        if 'is_box_product' not in fields:
+            fields.append('is_box_product')
+        if 'envelope_child_id' not in fields:
+            fields.append('envelope_child_id')
+        if 'envelopes_per_box' not in fields:
+            fields.append('envelopes_per_box')
+        if 'parent_box_id' not in fields:
+            fields.append('parent_box_id')
+        if 'code' not in fields:
+            fields.append('code')
         return fields
 
     @api.model
     def _load_pos_data_read(self, records, config):
         res = super()._load_pos_data_read(records, config)
+        # Use a map for efficiency and ensure we get the float value directly
         product_map = {p.id: p.qty_available for p in records}
         for r in res:
             r['qty_available'] = product_map.get(r['id'], 0.0)
         return res
-
 
     def write(self, vals):
         # Handle Margin/Price updates
