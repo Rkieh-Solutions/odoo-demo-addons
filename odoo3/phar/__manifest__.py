@@ -31,7 +31,7 @@
         'web.assets_backend': [
             'phar/static/src/js/substitute_handler.js',
         ],
-        'point_of_sale._assets_pos': [
+        'point_of_sale.assets': [
             'phar/static/src/css/pharmacy_pos.css',
             'phar/static/src/js/SubstanceSearchPopup.js',
             'phar/static/src/js/pos_extension.js',
