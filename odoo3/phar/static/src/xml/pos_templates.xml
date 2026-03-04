@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
-    <!-- Add Open Box button to the Actions popup menu -->
+    <!-- Add Open Box and Find Substitutes to the Actions popup (shown when showRemainingButtons=true) -->
     <t t-name="phar.ControlButtons" t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
-        <xpath expr="//*[contains(@class, 'control-buttons-modal')]/*[1]" position="before">
+        <xpath expr="//div[hasclass('control-buttons-modal')]/NoteButton[1]" position="before">
             <button t-att-class="buttonClass"
                     t-on-click="() => this.onClickOpenBox()">
                 <i class="fa fa-archive me-2" role="img" aria-label="Open Box" title="Open Box" />
