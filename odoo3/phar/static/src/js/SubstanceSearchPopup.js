@@ -10,7 +10,7 @@ import { _t } from "@web/core/l10n/translation";
  * It finds alternatives based on shared ingredients (overlap).
  */
 export class SubstanceSearchPopup extends Component {
-    static template = "pharmacy.SubstanceSearchPopup";
+    static template = "phar.SubstanceSearchPopup";
     static components = { Dialog };
     static props = {
         title: { type: String, optional: true },
