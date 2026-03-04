@@ -28,15 +28,10 @@ patch(PosStore.prototype, {
             const new_qty = vals.qty || 1;
             const total_planned_qty = qty_in_cart + new_qty;
 
-            if (qty_available <= 0) {
+            if (qty_available <= 0 || total_planned_qty > qty_available) {
                 await this.dialog.add(AlertDialog, {
-                    title: _t("Out of Stock!"),
-                    body: _t("The product '%s' is completely out of stock. Are you sure you want to add it?", product.display_name),
-                });
-            } else if (total_planned_qty > qty_available) {
-                await this.dialog.add(AlertDialog, {
-                    title: _t("Low Stock Warning"),
-                    body: _t("The product '%s' only has %s units available. You are adding %s in total. Continue?",
+                    title: _t("Out of Stock Warning"),
+                    body: _t("The product '%s' has limited quantity in stock (On Hand: %s). Your cart now has %s. Do you want to continue?",
                         product.display_name, qty_available, total_planned_qty),
                 });
             }

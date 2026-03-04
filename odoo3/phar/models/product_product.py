@@ -1,13 +1,11 @@
-from odoo import api, fields, models
+from odoo import api, models
 
 class ProductProduct(models.Model):
     _inherit = 'product.product'
 
-    code = fields.Char(related='product_tmpl_id.code', string="Code", store=True, index=True)
-
     @api.model
-    def _load_pos_data_fields(self, config):
-        fields = super()._load_pos_data_fields(config)
+    def _load_pos_data_fields(self, config_id):
+        fields = super()._load_pos_data_fields(config_id)
         # Add qty_available for stock alerts
         if 'qty_available' not in fields:
             fields.append('qty_available')
@@ -15,16 +13,6 @@ class ProductProduct(models.Model):
             fields.append('composition')
         if 'composition_text' not in fields:
             fields.append('composition_text')
-        if 'is_box_product' not in fields:
-            fields.append('is_box_product')
-        if 'envelope_child_id' not in fields:
-            fields.append('envelope_child_id')
-        if 'envelopes_per_box' not in fields:
-            fields.append('envelopes_per_box')
-        if 'parent_box_id' not in fields:
-            fields.append('parent_box_id')
-        if 'code' not in fields:
-            fields.append('code')
         return fields
 
     @api.model
