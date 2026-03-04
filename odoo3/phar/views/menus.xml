@@ -23,8 +23,8 @@
               sequence="21"/>
 
     <!-- Configuration Section -->
-    <menuitem id="menu_phar_config" 
-              name="phar" 
+    <menuitem id="menu_pharmacy_config" 
+              name="Pharmacy" 
               parent="stock.menu_stock_config_settings" 
               sequence="61"/>
 </odoo>
