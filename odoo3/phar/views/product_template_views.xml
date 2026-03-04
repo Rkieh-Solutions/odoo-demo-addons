@@ -9,7 +9,7 @@
             <!-- General Information: Code, ATC, Registration No., Margin (from extension) -->
             <xpath expr="//group[@name='group_general']" position="inside">
                 <field name="code" string="Code"/>
-                <field name="atc_id" options="{'no_create': True, 'no_open': True}"/>
+                <field name="atc_id"/>
                 <field name="registration_number" string="Registration No."/>
                 <label for="pharmacy_margin_input" string="Margin (%)"/>
                 <div class="o_row">
@@ -40,19 +40,19 @@
                     
                     <group string="Pharmaceutical Properties" name="drug_properties">
                         <group>
-                            <field name="form_id" options="{'no_create': True, 'no_open': True}"/>
-                            <field name="strength_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="form_id"/>
+                            <field name="strength_id"/>
                         </group>
                         <group>
-                            <field name="presentation_id" options="{'no_create': True, 'no_open': True}"/>
-                            <field name="stratum_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="presentation_id"/>
+                            <field name="stratum_id"/>
                         </group>
                     </group>
 
                     <group string="Ingredients &amp; Composition">
                         <field name="composition"
                                widget="many2many_tags"
-                               options="{'color_field': 'color', 'no_create_edit': True}"
+                               options="{'color_field': 'color'}"
                                nolabel="1"
                                placeholder="Add ingredients..."/>
                     </group>
@@ -60,7 +60,7 @@
                     <group string="MOH / Regulatory">
                         <group>
                             <field name="registration_number"/>
-                            <field name="atc_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="atc_id"/>
                         </group>
                         <group>
                             <field name="agent_id"/>
