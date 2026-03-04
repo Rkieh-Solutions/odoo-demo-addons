@@ -461,8 +461,8 @@ class ProductTemplate(models.Model):
         return super().create(vals_list)
 
     @api.model
-    def _load_pos_data_fields(self, config_id):
-        fields = super()._load_pos_data_fields(config_id)
+    def _load_pos_data_fields(self, config):
+        fields = super()._load_pos_data_fields(config)
         # Technical pharmacy fields required by POS JS
         extra = [
             'is_box_product', 

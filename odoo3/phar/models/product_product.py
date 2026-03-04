@@ -4,8 +4,8 @@ class ProductProduct(models.Model):
     _inherit = 'product.product'
 
     @api.model
-    def _load_pos_data_fields(self, config_id):
-        fields = super()._load_pos_data_fields(config_id)
+    def _load_pos_data_fields(self, config):
+        fields = super()._load_pos_data_fields(config)
         extra = [
             'is_box_product', 
             'envelopes_per_box', 
