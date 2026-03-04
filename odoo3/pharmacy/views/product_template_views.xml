@@ -8,7 +8,7 @@
         <field name="arch" type="xml">
             <!-- General Information: Code, Registration No., Margin -->
             <xpath expr="//group[@name='group_general']" position="inside">
-<!-- <field name="code" string="Pharmacy Code"/> -->
+                <field name="code" string="Pharmacy Code"/>
                 <field name="registration_number" string="Registration No."/>
                 <label for="pharmacy_margin_input" string="Pharmacy Margin (%)"/>
                 <div class="o_row">
@@ -72,11 +72,9 @@
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_tree_view"/>
         <field name="arch" type="xml">
-<!--
             <xpath expr="//field[@name='name']" position="before">
                 <field name="code" string="Code" optional="show"/>
             </xpath>
--->
             <xpath expr="//field[@name='name']" position="after">
                 <field name="is_box_product" optional="show"/>
                 <field name="form_id" optional="hide"/>
