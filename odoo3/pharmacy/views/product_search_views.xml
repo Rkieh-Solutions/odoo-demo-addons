@@ -5,7 +5,9 @@
     <field name="model">product.template</field>
     <field name="inherit_id" ref="product.product_template_search_view"/>
     <field name="arch" type="xml">
+
       <xpath expr="//search" position="inside">
+        <field name="code" string="Code" filter_domain="[('code', 'ilike', self)]"/>
         <field name="form_id" string="Form"/>
         <field name="strength_id" string="Strength"/>
         <field name="presentation_id" string="Presentation"/>
@@ -16,9 +18,6 @@
         <filter name="composition_filter"
                 string="Has Ingredient"
                 domain="[('composition', '!=', False)]"/>
-        <filter name="box_products"
-                string="Box Products"
-                domain="[('is_box_product', '=', True)]"/>
 
         <separator/>
         <filter name="group_by_form" string="Form"
@@ -34,6 +33,7 @@
         <filter name="group_by_composition" string="Composition"
                 context="{'group_by': 'composition_text'}"/>
       </xpath>
+
     </field>
   </record>
 </odoo>

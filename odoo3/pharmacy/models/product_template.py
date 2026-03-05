@@ -322,9 +322,6 @@ class ProductTemplate(models.Model):
 
         try:
             code_idx = fields.index("code")
-    #         if not rec.code:
-    #         domain = [('code', '=', rec.code), ('id', '!=', rec.id)]
-    #                 f"The code '{rec.code}' is already assigned to another product. "
         except ValueError:
             code_idx = -1
 
