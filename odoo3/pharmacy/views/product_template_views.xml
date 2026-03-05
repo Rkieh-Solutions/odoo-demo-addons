@@ -8,7 +8,7 @@
         <field name="arch" type="xml">
             <!-- General Information: Code, Registration No., Margin -->
             <xpath expr="//group[@name='group_general']" position="inside">
-                <field name="code" string="Pharmacy Code"/>
+                <field name="code" string="Code"/>
                 <field name="registration_number" string="Registration No."/>
                 <label for="pharmacy_margin_input" string="Pharmacy Margin (%)"/>
                 <div class="o_row">
@@ -22,11 +22,11 @@
                 <page name="pharmacy_management" string="Pharmacy Management">
                     <group>
                         <group name="group_pharmacy_basic" string="Drug Identification">
-                            <field name="atc_id"/>
-                            <field name="form_id"/>
-                            <field name="strength_id"/>
-                            <field name="presentation_id"/>
-                            <field name="stratum_id"/>
+                            <field name="atc_id" options="{'no_create': False, 'no_quick_create': False, 'no_create_edit': False}"/>
+                            <field name="form_id" options="{'no_create': False, 'no_quick_create': False, 'no_create_edit': False}"/>
+                            <field name="strength_id" options="{'no_create': False, 'no_quick_create': False, 'no_create_edit': False}"/>
+                            <field name="presentation_id" options="{'no_create': False, 'no_quick_create': False, 'no_create_edit': False}"/>
+                            <field name="stratum_id" options="{'no_create': False, 'no_quick_create': False, 'no_create_edit': False}"/>
                         </group>
                     </group>
                     <group string="Ingredients &amp; Composition">
@@ -66,8 +66,8 @@
                 <page string="MOH / Regulatory" name="pharmacy_moh_regulatory">
                   <group>
                     <group string="Regulatory Partners">
-                      <field name="agent_id"/>
-                      <field name="responsible_party_id"/>
+                      <field name="agent_id" options="{'no_create': False, 'no_quick_create': False, 'no_create_edit': False}"/>
+                      <field name="responsible_party_id" options="{'no_create': False, 'no_quick_create': False, 'no_create_edit': False}"/>
                     </group>
                   </group>
                 </page>
@@ -97,18 +97,7 @@
         </field>
     </record>
 
-    <!-- Combined Search View -->
-    <record id="product_template_search_view_pharmacy" model="ir.ui.view">
-        <field name="name">product.template.search.pharmacy</field>
-        <field name="model">product.template</field>
-        <field name="inherit_id" ref="product.product_template_search_view"/>
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='name']" position="after">
-                <field name="code" string="Code" filter_domain="[('code', 'ilike', self)]"/>
-                <filter string="Box Products" name="box_products" domain="[('is_box_product', '=', True)]"/>
-            </xpath>
-        </field>
-    </record>
+    <!-- Search View moved to views/product_search_views.xml for consolidation -->
 
     <!-- POS Form View Inheritance removed for Odoo 20 compatibility: no custom fields added to avoid parseFieldNode errors -->
 
