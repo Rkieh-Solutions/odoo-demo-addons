@@ -1,35 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Actions for App Views -->
+    <record id="action_pharmacy_products" model="ir.actions.act_window">
+        <field name="name">Pharmacy Products</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="context">{'search_default_filter_to_sell': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Manage your pharmaceutical inventory here.
+            </p>
+        </field>
+    </record>
+
     <!-- Pharmacy Root as Dashboard App -->
     <menuitem id="menu_pharmacy_root" 
               name="Pharmacy" 
               web_icon="pharmacy,static/description/icon.png"
+              action="action_pharmacy_products"
               sequence="1"/>
 
-    <!-- Integrated Menus -->
-    
-    <!-- 1. Under Inventory / Operations -->
-    <menuitem id="menu_pharmacy_stock_ops" 
-              name="Pharmacy Operations" 
-              parent="stock.menu_stock_warehouse_mgmt" 
-              action="product.product_template_action_all"
-              sequence="50"/>
+    <!-- Operations View -->
+    <menuitem id="menu_pharmacy_operations"
+              name="Operations"
+              parent="menu_pharmacy_root"
+              sequence="10"/>
 
-    <!-- 2. Under POS / Products -->
-    <menuitem id="menu_pharmacy_pos_products"
-              name="Pharmacy Products"
-              parent="point_of_sale.menu_pos_products"
-              action="product.product_template_action_all"
-              sequence="20"/>
+    <menuitem id="menu_pharmacy_all_products"
+              name="Products"
+              parent="menu_pharmacy_operations"
+              action="action_pharmacy_products"
+              sequence="10"/>
 
     <!-- Configuration Section -->
     <menuitem id="menu_pharmacy_config" 
-              name="Pharmacy" 
-              parent="stock.menu_stock_config_settings" 
-              sequence="60"/>
+              name="Configuration" 
+              parent="menu_pharmacy_root" 
+              sequence="100"/>
 
     <menuitem id="menu_pharmacy_config_forms"
-              name="Forms"
+              name="Drug Forms"
               parent="menu_pharmacy_config"
               action="action_pharmacy_form"
               sequence="10"/>
