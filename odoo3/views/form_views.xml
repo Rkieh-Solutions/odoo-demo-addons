@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+  <!-- ==================== Tree View ==================== -->
+  <record id="pharmacy_form_view_list" model="ir.ui.view">
+    <field name="name">pharmacy.form.list</field>
+    <field name="model">pharmacy.form</field>
+    <field name="arch" type="xml">
+      <list editable="bottom">
+        <field name="name"/>
+      </list>
+    </field>
+  </record>
+
+  <!-- ==================== Form View ==================== -->
+  <record id="pharmacy_form_view_form" model="ir.ui.view">
+    <field name="name">pharmacy.form.form</field>
+    <field name="model">pharmacy.form</field>
+    <field name="arch" type="xml">
+      <form>
+        <sheet>
+          <group>
+            <field name="name"/>
+            <field name="active" invisible="1"/>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <!-- ==================== Search View ==================== -->
+  <record id="pharmacy_form_view_search" model="ir.ui.view">
+    <field name="name">pharmacy.form.search</field>
+    <field name="model">pharmacy.form</field>
+    <field name="arch" type="xml">
+      <search>
+        <field name="name"/>
+        <filter name="inactive" string="Archived"
+                domain="[('active','=',False)]"/>
+      </search>
+    </field>
+  </record>
+
+  <!-- ==================== Action ==================== -->
+  <record id="pharmacy_form_action" model="ir.actions.act_window">
+    <field name="name">Forms</field>
+    <field name="res_model">pharmacy.form</field>
+    <field name="view_mode">list,form</field>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">
+        Create your first drug form
+      </p>
+      <p>Drug forms like Tablet, Capsule, Syrup, etc.</p>
+    </field>
+  </record>
+
+</odoo>
