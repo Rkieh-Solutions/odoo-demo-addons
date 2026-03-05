@@ -1,6 +1,6 @@
 {
     'name': 'Pharmacy Management',
-    'version': '19.0.1.0.0',
+    'version': '20.0.1.0.0',
     'category': 'Industry',
     'sequence': 1,
     'summary': 'Advanced Pharmacy Management with Box/Envelope Inventory',
@@ -27,6 +27,7 @@
         'views/product_search_views.xml',
         'views/stratum_views.xml',
         'views/strength_views.xml',
+        'views/pharmacy_config_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

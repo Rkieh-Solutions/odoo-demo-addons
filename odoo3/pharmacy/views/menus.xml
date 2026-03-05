@@ -27,4 +27,40 @@
               name="Pharmacy" 
               parent="stock.menu_stock_config_settings" 
               sequence="60"/>
+
+    <menuitem id="menu_pharmacy_config_forms"
+              name="Forms"
+              parent="menu_pharmacy_config"
+              action="action_pharmacy_form"
+              sequence="10"/>
+
+    <menuitem id="menu_pharmacy_config_presentations"
+              name="Presentations"
+              parent="menu_pharmacy_config"
+              action="action_pharmacy_presentation"
+              sequence="20"/>
+
+    <menuitem id="menu_pharmacy_config_strengths"
+              name="Strengths"
+              parent="menu_pharmacy_config"
+              action="action_pharmacy_strength"
+              sequence="30"/>
+
+    <menuitem id="menu_pharmacy_config_atc"
+              name="ATC Codes"
+              parent="menu_pharmacy_config"
+              action="action_pharmacy_atc"
+              sequence="40"/>
+
+    <menuitem id="menu_pharmacy_config_stratum"
+              name="Strata"
+              parent="menu_pharmacy_config"
+              action="action_pharmacy_stratum"
+              sequence="50"/>
+
+    <menuitem id="menu_pharmacy_config_agents"
+              name="Agents"
+              parent="menu_pharmacy_config"
+              action="action_pharmacy_agents"
+              sequence="60"/>
 </odoo>

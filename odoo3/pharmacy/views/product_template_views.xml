@@ -16,40 +16,49 @@
                     <span class="text-muted" invisible="not pharmacy_margin">(Actual: <field name="pharmacy_margin" class="oe_inline"/>%)</span>
                 </div>
             </xpath>
-            <!-- Tab: Pharmacy Management -->
+            <!-- Tab Refinement -->
             <xpath expr="//sheet/notebook" position="inside">
                 <!-- Pharmacy Management Tab -->
                 <page name="pharmacy_management" string="Pharmacy Management">
                     <group>
                         <group name="group_pharmacy_basic" string="Drug Identification">
-                            <field name="atc_id" options="{'no_create': True}"/>
-                            <field name="form_id" options="{'no_create': True}"/>
-                            <field name="strength_id" options="{'no_create': True}"/>
-                            <field name="presentation_id" options="{'no_create': True}"/>
-                            <field name="stratum_id" options="{'no_create': True}"/>
-                        </group>
-                        <group name="group_box_management" string="Box &amp; Inventory">
-                            <field name="is_box_product"/>
-                            <field name="envelope_child_id" invisible="not is_box_product" required="is_box_product"/>
-                            <field name="envelopes_per_box" invisible="not is_box_product" required="is_box_product"/>
-                            <field name="parent_box_id" readonly="1" invisible="not parent_box_id"/>
+                            <field name="atc_id"/>
+                            <field name="form_id"/>
+                            <field name="strength_id"/>
+                            <field name="presentation_id"/>
+                            <field name="stratum_id"/>
                         </group>
                     </group>
                     <group string="Ingredients &amp; Composition">
                         <field name="composition"
                                widget="many2many_tags"
-                               options="{'color_field': 'color', 'no_create_edit': True}"
+                               options="{'color_field': 'color'}"
                                nolabel="1"
                                placeholder="Add ingredients for POS substitution..."/>
                     </group>
-                    <group string="Box Actions" invisible="not is_box_product and not parent_box_id">
+                </page>
+
+                <!-- Box Management Tab -->
+                <page name="box_management" string="Box Management" invisible="not is_box_product and not parent_box_id">
+                    <group>
+                        <group name="group_box_config" string="Configuration">
+                            <field name="is_box_product"/>
+                            <field name="envelope_child_id" invisible="not is_box_product" required="is_box_product"/>
+                            <field name="envelopes_per_box" invisible="not is_box_product" required="is_box_product"/>
+                            <field name="parent_box_id" readonly="1" invisible="not parent_box_id"/>
+                        </group>
+                        <group name="group_box_status" string="Inventory Status">
+                             <field name="envelope_qty" readonly="1" string="Available Loose Envelopes"/>
+                             <field name="qty_available" string="Physical Inventory"/>
+                        </group>
+                    </group>
+                    <group string="Operations">
                          <div class="alert alert-info" role="status" invisible="not is_box_product">
-                            Opening a box will deduct 1 from this product's stock and add <field name="envelopes_per_box" class="oe_inline"/> to the envelope product.
+                            Opening a box will deduct 1 from this product's stock (Physical Inventory) and add <field name="envelopes_per_box" class="oe_inline"/> to the child product.
                          </div>
-                         <field name="envelope_qty" readonly="1" string="Available Loose Envelopes"/>
                          <button name="action_open_new_box" string="Open New Box" type="object" 
                                  class="btn-primary" icon="fa-archive"
-                                 invisible="not is_box_product and not parent_box_id"/>
+                                 invisible="not is_box_product"/>
                     </group>
                 </page>
 
@@ -83,6 +92,7 @@
                 <field name="atc_id" optional="show"/>
                 <field name="stratum_id" optional="show"/>
                 <field name="composition_text" optional="show"/>
+                <field name="qty_available" string="Physical Inventory" optional="show" decoration-danger="qty_available &lt; 0"/>
             </xpath>
         </field>
     </record>
