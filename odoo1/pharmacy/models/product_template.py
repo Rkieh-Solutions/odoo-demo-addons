@@ -204,23 +204,43 @@ class ProductTemplate(models.Model):
 
     # --- Box Actions ---
 
-    def action_open_new_box(self):
+    def action_open_new_box(self, lot_name=None):
         """Logic to open a box and convert it into envelopes (Child product stock)."""
         self.ensure_one()
         if self.parent_box_id:
-            return self.parent_box_id.action_open_new_box()
+            return self.parent_box_id.action_open_new_box(lot_name=lot_name)
 
-        if not self.is_box_product or not self.envelope_child_id:
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': 'Configuration Missing',
-                    'message': 'This product must be marked as a Box and linked to an Envelope product.',
-                    'type': 'warning',
-                    'sticky': False,
-                }
-            }
+        # Ensure the product is marked as a Box product
+        if not self.is_box_product:
+            self.is_box_product = True
+
+        # Automatically create or find the child product if missing
+        if not self.envelope_child_id:
+            child_name = f"{self.name} envelope"
+            child = self.search([('name', '=', child_name), ('parent_box_id', '=', self.id)], limit=1)
+            if not child:
+                # Create the child product
+                child = self.create({
+                    'name': child_name,
+                    'parent_box_id': self.id,
+                    'type': self.type,
+                    'uom_id': self.uom_id.id,
+                    'uom_po_id': self.uom_po_id.id,
+                    'list_price': self.envelope_price or (self.list_price / (self.envelopes_per_box or 1)),
+                    'tracking': self.tracking,
+                    'is_box_product': False,
+                    # Inherit pharmacy fields
+                    'form_id': self.form_id.id,
+                    'stratum_id': self.stratum_id.id,
+                    'strength_id': self.strength_id.id,
+                    'presentation_id': self.presentation_id.id,
+                    'atc_id': self.atc_id.id,
+                })
+            self.envelope_child_id = child.id
+
+        if self.envelopes_per_box <= 0:
+            # Set a default if not configured (e.g., 20) or alert the user
+            self.envelopes_per_box = 10 # Default to 10 if not set, or we could raise an error
 
         if self.qty_available < 1:
             return {
@@ -245,8 +265,46 @@ class ProductTemplate(models.Model):
         if not box_product or not env_product:
             return
 
-        self.env['stock.quant']._update_available_quantity(box_product, location, -1)
-        self.env['stock.quant']._update_available_quantity(env_product, location, self.envelopes_per_box)
+        # Handle Lots
+        lot_id = False
+        child_lot_id = False
+        if self.tracking != 'none':
+            if lot_name:
+                lot_id = self.env['stock.lot'].search([
+                    ('product_id', '=', box_product.id),
+                    ('name', '=', lot_name),
+                    ('company_id', '=', self.env.company.id)
+                ], limit=1)
+            
+            if not lot_id:
+                # Try to find any lot with stock in this location
+                quant = self.env['stock.quant'].search([
+                    ('product_id', '=', box_product.id),
+                    ('location_id', 'child_of', location.id),
+                    ('quantity', '>', 0),
+                    ('lot_id', '!=', False)
+                ], limit=1)
+                lot_id = quant.lot_id
+
+            if lot_id:
+                # Sync lot to child product
+                child_lot = self.env['stock.lot'].search([
+                    ('product_id', '=', env_product.id),
+                    ('name', '=', lot_id.name),
+                    ('company_id', '=', self.env.company.id)
+                ], limit=1)
+                if not child_lot:
+                    child_lot = self.env['stock.lot'].create({
+                        'name': lot_id.name,
+                        'product_id': env_product.id,
+                        'company_id': self.env.company.id,
+                        'expiration_date': lot_id.expiration_date,
+                    })
+                child_lot_id = child_lot.id
+
+        # Update quantities
+        self.env['stock.quant']._update_available_quantity(box_product, location, -1, lot_id=lot_id)
+        self.env['stock.quant']._update_available_quantity(env_product, location, self.envelopes_per_box, lot_id=child_lot_id)
 
         return {
             'type': 'ir.actions.client',

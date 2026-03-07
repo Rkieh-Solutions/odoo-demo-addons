@@ -30,14 +30,13 @@ patch(PosStore.prototype, {
 
             if (qty_available <= 0) {
                 await this.dialog.add(AlertDialog, {
-                    title: _t("Out of Stock!"),
-                    body: _t("The product '%s' is completely out of stock. Are you sure you want to add it?", product.display_name),
+                    title: _t("Waring"),
+                    body: _t("Waring :the product (" + product.display_name + ")is out of stock , The requested quantity is not available in inventory."),
                 });
             } else if (total_planned_qty > qty_available) {
                 await this.dialog.add(AlertDialog, {
-                    title: _t("Low Stock Warning"),
-                    body: _t("The product '%s' only has %s units available. You are adding %s in total. Continue?",
-                        product.display_name, qty_available, total_planned_qty),
+                    title: _t("Waring"),
+                    body: _t("Waring :the product (" + product.display_name + ") only has " + qty_available + " units available. The requested quantity is not available in inventory. Continue?"),
                 });
             }
         }
