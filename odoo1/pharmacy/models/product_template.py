@@ -218,61 +218,22 @@ class ProductTemplate(models.Model):
             if self.envelopes_per_box <= 0:
                 self.sudo().write({'envelopes_per_box': 10}) # Default to 10 if zero
 
-            # 2. Handle Child Product Creation/Linking
+            # 2. Ensure Child Product Exists
             if not self.envelope_child_id:
-                child_name = f"{self.name} envelope"
-                # Search by name and parent link to avoid duplicates
-                child = self.env['product.template'].sudo().search([
-                    '|', ('name', '=', child_name), ('parent_box_id', '=', self.id)
-                ], limit=1)
-                
-                if not child:
-                    # Determine category
-                    categ_id = self.categ_id.id
-                    if not categ_id:
-                        # Fallback to All / Internal
-                        categ = self.env['product.category'].sudo().search([('name', '=', 'All')], limit=1)
-                        categ_id = categ.id if categ else 1
+                self.sudo()._ensure_child_envelope_created()
+                self.env.flush_all()
 
-                    # Create the child product as SUDO to ensure POS cashier can do it
-                    child = self.env['product.template'].sudo().create({
-                        'name': child_name,
-                        'parent_box_id': self.id,
-                        'type': self.type,
-                        'uom_id': self.uom_id.id,
-                        'uom_po_id': self.uom_po_id.id,
-                        'categ_id': categ_id,
-                        'list_price': self.envelope_price or (self.list_price / (self.envelopes_per_box or 1)),
-                        'standard_price': self.standard_price / (self.envelopes_per_box or 1) if self.envelopes_per_box > 1 else self.standard_price,
-                        'tracking': self.tracking,
-                        'is_box_product': False,
-                        'available_in_pos': True,
-                        'sale_ok': True,
-                        'purchase_ok': True,
-                        # Inherit pharmacy fields
-                        'form_id': self.form_id.id,
-                        'stratum_id': self.stratum_id.id,
-                        'strength_id': self.strength_id.id,
-                        'presentation_id': self.presentation_id.id,
-                        'atc_id': self.atc_id.id,
-                        'composition': [(6, 0, self.composition.ids)],
-                    })
-                
-                if child:
-                    self.sudo().write({'envelope_child_id': child.id})
-                    # Flush to ensure variants are created
-                    self.env.flush_all()
-                else:
-                    return {
-                        'type': 'ir.actions.client',
-                        'tag': 'display_notification',
-                        'params': {
-                            'title': 'Creation Failed',
-                            'message': 'Failed to create the child envelope product.',
-                            'type': 'danger',
-                            'sticky': False,
-                        }
+            if not self.envelope_child_id:
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': 'Creation Failed',
+                        'message': 'Failed to create the child envelope product.',
+                        'type': 'danger',
+                        'sticky': False,
                     }
+                }
 
             # 3. Stock Check
             if self.qty_available < 1:
@@ -288,8 +249,8 @@ class ProductTemplate(models.Model):
                 }
 
             # 4. Identify Variants
-            box_product = self.product_variant_id or self.env['product.product'].search([('product_tmpl_id', '=', self.id)], limit=1)
-            env_product = self.envelope_child_id.product_variant_id or self.env['product.product'].search([('product_tmpl_id', '=', self.envelope_child_id.id)], limit=1)
+            box_product = self.product_variant_id or self.env['product.product'].sudo().search([('product_tmpl_id', '=', self.id)], limit=1)
+            env_product = self.envelope_child_id.product_variant_id or self.env['product.product'].sudo().search([('product_tmpl_id', '=', self.envelope_child_id.id)], limit=1)
 
             if not box_product or not env_product:
                 return {
@@ -597,7 +558,56 @@ class ProductTemplate(models.Model):
                 vals["pharmacy_margin"] = margin
                 vals["pharmacy_margin_input"] = str(margin)
 
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        
+        # Auto-create child after creation if box
+        for rec in records:
+            if rec.is_box_product and not rec.envelope_child_id:
+                rec._ensure_child_envelope_created()
+                
+        return records
+
+    def _ensure_child_envelope_created(self):
+        """Helper to create child product if missing."""
+        self.ensure_one()
+        if not self.is_box_product or self.envelope_child_id:
+            return
+            
+        child_name = f"{self.name} envelope"
+        child = self.env['product.template'].sudo().search([
+            '|', ('name', '=', child_name), ('parent_box_id', '=', self.id)
+        ], limit=1)
+        
+        if not child:
+            categ_id = self.categ_id.id
+            if not categ_id:
+                categ = self.env['product.category'].sudo().search([('name', '=', 'All')], limit=1)
+                categ_id = categ.id if categ else 1
+
+            child = self.env['product.template'].sudo().create({
+                'name': child_name,
+                'parent_box_id': self.id,
+                'type': self.type,
+                'uom_id': self.uom_id.id,
+                'uom_po_id': self.uom_po_id.id,
+                'categ_id': categ_id,
+                'list_price': self.envelope_price or (self.list_price / (self.envelopes_per_box or 1)),
+                'standard_price': self.standard_price / (self.envelopes_per_box or 1) if self.envelopes_per_box > 1 else self.standard_price,
+                'tracking': self.tracking,
+                'is_box_product': False,
+                'available_in_pos': True,
+                'sale_ok': True,
+                'purchase_ok': True,
+                'form_id': self.form_id.id,
+                'stratum_id': self.stratum_id.id,
+                'strength_id': self.strength_id.id,
+                'presentation_id': self.presentation_id.id,
+                'atc_id': self.atc_id.id,
+                'composition': [(6, 0, self.composition.ids)],
+            })
+        
+        if child:
+            self.sudo().write({'envelope_child_id': child.id})
 
     @api.model
     def _load_pos_data_fields(self, config):
@@ -659,4 +669,13 @@ class ProductTemplate(models.Model):
                 super(ProductTemplate, rec).write(upd)
             return True
 
-        return super().write(vals)
+        # Default write behavior
+        res = super().write(vals)
+        
+        # Auto-create child after write if box
+        if 'is_box_product' in vals or 'envelope_child_id' in vals:
+            for rec in self:
+                if rec.is_box_product and not rec.envelope_child_id:
+                    rec._ensure_child_envelope_created()
+                    
+        return res
