@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_production_lot_form_pharmacy" model="ir.ui.view">
+        <field name="name">stock.lot.form.pharmacy</field>
+        <field name="model">stock.lot</field>
+        <field name="inherit_id" ref="stock.view_production_lot_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='main_group']" position="inside">
+                <group string="Pharmacy / Box Connection" name="pharmacy_box_connection">
+                    <field name="parent_lot_id" />
+                    <field name="child_lot_ids" widget="many2many_tags" readonly="1" />
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

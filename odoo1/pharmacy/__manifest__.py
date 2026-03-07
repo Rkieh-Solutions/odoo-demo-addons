@@ -27,6 +27,7 @@
         'views/strength_views.xml',
         'views/pharmacy_config_views.xml',
         'views/menus.xml',
+        'views/stock_lot_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

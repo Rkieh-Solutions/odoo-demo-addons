@@ -24,11 +24,19 @@ patch(ControlButtons.prototype, {
         }
 
         const product = selectedLine.product_id;
+        console.log("Opening Box for Product:", product);
+
+        // Handle different Odoo formats for IDs
         let parentTmplId = product.product_tmpl_id;
-        if (typeof parentTmplId === 'object') parentTmplId = parentTmplId.id;
+        if (Array.isArray(parentTmplId)) {
+            parentTmplId = parentTmplId[0];
+        } else if (typeof parentTmplId === 'object' && parentTmplId !== null) {
+            parentTmplId = parentTmplId.id;
+        }
 
         if (!parentTmplId) {
-            this.notification.add(_t("Template ID not found for this product."), { type: "warning" });
+            console.error("Could not find product template ID in:", product);
+            this.notification.add(_t("Product template ID not found. This product might not be correctly loaded in POS."), { type: "danger" });
             return;
         }
 
@@ -48,7 +56,17 @@ patch(ControlButtons.prototype, {
             if (this.props.close) this.props.close();
         } catch (error) {
             console.error("Open Box Error:", error);
-            this.notification.add(_t("Failed to open box. Please check if the product is correctly configured."), { type: "danger" });
+            let errMsg = _t("Failed to open box. Please check if the product is correctly configured.");
+            if (error && error.data && error.data.message) {
+                errMsg += "\nServer says: " + error.data.message;
+            } else if (error && error.message) {
+                errMsg += "\nError: " + error.message;
+            } else {
+                try {
+                    errMsg += "\nRaw Error: " + JSON.stringify(error);
+                } catch (e) { }
+            }
+            this.notification.add(errMsg, { type: "danger" });
         }
     },
     async onClickFindSubstitutes() {

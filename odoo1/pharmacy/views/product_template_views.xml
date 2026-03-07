@@ -43,8 +43,8 @@
                     <group>
                         <group name="group_box_config" string="Configuration">
                             <field name="is_box_product"/>
-                            <field name="envelope_child_id" invisible="not is_box_product" required="is_box_product"/>
-                            <field name="envelopes_per_box" invisible="not is_box_product" required="is_box_product"/>
+                            <field name="envelope_child_id" invisible="not is_box_product"/>
+                            <field name="envelopes_per_box" invisible="not is_box_product"/>
                             <field name="parent_box_id" readonly="1" invisible="not parent_box_id"/>
                         </group>
                         <group name="group_box_status" string="Inventory Status">
