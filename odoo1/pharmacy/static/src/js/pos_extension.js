@@ -33,8 +33,8 @@ patch(ControlButtons.prototype, {
         }
 
         // Try to get lot info if selected
-        const lotNames = selectedLine.get_lot_names();
-        const lotName = lotNames && lotNames.length > 0 ? lotNames[0] : null;
+        const lotLines = selectedLine.pack_lot_lines || [];
+        const lotName = lotLines.length > 0 ? (lotLines[0].lot_name || lotLines[0].text) : null;
 
         try {
             const result = await this.orm.call("product.template", "action_open_new_box", [parentTmplId], {
