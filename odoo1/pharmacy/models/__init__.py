@@ -1,6 +1,5 @@
 from . import product_template
 from . import product_product
-from . import pos_session
 # from . import sale_order
 # from . import sale_order_wizard
 # from . import purchase_order

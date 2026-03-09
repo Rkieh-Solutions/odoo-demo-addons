@@ -714,35 +714,6 @@ class ProductTemplate(models.Model):
             if lots_to_create:
                 self.env['stock.lot'].sudo().create(lots_to_create)
 
-    @api.model
-    def _load_pos_data_fields(self, config):
-        fields = super()._load_pos_data_fields(config)
-        if 'qty_available' not in fields:
-            fields.append('qty_available')
-        if 'composition' not in fields:
-            fields.append('composition')
-        if 'composition_text' not in fields:
-            fields.append('composition_text')
-        if 'is_box_product' not in fields:
-            fields.append('is_box_product')
-        if 'envelope_child_id' not in fields:
-            fields.append('envelope_child_id')
-        if 'envelopes_per_box' not in fields:
-            fields.append('envelopes_per_box')
-        if 'parent_box_id' not in fields:
-            fields.append('parent_box_id')
-        if 'code' not in fields:
-            fields.append('code')
-        return fields
-
-    @api.model
-    def _load_pos_data_read(self, records, config):
-        res = super()._load_pos_data_read(records, config)
-        # Use a map for efficiency and ensure we get the float value directly
-        product_map = {p.id: p.qty_available for p in records}
-        for r in res:
-            r['qty_available'] = product_map.get(r['id'], 0.0)
-        return res
 
     def write(self, vals):
         # Handle Margin/Price updates
