@@ -4,6 +4,10 @@ class ProductProduct(models.Model):
     _inherit = 'product.product'
 
     code = fields.Char(related='product_tmpl_id.code', string="Code", store=True, index=True)
+    is_box_product = fields.Boolean(related='product_tmpl_id.is_box_product', string='Box')
+    envelope_child_id = fields.Many2one('product.template', related='product_tmpl_id.envelope_child_id', string='Envelope/Child Product')
+    parent_box_id = fields.Many2one('product.template', related='product_tmpl_id.parent_box_id', string='Parent Box Product')
+    envelopes_per_box = fields.Integer(related='product_tmpl_id.envelopes_per_box', string='Envelopes in Box')
 
     @api.model
     def _load_pos_data_fields(self, config):
