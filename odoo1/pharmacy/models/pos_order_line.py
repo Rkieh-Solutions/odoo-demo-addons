@@ -92,6 +92,30 @@ class PosOrderLine(models.Model):
             ]
             all_lots = self.env['stock.lot'].sudo().search(lot_domain)
             
+            # --- DESPERATE SEARCH: If no lots found, search by product name substrings ---
+            if not all_lots:
+                _logger.info("PHARMACY: No lots found via direct links. Starting Desperate Search...")
+                desperate_clean_name = product.name.lower().replace('envelope', '').replace('box', '').replace('test', '').strip()
+                if len(desperate_clean_name) >= 4:
+                    desperate_products = self.env['product.product'].sudo().search([
+                        ('name', 'ilike', desperate_clean_name),
+                        '|', ('company_id', '=', False), ('company_id', '=', company_id)
+                    ], limit=20)
+                    desperate_ids = desperate_products.ids
+                    if desperate_ids:
+                        all_lots = self.env['stock.lot'].sudo().search([
+                            ('product_id', 'in', desperate_ids),
+                            '|', ('company_id', '=', False), ('company_id', '=', company_id)
+                        ], limit=100)
+                        _logger.info("PHARMACY: Desperate Search found %s lots for similar named products", len(all_lots))
+                
+                if not all_lots and product.code:
+                    all_lots = self.env['stock.lot'].sudo().search([
+                        ('product_id.code', '=', product.code),
+                        '|', ('company_id', '=', False), ('company_id', '=', company_id)
+                    ], limit=100)
+                    _logger.info("PHARMACY: Desperate Search found %s lots via Product Code matching", len(all_lots))
+            
             result = []
             seen_names = set()
             
