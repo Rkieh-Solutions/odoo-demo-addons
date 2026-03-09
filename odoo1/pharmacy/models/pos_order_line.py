@@ -59,6 +59,12 @@ class PosOrderLine(models.Model):
         
         # We need to map child stock specifically for display
         # We aggregate by lot name to handle box/envelope dual lots
+        # stock_map tracks stock for the SPECIFIC product_id requested in POS
+        # aggregated by lot name
+        name_stock_map = {}
+        lot_id_map = {}
+        lot_expiry_map = {}
+        
         quants = self.env['stock.quant'].sudo().search(quant_domain)
         for q in quants:
             lot = q.lot_id
