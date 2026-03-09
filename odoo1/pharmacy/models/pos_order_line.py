@@ -1,5 +1,8 @@
 import datetime
+import logging
 from odoo import api, fields, models, _
+
+_logger = logging.getLogger(__name__)
 
 class PosOrderLine(models.Model):
     _inherit = 'pos.order.line'
@@ -56,14 +59,6 @@ class PosOrderLine(models.Model):
         
         # We need to map child stock specifically for display
         # We aggregate by lot name to handle box/envelope dual lots
-        quants = self.env['stock.quant'].sudo().search(quant_domain)
-        
-        # stock_map tracks stock for the SPECIFIC product_id requested in POS
-        # aggregated by lot name
-        name_stock_map = {}
-        lot_id_map = {}
-        lot_expiry_map = {}
-        
         quants = self.env['stock.quant'].sudo().search(quant_domain)
         for q in quants:
             lot = q.lot_id
@@ -132,8 +127,6 @@ class PosOrderLine(models.Model):
                 'expiration_date': exp_str,
             })
 
-        # Final Sort: Usable stock first, then by name
-        result.sort(key=lambda x: (x['product_qty'] <= 0, x['name']))
-
-
+        # Final Sort: Alphabetical so related lots are grouped (ar0001, ar0002...)
+        result.sort(key=lambda x: x['name'])
         return result
