@@ -23,7 +23,9 @@ patch(SelectLotPopup.prototype, {
                     const dateStr = hasExp ? option.expiration_date.split(' ')[0] : '';
 
                     return {
-                        label: hasExp ? `${option.name} | Exp: ${dateStr}` : option.name,
+                        label: hasExp
+                            ? `${option.name} (Qty: ${option.product_qty}) | Exp: ${dateStr}`
+                            : `${option.name} (Qty: ${option.product_qty})`,
                         onSelect: () =>
                             this.onSelect({
                                 create: true,

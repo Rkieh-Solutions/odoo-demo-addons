@@ -51,25 +51,56 @@ patch(ControlButtons.prototype, {
         }
 
         let lotName = null;
+        let lotId = null;
         if (lotLines && lotLines.length > 0) {
             const firstLot = lotLines[0];
+            // Ultra-robust ID and Name extraction
+            lotId = firstLot.id || (typeof firstLot.get === 'function' ? firstLot.get('id') : null);
             lotName = typeof firstLot.get === 'function' ? firstLot.get('lot_name') : (firstLot.lot_name || firstLot.text || firstLot.name);
         }
 
-        console.log("Raw Extracted LotName:", lotName, "from lines:", lotLines);
+        console.log("Extracted Lot Info - ID:", lotId, "Name:", lotName);
 
-        if (lotName && lotName.includes('| Exp:')) {
-            lotName = lotName.split('| Exp:')[0].trim();
+        // Robust name parsing for safe fallback matching
+        if (lotName) {
+            if (lotName.includes('| Exp:')) lotName = lotName.split('| Exp:')[0].trim();
+            if (lotName.includes(' (Qty:')) lotName = lotName.split(' (Qty:')[0].trim();
         }
 
         try {
             const result = await this.orm.call("product.template", "action_open_new_box", [parentTmplId], {
-                lot_name: lotName
+                lot_id: lotId,
+                lot_name: lotName,
+                pos_config_id: this.pos.config.id
             });
             if (result && result.params && result.params.type === 'danger') {
                 this.notification.add(result.params.message, { type: "danger" });
             } else {
                 this.notification.add(_t("📦 Box opened successfully! Stock has been updated."), { type: "success" });
+
+                // --- CRITICAL: Sync POS Data ---
+                // We need to refresh the quantity on hand for the products involved
+                const productIds = [product.id];
+                if (product.envelope_child_id) {
+                    const childId = Array.isArray(product.envelope_child_id) ? product.envelope_child_id[0] : (product.envelope_child_id.id || product.envelope_child_id);
+                    productIds.push(childId);
+                }
+
+                try {
+                    // Update the local POS models with fresh data from server
+                    const fields = ["qty_available", "box_qty", "envelope_qty"];
+                    const updatedData = await this.orm.read("product.product", productIds, fields);
+
+                    for (const data of updatedData) {
+                        const posProduct = this.pos.data.models["product.product"].get(data.id);
+                        if (posProduct) {
+                            Object.assign(posProduct, data);
+                        }
+                    }
+                    console.log("POS stock data synced after opening box.");
+                } catch (syncError) {
+                    console.error("Failed to sync POS stock data:", syncError);
+                }
             }
             if (this.props.close) this.props.close();
         } catch (error) {

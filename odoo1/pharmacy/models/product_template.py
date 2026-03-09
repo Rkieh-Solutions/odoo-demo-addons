@@ -204,13 +204,14 @@ class ProductTemplate(models.Model):
 
     # --- Box Actions ---
 
-    def action_open_new_box(self, lot_name=None):
+    def action_open_new_box(self, lot_id=None, lot_name=None, pos_config_id=None):
         """Logic to open a box and convert it into envelopes (Child product stock)."""
         self.ensure_one()
         try:
             if self.parent_box_id:
-                return self.parent_box_id.action_open_new_box(lot_name=lot_name)
+                return self.parent_box_id.action_open_new_box(lot_name=lot_name, pos_config_id=pos_config_id)
 
+            # ... (previous config checks restored)
             # 1. Ensure/Auto-fix Box configuration
             if not self.is_box_product:
                 self.sudo().write({'is_box_product': True})
@@ -265,17 +266,26 @@ class ProductTemplate(models.Model):
                         'sticky': False,
                     }
                 }
-
-            # 5. Warehouse/Location
-            warehouse = self.env['stock.warehouse'].sudo().search([('company_id', '=', self.env.company.id)], limit=1)
-            location = warehouse.lot_stock_id if warehouse else None
+            
+            # 5. Warehouse/Location Sync
+            location = None
+            if pos_config_id:
+                pos_config = self.env['pos.config'].sudo().browse(pos_config_id)
+                if pos_config.picking_type_id and pos_config.picking_type_id.default_location_src_id:
+                    location = pos_config.picking_type_id.default_location_src_id
+            
+            if not location:
+                # Fallback to default warehouse location
+                warehouse = self.env['stock.warehouse'].sudo().search([('company_id', '=', self.env.company.id)], limit=1)
+                location = warehouse.lot_stock_id if warehouse else None
+            
             if not location:
                 return {
                     'type': 'ir.actions.client',
                     'tag': 'display_notification',
                     'params': {
                         'title': 'Location Error',
-                        'message': 'No default stock location found for the warehouse.',
+                        'message': 'No default stock location found.',
                         'type': 'danger',
                         'sticky': False,
                     }
@@ -285,29 +295,71 @@ class ProductTemplate(models.Model):
             lot_record = False
             child_lot_record = False
             
-            _logger.info("ACTION_OPEN_NEW_BOX CALLED. lot_name received from POS: '%s'", lot_name)
+            _logger.info("ACTION_OPEN_NEW_BOX CALLED. lot_id: %s, lot_name: '%s', config: %s", lot_id, lot_name, pos_config_id)
             
             if self.tracking != 'none':
-                if lot_name:
-                    if '| Exp:' in lot_name:
-                        lot_name = lot_name.split('| Exp:')[0].strip()
+                # --- ROOT CAUSE FIX: Search all variants of this template ---
+                all_variants = self.product_variant_ids
+                
+                if lot_id:
+                    lot_record = self.env['stock.lot'].sudo().browse(lot_id)
+                    if not lot_record.exists() or lot_record.product_id.product_tmpl_id.id != self.id:
+                        # lot_record belongs to child, find parent by name in ALL box variants
+                        if lot_record.exists() and (lot_record.product_id.parent_box_id.id == self.id or lot_record.product_id.product_tmpl_id.parent_box_id.id == self.id):
+                             lot_record = self.env['stock.lot'].sudo().search([
+                                ('product_id', 'in', all_variants.ids),
+                                ('name', '=', lot_record.name),
+                                ('company_id', '=', self.env.company.id)
+                            ], limit=1)
+                
+                if not lot_record and lot_name:
+                    # Robust cleaning of lot_name from POS UI (handles "NAME (Qty: X) | Exp: Y")
+                    clean_name = lot_name
+                    if '| Exp:' in clean_name: clean_name = clean_name.split('| Exp:')[0].strip()
+                    if ' (Qty:' in clean_name: clean_name = clean_name.split(' (Qty:')[0].strip()
+                    
                     lot_record = self.env['stock.lot'].sudo().search([
-                        ('product_id', 'in', self.product_variant_ids.ids),
-                        ('name', '=', lot_name),
+                        ('product_id', 'in', all_variants.ids),
+                        ('name', '=', clean_name),
                         ('company_id', '=', self.env.company.id)
                     ], limit=1)
-                    
-                    if lot_record:
-                        box_product = lot_record.product_id
                 
-                if not lot_record:
-                    # Find any lot with stock across ALL variants unconditionally
+                # REJECTION LOGIC: If user picked a lot, we MUST use it or error
+                if (lot_id or lot_name) and not lot_record:
+                    return {
+                        'type': 'ir.actions.client',
+                        'tag': 'display_notification',
+                        'params': {
+                            'title': 'Lot Error',
+                            'message': f"The selected lot could not be found for the box product.",
+                            'type': 'danger',
+                            'sticky': False,
+                        }
+                    }
+
+                if lot_record:
+                    # Ensure it has stock
+                    box_product = lot_record.product_id
+                    box_stock = self.env['stock.quant'].sudo()._get_available_quantity(box_product, location, lot_id=lot_record)
+                    if box_stock < 1:
+                         return {
+                            'type': 'ir.actions.client',
+                            'tag': 'display_notification',
+                            'params': {
+                                'title': 'No Stock in Box',
+                                'message': f"Lot '{lot_record.name}' has 0 boxes in the current location.",
+                                'type': 'danger',
+                                'sticky': False,
+                            }
+                        }
+                else:
+                    # Only if NO selection was made, pick FIRST available (legacy behavior)
                     quant = self.env['stock.quant'].sudo().search([
                         ('product_id', 'in', self.product_variant_ids.ids),
                         ('location_id', 'child_of', location.id),
                         ('quantity', '>', 0),
                         ('lot_id', '!=', False)
-                    ], limit=1)
+                    ], order='lot_id asc', limit=1)
                     lot_record = quant.lot_id
                     if lot_record:
                         box_product = lot_record.product_id
@@ -332,6 +384,9 @@ class ProductTemplate(models.Model):
 
             # 7. Perform Stock Move
             try:
+                if not lot_record:
+                    raise Exception("No available box found to open.")
+                
                 self.env['stock.quant'].sudo()._update_available_quantity(box_product, location, -1, lot_id=lot_record)
                 self.env['stock.quant'].sudo()._update_available_quantity(env_product, location, self.envelopes_per_box, lot_id=child_lot_record)
             except Exception as e:
