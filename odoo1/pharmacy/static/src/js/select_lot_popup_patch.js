@@ -22,11 +22,12 @@ patch(SelectLotPopup.prototype, {
                     const hasExp = !!option.expiration_date;
                     const dateStr = hasExp ? option.expiration_date.split(' ')[0] : '';
                     const boxInfo = option.parent_qty > 0 ? ` | Boxes: ${option.parent_qty}` : '';
+                    const displayName = option.display_name || option.name;
 
                     return {
                         label: hasExp
-                            ? `${option.name} (Qty: ${option.product_qty}${boxInfo}) | Exp: ${dateStr}`
-                            : `${option.name} (Qty: ${option.product_qty}${boxInfo})`,
+                            ? `${displayName} (Qty: ${option.product_qty}${boxInfo}) | Exp: ${dateStr}`
+                            : `${displayName} (Qty: ${option.product_qty}${boxInfo})`,
                         onSelect: () =>
                             this.onSelect({
                                 create: true,

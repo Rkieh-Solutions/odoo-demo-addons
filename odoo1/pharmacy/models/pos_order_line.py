@@ -10,154 +10,116 @@ class PosOrderLine(models.Model):
     @api.model
     def get_existing_lots(self, company_id, config_id, product_id):
         """
-        Final robust version: Multi-variant search + Desperate Search fallback + Anti-crash.
+        Ultimate Robust Version: Finds all lots for current product, variants, parent, 
+        and name-matched products. Ensures visibility even if stock is 0.
         """
         try:
-            _logger.info("PHARMACY RPC: get_existing_lots(product_id=%s, company_id=%s)", product_id, company_id)
-            
-            pos_config = self.env['pos.config'].sudo().browse(config_id)
+            _logger.info("PHARMACY RPC CALLED: product_id=%s", product_id)
             product = self.env['product.product'].sudo().browse(product_id)
+            if not product.exists(): return []
+            tmpl = product.product_tmpl_id
             
-            if not product.exists():
-                return []
-
-            # 1. Base IDs
-            product_ids_to_check = product.product_tmpl_id.product_variant_ids.ids or [product_id]
-            parent_product_ids = []
+            # 1. Product Discovery
+            variant_ids = tmpl.product_variant_ids.ids
             
-            # Parent Box Discovery
-            parent_tmpl = product.parent_box_id or product.product_tmpl_id.parent_box_id
+            # Find Parents (Box)
+            parent_ids = []
+            parent_tmpl = product.parent_box_id or tmpl.parent_box_id
             if not parent_tmpl:
                 parent_tmpl = self.env['product.template'].sudo().search([
-                    ('envelope_child_id', 'in', [product.product_tmpl_id.id, product.id])
+                    ('envelope_child_id', 'in', [tmpl.id, product.id])
                 ], limit=1)
-                
-            if not parent_tmpl:
-                name_parts = product.name.lower().split()
-                for i in range(len(name_parts), 0, -1):
-                    clean_name = " ".join(name_parts[:i]).strip()
-                    if clean_name in ('envelope', 'child', 'piece', 'test', 'needle') or len(clean_name) < 3:
-                        continue
-                    parent_tmpl = self.env['product.template'].sudo().search([
-                        ('name', 'ilike', clean_name),
-                        ('is_box_product', '=', True),
-                        '|', ('company_id', '=', False), ('company_id', '=', company_id)
-                    ], limit=1)
-                    if parent_tmpl: break
-                
             if parent_tmpl:
-                parent_product_ids = parent_tmpl.product_variant_ids.ids
-
-            # 2. Get quantities
-            src_loc = pos_config.picking_type_id.default_location_src_id
-            all_relevant_product_ids = list(set(product_ids_to_check + parent_product_ids))
+                parent_ids = parent_tmpl.product_variant_ids.ids
             
-            quant_domain = [
-                '|', ('company_id', '=', False), ('company_id', '=', company_id),
-                ('product_id', 'in', all_relevant_product_ids),
-                ('location_id', 'child_of', src_loc.id),
+            # Fuzzy match for products with similar names (Panadol, etc.)
+            fuzzy_ids = []
+            base_name = product.name.split('(')[0].strip()
+            if len(base_name) > 3:
+                fuzzy_products = self.env['product.product'].sudo().search([
+                    ('name', 'ilike', base_name)
+                ], limit=50)
+                fuzzy_ids = fuzzy_products.ids
+                
+            all_ids = list(set(variant_ids + parent_ids + fuzzy_ids))
+            
+            # 2. Load globally existing lots (No limit for maximum visibility)
+            all_lots = self.env['stock.lot'].sudo().search([
+                ('product_id', 'in', all_ids)
+            ])
+            
+            # 3. Load quantities (scoped to POS location)
+            pos_config = self.env['pos.config'].sudo().browse(config_id)
+            src_loc = pos_config.picking_type_id.default_location_src_id
+            
+            quants = self.env['stock.quant'].sudo().search([
+                ('product_id', 'in', all_ids),
                 ('quantity', '>', 0),
                 ('lot_id', '!=', False),
-            ]
+                ('location_id', 'child_of', src_loc.id)
+            ])
             
-            name_child_stock = {}
-            name_parent_stock = {}
-            lot_id_map = {}
-            lot_expiry_map = {}
-            
-            quants = self.env['stock.quant'].sudo().search(quant_domain)
+            stock_map = {} # name -> {child: 0, parent: 0}
             for q in quants:
-                lot = q.lot_id
+                ln = q.lot_id.name
+                if ln not in stock_map: stock_map[ln] = {'child': 0, 'parent': 0}
+                if q.product_id.id in variant_ids:
+                    stock_map[ln]['child'] += q.quantity
+                else:
+                    stock_map[ln]['parent'] += q.quantity
+
+            # 4. Final Processing (Distinct entries for Envelope and Box)
+            final_results = []
+            seen_combinations = set() # (name, is_box)
+
+            # Sort lots to ensure consistency
+            sorted_lots = sorted(all_lots, key=lambda l: (l.name or '', l.product_id.id))
+
+            for lot in sorted_lots:
                 name = lot.name
                 if not name: continue
                 
-                if name not in lot_id_map or q.product_id.id in product_ids_to_check:
-                    lot_id_map[name] = lot.id
-                    lot_expiry_map[name] = lot.expiration_date
-
-                if q.product_id.id in product_ids_to_check:
-                    name_child_stock[name] = name_child_stock.get(name, 0.0) + q.quantity
-                elif q.product_id.id in parent_product_ids:
-                    name_parent_stock[name] = name_parent_stock.get(name, 0.0) + q.quantity
-
-            # 3. Get ALL lots for visibility
-            lot_domain = [
-                '|', ('company_id', '=', False), ('company_id', '=', company_id),
-                ('product_id', 'in', all_relevant_product_ids),
-            ]
-            all_lots = self.env['stock.lot'].sudo().search(lot_domain)
-            
-            # --- DESPERATE SEARCH: Fallback if no lots found via links ---
-            if not all_lots:
-                desperate_clean_name = product.name.lower().replace('envelope', '').replace('box', '').replace('test', '').strip()
-                if len(desperate_clean_name) >= 4:
-                    desperate_products = self.env['product.product'].sudo().search([
-                        ('name', 'ilike', desperate_clean_name),
-                        '|', ('company_id', '=', False), ('company_id', '=', company_id)
-                    ], limit=10)
-                    if desperate_products:
-                        all_lots = self.env['stock.lot'].sudo().search([
-                            ('product_id', 'in', desperate_products.ids),
-                            '|', ('company_id', '=', False), ('company_id', '=', company_id)
-                        ], limit=50)
+                is_box = lot.product_id.id not in variant_ids
+                comb = (name, is_box)
+                if comb in seen_combinations: continue
+                seen_combinations.add(comb)
                 
-                if not all_lots and product.code:
-                    all_lots = self.env['stock.lot'].sudo().search([
-                        ('product_id.code', '=', product.code),
-                        '|', ('company_id', '=', False), ('company_id', '=', company_id)
-                    ], limit=50)
-
-            result = []
-            seen_names = set()
-            
-            for lot in all_lots:
-                name = lot.name
-                if not name or name in seen_names: continue
-                seen_names.add(name)
+                # Metadata
+                exp = lot.expiration_date
+                exp_str = exp.strftime('%Y-%m-%d %H:%M:%S') if exp else False
                 
-                child_qty = name_child_stock.get(name, 0.0)
-                parent_qty = name_parent_stock.get(name, 0.0)
-                
-                lid = lot_id_map.get(name)
-                exp = lot_expiry_map.get(name, lot.expiration_date)
-                
-                # Check IDs
-                current_lot = self.env['stock.lot'].sudo().browse(lid) if lid else False
-                if not lid or not current_lot.exists() or current_lot.product_id.id not in product_ids_to_check:
-                    child_lot = self.env['stock.lot'].sudo().search([
-                        ('product_id', 'in', product_ids_to_check),
-                        ('name', '=', name),
-                        ('company_id', '=', company_id)
+                # Ensure we have a "Selectable" ID for THIS product
+                # (Always return a lot ID valid for the current order line product)
+                target_id = lot.id
+                if is_box:
+                    local_lot = self.env['stock.lot'].sudo().search([
+                        ('product_id', 'in', variant_ids),
+                        ('name', '=', name)
                     ], limit=1)
-                    
-                    if not child_lot:
-                        target_variant_id = product_id if product_id in product_ids_to_check else product_ids_to_check[0]
-                        child_lot = self.env['stock.lot'].sudo().create({
+                    if not local_lot:
+                        v_id = product_id if product_id in variant_ids else variant_ids[0]
+                        local_lot = self.env['stock.lot'].sudo().create({
                             'name': name,
-                            'product_id': target_variant_id,
-                            'company_id': company_id,
+                            'product_id': v_id,
                             'expiration_date': exp,
-                            'parent_lot_id': lot.id if lot.product_id.id not in product_ids_to_check else False,
+                            'company_id': lot.company_id.id or self.env.company.id
                         })
-                    lid = child_lot.id
-                    exp = child_lot.expiration_date
+                    target_id = local_lot.id
                 
-                exp_str = False
-                if exp:
-                    try: exp_str = exp.strftime('%Y-%m-%d %H:%M:%S')
-                    except: exp_str = str(exp).split('.')[0]
-
-                result.append({
-                    'id': lid,
+                # Format Name for POS list
+                suffix = " (Box)" if is_box else " (Envelope)"
+                display_name = f"{name}{suffix}"
+                
+                final_results.append({
+                    'id': target_id,
                     'name': name,
-                    'product_qty': child_qty,
-                    'parent_qty': parent_qty,
+                    'display_name': display_name,
+                    'product_qty': stock_map.get(name, {}).get('child', 0.0) if not is_box else 0.0,
+                    'parent_qty': stock_map.get(name, {}).get('parent', 0.0) if is_box else 0.0,
                     'expiration_date': exp_str,
                 })
-
-            result.sort(key=lambda x: x['name'])
-            return result
             
+            return sorted(final_results, key=lambda x: x['name'])
         except Exception as e:
-            _logger.error("PHARMACY CRITICAL ERROR: %s", str(e), exc_info=True)
+            _logger.error("POS LOT ERROR: %s", str(e), exc_info=True)
             return []

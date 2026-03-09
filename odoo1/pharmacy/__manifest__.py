@@ -1,6 +1,6 @@
 {
     'name': 'Pharmacy Management',
-    'version': '19.0.1.0.7',
+    'version': '19.0.1.0.9',
     'category': 'Industry',
     'sequence': 1,
     'summary': 'Advanced Pharmacy Management with Box/Envelope Inventory',
@@ -33,7 +33,7 @@
         'web.assets_backend': [
             'pharmacy/static/src/js/substitute_handler.js',
         ],
-        'point_of_sale._assets_pos': [
+        'point_of_sale.assets': [
             'pharmacy/static/src/css/pharmacy_pos.css',
             'pharmacy/static/src/js/substitute_handler.js',
             'pharmacy/static/src/pos/substance_search_popup/substance_search_popup.js',
