@@ -26,4 +26,46 @@ class StockLot(models.Model):
                 parent = self.browse(vals['parent_lot_id'])
                 if parent and not vals.get('expiration_date'):
                     vals['expiration_date'] = parent.expiration_date
-        return super().create(vals_list)
+                    
+        records = super().create(vals_list)
+        
+        # Auto-mirror lot to the child envelope Product if it's a Box
+        child_lots_to_create = []
+        for rec in records:
+            if not rec.parent_lot_id and rec.product_id.is_box_product and rec.product_id.envelope_child_id and rec.product_id.envelope_child_id.product_variant_ids:
+                child_variant_id = rec.product_id.envelope_child_id.product_variant_ids[0].id
+                
+                # Check if it already has a synced lot with the same name to avoid duplicates
+                existing = self.sudo().search([
+                    ('product_id', '=', child_variant_id),
+                    ('name', '=', rec.name),
+                    ('company_id', '=', rec.company_id.id)
+                ], limit=1)
+                
+                if not existing:
+                    child_lots_to_create.append({
+                        'name': rec.name,
+                        'product_id': child_variant_id,
+                        'company_id': rec.company_id.id,
+                        'expiration_date': rec.expiration_date,
+                        'parent_lot_id': rec.id,
+                    })
+        
+        if child_lots_to_create:
+            self.sudo().create(child_lots_to_create)
+
+        return records
+
+    def write(self, vals):
+        res = super().write(vals)
+        # If the parent lot changes name or expiration date, automatically sync to all child lots
+        if 'name' in vals or 'expiration_date' in vals:
+            for rec in self:
+                if rec.child_lot_ids:
+                    update_vals = {}
+                    if 'name' in vals:
+                        update_vals['name'] = vals['name']
+                    if 'expiration_date' in vals:
+                        update_vals['expiration_date'] = vals['expiration_date']
+                    rec.child_lot_ids.sudo().write(update_vals)
+        return res

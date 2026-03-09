@@ -40,9 +40,27 @@ patch(ControlButtons.prototype, {
             return;
         }
 
-        // Try to get lot info if selected
-        const lotLines = selectedLine.pack_lot_lines || [];
-        const lotName = lotLines.length > 0 ? (lotLines[0].lot_name || lotLines[0].text) : null;
+        // Try to get lot info if selected using ultra-robust extraction
+        let lotLines = [];
+        if (selectedLine.get_lot_lines && typeof selectedLine.get_lot_lines === 'function') {
+            lotLines = selectedLine.get_lot_lines();
+        } else if (selectedLine.pack_lot_lines && selectedLine.pack_lot_lines.models) {
+            lotLines = selectedLine.pack_lot_lines.models;
+        } else if (Array.isArray(selectedLine.pack_lot_lines)) {
+            lotLines = selectedLine.pack_lot_lines;
+        }
+
+        let lotName = null;
+        if (lotLines && lotLines.length > 0) {
+            const firstLot = lotLines[0];
+            lotName = typeof firstLot.get === 'function' ? firstLot.get('lot_name') : (firstLot.lot_name || firstLot.text || firstLot.name);
+        }
+
+        console.log("Raw Extracted LotName:", lotName, "from lines:", lotLines);
+
+        if (lotName && lotName.includes('| Exp:')) {
+            lotName = lotName.split('| Exp:')[0].trim();
+        }
 
         try {
             const result = await this.orm.call("product.template", "action_open_new_box", [parentTmplId], {

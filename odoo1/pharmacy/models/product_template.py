@@ -218,10 +218,12 @@ class ProductTemplate(models.Model):
             if self.envelopes_per_box <= 0:
                 self.sudo().write({'envelopes_per_box': 10}) # Default to 10 if zero
 
-            # 2. Ensure Child Product Exists
+            # 2. Ensure Child Product Exists and Lots are Synced
             if not self.envelope_child_id:
                 self.sudo()._ensure_child_envelope_created()
-                self.env.flush_all()
+                
+            self.sudo()._sync_lots_to_child()
+            self.env.flush_all()
 
             if not self.envelope_child_id:
                 return {
@@ -248,7 +250,7 @@ class ProductTemplate(models.Model):
                     }
                 }
 
-            # 4. Identify Variants
+            # 4. Identify Variants (Base)
             box_product = self.product_variant_id or self.env['product.product'].sudo().search([('product_tmpl_id', '=', self.id)], limit=1)
             env_product = self.envelope_child_id.product_variant_id or self.env['product.product'].sudo().search([('product_tmpl_id', '=', self.envelope_child_id.id)], limit=1)
 
@@ -279,34 +281,47 @@ class ProductTemplate(models.Model):
                     }
                 }
 
-            # 6. Handle Lots
+            # 6. Handle Lots across ALL Variants
             lot_record = False
             child_lot_record = False
+            
+            _logger.info("ACTION_OPEN_NEW_BOX CALLED. lot_name received from POS: '%s'", lot_name)
+            
             if self.tracking != 'none':
                 if lot_name:
+                    if '| Exp:' in lot_name:
+                        lot_name = lot_name.split('| Exp:')[0].strip()
                     lot_record = self.env['stock.lot'].sudo().search([
-                        ('product_id', '=', box_product.id),
+                        ('product_id', 'in', self.product_variant_ids.ids),
                         ('name', '=', lot_name),
                         ('company_id', '=', self.env.company.id)
                     ], limit=1)
+                    
+                    if lot_record:
+                        box_product = lot_record.product_id
                 
                 if not lot_record:
-                    # Find any lot with stock
+                    # Find any lot with stock across ALL variants unconditionally
                     quant = self.env['stock.quant'].sudo().search([
-                        ('product_id', '=', box_product.id),
+                        ('product_id', 'in', self.product_variant_ids.ids),
                         ('location_id', 'child_of', location.id),
                         ('quantity', '>', 0),
                         ('lot_id', '!=', False)
                     ], limit=1)
                     lot_record = quant.lot_id
+                    if lot_record:
+                        box_product = lot_record.product_id
 
                 if lot_record:
                     child_lot_record = self.env['stock.lot'].sudo().search([
-                        ('product_id', '=', env_product.id),
+                        ('product_id', 'in', self.envelope_child_id.product_variant_ids.ids),
                         ('name', '=', lot_record.name),
                         ('company_id', '=', self.env.company.id)
                     ], limit=1)
-                    if not child_lot_record:
+                    
+                    if child_lot_record:
+                        env_product = child_lot_record.product_id
+                    else:
                         child_lot_record = self.env['stock.lot'].sudo().create({
                             'name': lot_record.name,
                             'product_id': env_product.id,
@@ -339,6 +354,7 @@ class ProductTemplate(models.Model):
                     'message': f"Deducted 1 Box from '{self.name}' and added {self.envelopes_per_box} envelopes to stock.",
                     'type': 'success',
                     'sticky': False,
+                    'next': {'type': 'ir.actions.client', 'tag': 'reload'},
                 }
             }
 
@@ -608,6 +624,40 @@ class ProductTemplate(models.Model):
         
         if child:
             self.sudo().write({'envelope_child_id': child.id})
+            self.sudo()._sync_lots_to_child()
+
+    def _sync_lots_to_child(self):
+        self.ensure_one()
+        if not self.envelope_child_id or not self.product_variant_ids or not self.envelope_child_id.product_variant_ids:
+            return
+            
+        parent_variant_ids = self.product_variant_ids.ids
+        child_variant_id = self.envelope_child_id.product_variant_ids[0].id
+            
+        # Sync any existing lots from the parent to the child
+        existing_parent_lots = self.env['stock.lot'].sudo().search([
+            ('product_id', 'in', parent_variant_ids),
+            ('company_id', '=', self.env.company.id)
+        ])
+        if existing_parent_lots:
+            lots_to_create = []
+            for p_lot in existing_parent_lots:
+                # Check if already synced
+                exists = self.env['stock.lot'].sudo().search([
+                    ('product_id', '=', child_variant_id),
+                    ('name', '=', p_lot.name),
+                    ('company_id', '=', self.env.company.id)
+                ], limit=1)
+                if not exists:
+                    lots_to_create.append({
+                        'name': p_lot.name,
+                        'product_id': child_variant_id,
+                        'company_id': p_lot.company_id.id,
+                        'expiration_date': p_lot.expiration_date,
+                        'parent_lot_id': p_lot.id,
+                    })
+            if lots_to_create:
+                self.env['stock.lot'].sudo().create(lots_to_create)
 
     @api.model
     def _load_pos_data_fields(self, config):
