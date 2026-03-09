@@ -10,7 +10,7 @@ class PosOrderLine(models.Model):
     @api.model
     def get_existing_lots(self, company_id, config_id, product_id):
         """
-        Robust lot fetching with parent-child synchronization.
+        Final robust version: Multi-variant search + Desperate Search fallback + Anti-crash.
         """
         try:
             _logger.info("PHARMACY RPC: get_existing_lots(product_id=%s, company_id=%s)", product_id, company_id)
@@ -19,14 +19,10 @@ class PosOrderLine(models.Model):
             product = self.env['product.product'].sudo().browse(product_id)
             
             if not product.exists():
-                _logger.error("PHARMACY: Product ID %s not found", product_id)
                 return []
 
-            # 1. Identify product IDs to check
-            product_ids_to_check = product.product_tmpl_id.product_variant_ids.ids
-            if not product_ids_to_check:
-                product_ids_to_check = [product_id]
-                
+            # 1. Base IDs
+            product_ids_to_check = product.product_tmpl_id.product_variant_ids.ids or [product_id]
             parent_product_ids = []
             
             # Parent Box Discovery
@@ -51,7 +47,6 @@ class PosOrderLine(models.Model):
                 
             if parent_tmpl:
                 parent_product_ids = parent_tmpl.product_variant_ids.ids
-                _logger.info("PHARMACY: Linked to parent box %s (%s)", parent_tmpl.id, parent_tmpl.name)
 
             # 2. Get quantities
             src_loc = pos_config.picking_type_id.default_location_src_id
@@ -92,30 +87,26 @@ class PosOrderLine(models.Model):
             ]
             all_lots = self.env['stock.lot'].sudo().search(lot_domain)
             
-            # --- DESPERATE SEARCH: If no lots found, search by product name substrings ---
+            # --- DESPERATE SEARCH: Fallback if no lots found via links ---
             if not all_lots:
-                _logger.info("PHARMACY: No lots found via direct links. Starting Desperate Search...")
                 desperate_clean_name = product.name.lower().replace('envelope', '').replace('box', '').replace('test', '').strip()
                 if len(desperate_clean_name) >= 4:
                     desperate_products = self.env['product.product'].sudo().search([
                         ('name', 'ilike', desperate_clean_name),
                         '|', ('company_id', '=', False), ('company_id', '=', company_id)
-                    ], limit=20)
-                    desperate_ids = desperate_products.ids
-                    if desperate_ids:
+                    ], limit=10)
+                    if desperate_products:
                         all_lots = self.env['stock.lot'].sudo().search([
-                            ('product_id', 'in', desperate_ids),
+                            ('product_id', 'in', desperate_products.ids),
                             '|', ('company_id', '=', False), ('company_id', '=', company_id)
-                        ], limit=100)
-                        _logger.info("PHARMACY: Desperate Search found %s lots for similar named products", len(all_lots))
+                        ], limit=50)
                 
                 if not all_lots and product.code:
                     all_lots = self.env['stock.lot'].sudo().search([
                         ('product_id.code', '=', product.code),
                         '|', ('company_id', '=', False), ('company_id', '=', company_id)
-                    ], limit=100)
-                    _logger.info("PHARMACY: Desperate Search found %s lots via Product Code matching", len(all_lots))
-            
+                    ], limit=50)
+
             result = []
             seen_names = set()
             
@@ -130,7 +121,7 @@ class PosOrderLine(models.Model):
                 lid = lot_id_map.get(name)
                 exp = lot_expiry_map.get(name, lot.expiration_date)
                 
-                # Check if current ID belongs to child
+                # Check IDs
                 current_lot = self.env['stock.lot'].sudo().browse(lid) if lid else False
                 if not lid or not current_lot.exists() or current_lot.product_id.id not in product_ids_to_check:
                     child_lot = self.env['stock.lot'].sudo().search([
@@ -153,10 +144,8 @@ class PosOrderLine(models.Model):
                 
                 exp_str = False
                 if exp:
-                    try:
-                        exp_str = exp.strftime('%Y-%m-%d %H:%M:%S')
-                    except:
-                        exp_str = str(exp).split('.')[0] # Fallback for string or weird objects
+                    try: exp_str = exp.strftime('%Y-%m-%d %H:%M:%S')
+                    except: exp_str = str(exp).split('.')[0]
 
                 result.append({
                     'id': lid,
@@ -170,14 +159,5 @@ class PosOrderLine(models.Model):
             return result
             
         except Exception as e:
-            _logger.error("PHARMACY CRITICAL ERROR in get_existing_lots: %s", str(e), exc_info=True)
-            # Fallback to basic lot search to at least show something
-            try:
-                domain = [('product_id', '=', product_id), ('company_id', '=', company_id)]
-                lots = self.env['stock.lot'].sudo().search_read(domain, ['id', 'name', 'expiration_date'], limit=100)
-                for l in lots:
-                    if l.get('expiration_date'):
-                        l['expiration_date'] = str(l['expiration_date']).split('.')[0]
-                return lots
-            except:
-                return []
+            _logger.error("PHARMACY CRITICAL ERROR: %s", str(e), exc_info=True)
+            return []
