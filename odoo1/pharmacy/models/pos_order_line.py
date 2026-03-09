@@ -21,7 +21,9 @@ class PosOrderLine(models.Model):
         pos_config = self.env['pos.config'].sudo().browse(config_id)
         # 1. Identify product IDs to check (product itself + parent box if any)
         product = self.env['product.product'].sudo().browse(product_id)
-        product_ids_to_check = [product_id]
+        # Always check ALL variants of the current product
+        product_ids_to_check = product.product_tmpl_id.product_variant_ids.ids
+        parent_product_ids = []
         
         # Robust Parent Box Identification
         parent_tmpl = product.parent_box_id or product.product_tmpl_id.parent_box_id
@@ -34,7 +36,6 @@ class PosOrderLine(models.Model):
             
         if not parent_tmpl:
             # 2. Name-based fallback (more flexible)
-            # Try to find a product that has the same name but might have "box" or no suffix
             clean_name = product.name.lower().replace(' envelope', '').replace(' child', '').replace(' piece', '').strip()
             parent_tmpl = self.env['product.template'].sudo().search([
                 ('name', 'ilike', clean_name),
@@ -42,26 +43,25 @@ class PosOrderLine(models.Model):
             ], limit=1)
             
         if parent_tmpl:
-            # --- CRITICAL: Check ALL variants of the parent template ---
-            parent_variants = self.env['product.product'].sudo().search([('product_tmpl_id', '=', parent_tmpl.id)])
-            product_ids_to_check.extend(parent_variants.ids)
-            _logger.info("PHARMACY: Linked child %s to parent box %s", product_id, parent_tmpl.id)
+            # Include ALL variants of the parent product
+            parent_product_ids = parent_tmpl.product_variant_ids.ids
+            _logger.info("PHARMACY: Linked child variants %s to parent box variants %s", product_ids_to_check, parent_product_ids)
 
         # 2. Get quantities from stock.quant, aggregated by lot name
         src_loc = pos_config.picking_type_id.default_location_src_id
+        all_relevant_product_ids = list(set(product_ids_to_check + parent_product_ids))
+        
         quant_domain = [
             '|', ('company_id', '=', False), ('company_id', '=', company_id),
-            ('product_id', 'in', product_ids_to_check),
+            ('product_id', 'in', all_relevant_product_ids),
             ('location_id', 'child_of', src_loc.id),
             ('quantity', '>', 0),
             ('lot_id', '!=', False),
         ]
         
-        # We need to map child stock specifically for display
-        # We aggregate by lot name to handle box/envelope dual lots
-        # stock_map tracks stock for the SPECIFIC product_id requested in POS
-        # aggregated by lot name
-        name_stock_map = {}
+        # Track stock for Child and Parent separately per lot name
+        name_child_stock = {}
+        name_parent_stock = {}
         lot_id_map = {}
         lot_expiry_map = {}
         
@@ -70,57 +70,54 @@ class PosOrderLine(models.Model):
             lot = q.lot_id
             name = lot.name
             
-            # Record metadata for this name (preferring the child product's lot if already exists)
-            if name not in lot_id_map or q.product_id.id == product_id:
+            # Record metadata (preferring current product's lot if multiple exist with same name)
+            if name not in lot_id_map or q.product_id.id in product_ids_to_check:
                 lot_id_map[name] = lot.id
                 lot_expiry_map[name] = lot.expiration_date
 
-            # Calculate stock ONLY if it's the child product AND in the exact search location
-            if q.product_id.id == product_id and q.location_id.id == src_loc.id:
-                name_stock_map[name] = name_stock_map.get(name, 0.0) + q.quantity
+            # Aggregate stock
+            if q.product_id.id in product_ids_to_check:
+                name_child_stock[name] = name_child_stock.get(name, 0.0) + q.quantity
+            elif q.product_id.id in parent_product_ids:
+                name_parent_stock[name] = name_parent_stock.get(name, 0.0) + q.quantity
 
-        # 3. Get ALL potential lots for these products to ensure visibility of un-opened lots
+        # 3. Get ALL potential lots to ensure visibility
         lot_domain = [
             '|', ('company_id', '=', False), ('company_id', '=', company_id),
-            ('product_id', 'in', product_ids_to_check),
+            ('product_id', 'in', all_relevant_product_ids),
         ]
         all_lots = self.env['stock.lot'].sudo().search(lot_domain)
         
         result = []
         seen_names = set()
         
-        # Merge all found lot names
         for lot in all_lots:
             if lot.name in seen_names:
                 continue
             seen_names.add(lot.name)
             
             name = lot.name
-            qty = name_stock_map.get(name, 0.0)
+            child_qty = name_child_stock.get(name, 0.0)
+            parent_qty = name_parent_stock.get(name, 0.0)
             
-            # Use the lot ID from quants if available, otherwise this lot
             lid = lot_id_map.get(name)
             exp = lot_expiry_map.get(name, lot.expiration_date)
             
-            # --- CRITICAL FIX: Ensure the ID belongs to the CHILD product ---
-            # If we only have a box lot ID (or no ID in the map yet), 
-            # we MUST ensure there's a child lot record for the selection to be valid in POS.
-            if not lid or self.env['stock.lot'].sudo().browse(lid).product_id.id != product_id:
-                # Try to find a child lot by name
+            # Ensure the ID belongs to the product currently being sold (so it can be selected)
+            if not lid or self.env['stock.lot'].sudo().browse(lid).product_id.id not in product_ids_to_check:
                 child_lot = self.env['stock.lot'].sudo().search([
-                    ('product_id', '=', product_id),
+                    ('product_id', 'in', product_ids_to_check),
                     ('name', '=', name),
                     ('company_id', '=', company_id)
                 ], limit=1)
                 
                 if not child_lot:
-                    # Auto-create child lot so we have a valid ID for POS
                     child_lot = self.env['stock.lot'].sudo().create({
                         'name': name,
-                        'product_id': product_id,
+                        'product_id': product_id, # Link to the specific variant being sold
                         'company_id': company_id,
                         'expiration_date': exp,
-                        'parent_lot_id': lot.id if lot.product_id.id != product_id else False,
+                        'parent_lot_id': lot.id if lot.product_id.id not in product_ids_to_check else False,
                     })
                 lid = child_lot.id
             
@@ -129,10 +126,10 @@ class PosOrderLine(models.Model):
             result.append({
                 'id': lid,
                 'name': name,
-                'product_qty': qty,
+                'product_qty': child_qty,
+                'parent_qty': parent_qty,
                 'expiration_date': exp_str,
             })
 
-        # Final Sort: Alphabetical so related lots are grouped (ar0001, ar0002...)
         result.sort(key=lambda x: x['name'])
         return result
