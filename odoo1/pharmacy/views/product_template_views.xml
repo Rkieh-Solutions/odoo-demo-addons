@@ -24,32 +24,24 @@
                             <field name="presentation_id" options="{'no_create': False}"/>
                             <field name="stratum_id" options="{'no_create': False}"/>
                         </group>
-                    </group>
-                    <group string="Ingredients &amp; Composition">
-                        <field name="composition" widget="many2many_tags" options="{'color_field': 'color'}" nolabel="1"/>
-                    </group>
-                </page>
-                <page name="box_management" string="Box Management">
-                    <group>
-                        <group name="group_box_config" string="Configuration">
+                        <group name="group_box_config" string="Box &amp; Child Management">
                             <field name="is_box_product"/>
                             <field name="envelope_child_id" invisible="not is_box_product" required="is_box_product"/>
                             <field name="envelopes_per_box" invisible="not is_box_product" required="is_box_product"/>
                             <field name="parent_box_id" readonly="1" invisible="not parent_box_id"/>
                             <field name="envelope_price"/>
-                        </group>
-                        <group name="group_box_status" string="Inventory Status">
-                             <field name="envelope_qty" readonly="1" string="Available Loose Envelopes"/>
-                             <field name="qty_available" string="Physical Inventory"/>
+                            <field name="envelope_qty" readonly="1" string="Available Loose Envelopes" invisible="not is_box_product"/>
                         </group>
                     </group>
-                    <group string="Operations">
-                         <div class="alert alert-info" role="status" invisible="not is_box_product">
+                    <group string="Ingredients &amp; Composition">
+                        <field name="composition" widget="many2many_tags" options="{'color_field': 'color'}" nolabel="1"/>
+                    </group>
+                    <group string="Box Operations" invisible="not is_box_product">
+                         <div class="alert alert-info" role="status">
                             Opening a box will deduct 1 from this product's stock and add <field name="envelopes_per_box" class="oe_inline"/> to the child product.
                          </div>
                          <button name="action_open_new_box" string="Open New Box" type="object" 
-                                 class="btn-primary" icon="fa-archive"
-                                 invisible="not is_box_product"/>
+                                 class="btn-primary" icon="fa-archive"/>
                     </group>
                 </page>
             </xpath>
