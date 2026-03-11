@@ -1,9 +1,9 @@
-/** @odoo-module */
+import { Component, useState, onRendered, useRef } from "@odoo/owl";
 import { patch } from "@web/core/utils/patch";
 import { ControlButtons } from "@point_of_sale/app/screens/product_screen/control_buttons/control_buttons";
 import { useService } from "@web/core/utils/hooks";
 import { CreateChildProductPopup } from "@pharmacy/pos/create_child_product_popup/create_child_product_popup";
-import { SubstitutionPopup } from "@pharmacy/pos/substitution_popup/substitution_popup";
+import { SubstanceSearchPopup } from "@pharmacy/pos/substance_search_popup/substance_search_popup";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { _t } from "@web/core/l10n/translation";
 
@@ -54,43 +54,8 @@ patch(ControlButtons.prototype, {
         this.notification.add(_t("Box opened."), { type: "success" });
     },
     async onClickFindSubstitutes() {
-        const order = this.pos.getOrder();
-        const line = order ? order.getSelectedOrderline() : null;
-        if (!line || !line.product_id) return;
-
-        const product = line.product_id;
-        const templateId = product.product_tmpl_id.id || product.product_tmpl_id;
-
-        const results = await this.orm.call("product.template", "get_substitute_products", [[templateId]]);
-
-        if (results.length === 0) {
-            this.notification.add(_t("No substitutes found."), { type: "info" });
-            return;
-        }
-
-        this.dialog.add(SubstitutionPopup, {
-            title: _t("Substitutes for %s", product.display_name),
-            substitutes: results,
-            onReplace: async (substitute) => {
-                const newProduct = this.pos.db.get_product_by_id(substitute.product_id);
-                if (newProduct) {
-                    const originalLine = order.getSelectedOrderline();
-                    const qty = originalLine.get_quantity();
-
-                    // Remove old line and add new one
-                    order.removeOrderline(originalLine);
-                    await order.add_product(newProduct, { quantity: qty });
-
-                    this.notification.add(_t("Product replaced with %s", newProduct.display_name), { type: "success" });
-                }
-            },
-            onAdd: async (substitute) => {
-                const newProduct = this.pos.db.get_product_by_id(substitute.product_id);
-                if (newProduct) {
-                    await order.add_product(newProduct, { quantity: 1 });
-                    this.notification.add(_t("Added %s to order", newProduct.display_name), { type: "success" });
-                }
-            }
+        this.dialog.add(SubstanceSearchPopup, {
+            title: _t("Find Substitutes by Ingredient"),
         });
     }
 });
