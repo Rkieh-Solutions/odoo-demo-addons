@@ -204,60 +204,265 @@ class ProductTemplate(models.Model):
 
     # --- Box Actions ---
 
-    def action_open_new_box(self):
+    def action_open_new_box(self, lot_id=None, lot_name=None, pos_config_id=None):
         """Logic to open a box and convert it into envelopes (Child product stock)."""
         self.ensure_one()
-        if self.parent_box_id:
-            return self.parent_box_id.action_open_new_box()
+        try:
+            if self.parent_box_id:
+                return self.parent_box_id.action_open_new_box(lot_name=lot_name, pos_config_id=pos_config_id)
 
-        if not self.is_box_product or not self.envelope_child_id:
+            # ... (previous config checks restored)
+            # 1. Ensure/Auto-fix Box configuration
+            if not self.is_box_product:
+                self.sudo().write({'is_box_product': True})
+            
+            if self.envelopes_per_box <= 0:
+                self.sudo().write({'envelopes_per_box': 10}) # Default to 10 if zero
+
+            # 2. Ensure Child Product Exists and Lots are Synced
+            if not self.envelope_child_id:
+                self.sudo()._ensure_child_envelope_created()
+                
+            self.sudo()._sync_lots_to_child()
+            self.env.flush_all()
+
+            if not self.envelope_child_id:
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': 'Creation Failed',
+                        'message': 'Failed to create the child envelope product.',
+                        'type': 'danger',
+                        'sticky': False,
+                    }
+                }
+
+            # 3. Stock Check
+            if self.qty_available < 1:
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': 'No Full Boxes',
+                        'message': f"You do not have any unopened boxes for '{self.name}'.",
+                        'type': 'danger',
+                        'sticky': False,
+                    }
+                }
+
+            # 4. Identify Variants (Base)
+            box_product = self.product_variant_id or self.env['product.product'].sudo().search([('product_tmpl_id', '=', self.id)], limit=1)
+            env_product = self.envelope_child_id.product_variant_id or self.env['product.product'].sudo().search([('product_tmpl_id', '=', self.envelope_child_id.id)], limit=1)
+
+            if not box_product or not env_product:
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': 'Variant Error',
+                        'message': 'Failed to identify the product variants for stock update.',
+                        'type': 'danger',
+                        'sticky': False,
+                    }
+                }
+            
+            # 5. Warehouse/Location Sync
+            location = None
+            if pos_config_id:
+                pos_config = self.env['pos.config'].sudo().browse(pos_config_id)
+                if pos_config.picking_type_id and pos_config.picking_type_id.default_location_src_id:
+                    location = pos_config.picking_type_id.default_location_src_id
+            
+            if not location:
+                # Fallback to default warehouse location
+                warehouse = self.env['stock.warehouse'].sudo().search([('company_id', '=', self.env.company.id)], limit=1)
+                location = warehouse.lot_stock_id if warehouse else None
+            
+            if not location:
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': 'Location Error',
+                        'message': 'No default stock location found.',
+                        'type': 'danger',
+                        'sticky': False,
+                    }
+                }
+
+            # 6. Handle Lots across ALL Variants
+            lot_record = False
+            child_lot_record = False
+            
+            _logger.info("ACTION_OPEN_NEW_BOX CALLED. lot_id: %s, lot_name: '%s', config: %s", lot_id, lot_name, pos_config_id)
+            
+            if self.tracking != 'none':
+                # --- ROOT CAUSE FIX: Search all variants of this template ---
+                all_variants = self.product_variant_ids
+                
+                if lot_id:
+                    lot_record = self.env['stock.lot'].sudo().browse(lot_id)
+                    if lot_record.exists():
+                        # Bidirectional Discovery: If this lot belongs to a different template (like the child),
+                        # find or create the lot with the SAME name for THIS template (the Box).
+                        if lot_record.product_id.product_tmpl_id.id != self.id:
+                            _logger.info("ACTION_OPEN_NEW_BOX: Syncing lot '%s' from product %s to Box Tmpl: %s", 
+                                         lot_record.name, lot_record.product_id.name, self.id)
+                            
+                            parent_lot = self.env['stock.lot'].sudo().search([
+                                ('product_id', 'in', all_variants.ids),
+                                ('name', '=', lot_record.name),
+                                ('company_id', '=', self.env.company.id)
+                            ], limit=1)
+                            
+                            if parent_lot:
+                                lot_record = parent_lot
+                            else:
+                                lot_record = self.env['stock.lot'].sudo().create({
+                                    'name': lot_record.name,
+                                    'product_id': all_variants[0].id,
+                                    'company_id': self.env.company.id,
+                                    'expiration_date': lot_record.expiration_date,
+                                })
+                
+                if not lot_record and lot_name:
+                    # Robust cleaning of lot_name from POS UI (handles all suffixes)
+                    clean_name = lot_name
+                    for suffix in ['| Exp:', ' (Qty:', ' (Box)', ' (Envelope)']:
+                        if suffix in clean_name:
+                            clean_name = clean_name.split(suffix)[0].strip()
+                    
+                    _logger.info("ACTION_OPEN_NEW_BOX: Searching for cleaned lot name '%s' (from '%s')", clean_name, lot_name)
+                    lot_record = self.env['stock.lot'].sudo().search([
+                        ('product_id', 'in', all_variants.ids),
+                        ('name', '=', clean_name),
+                        ('company_id', '=', self.env.company.id)
+                    ], limit=1)
+                
+                # REJECTION LOGIC: If a specific lot was requested but NOT found, error out.
+                # DO NOT fall back to alphabetical if the user made a specific choice.
+                if (lot_id or lot_name) and not lot_record:
+                    return {
+                        'type': 'ir.actions.client',
+                        'tag': 'display_notification',
+                        'params': {
+                            'title': 'Lot Not Found',
+                            'message': f"The selected lot could not be found for this product family.",
+                            'type': 'danger',
+                            'sticky': False,
+                        }
+                    }
+                
+                # REJECTION LOGIC: If user picked a lot, we MUST use it or error
+                if (lot_id or lot_name) and not lot_record:
+                    return {
+                        'type': 'ir.actions.client',
+                        'tag': 'display_notification',
+                        'params': {
+                            'title': 'Lot Error',
+                            'message': f"The selected lot could not be found for the box product.",
+                            'type': 'danger',
+                            'sticky': False,
+                        }
+                    }
+
+                if lot_record:
+                    # Ensure it has stock
+                    box_product = lot_record.product_id
+                    box_stock = self.env['stock.quant'].sudo()._get_available_quantity(box_product, location, lot_id=lot_record)
+                    if box_stock < 1:
+                         return {
+                            'type': 'ir.actions.client',
+                            'tag': 'display_notification',
+                            'params': {
+                                'title': 'No Stock in Box',
+                                'message': f"Lot '{lot_record.name}' has 0 boxes in the current location.",
+                                'type': 'danger',
+                                'sticky': False,
+                            }
+                        }
+                else:
+                    # Only if NO selection was made, pick FIRST available (legacy behavior)
+                    quant = self.env['stock.quant'].sudo().search([
+                        ('product_id', 'in', self.product_variant_ids.ids),
+                        ('location_id', 'child_of', location.id),
+                        ('quantity', '>', 0),
+                        ('lot_id', '!=', False)
+                    ], order='lot_id asc', limit=1)
+                    lot_record = quant.lot_id
+                    if lot_record:
+                        box_product = lot_record.product_id
+
+                if lot_record:
+                    # Identify the child product variant correctly
+                    env_variants = self.envelope_child_id.product_variant_ids
+                    if not env_variants:
+                        raise Exception("The child product template has no variants.")
+                    env_product = env_variants[0]
+
+                    child_lot_record = self.env['stock.lot'].sudo().search([
+                        ('product_id', 'in', env_variants.ids),
+                        ('name', '=', lot_record.name),
+                        ('company_id', '=', self.env.company.id)
+                    ], limit=1)
+                    
+                    if not child_lot_record:
+                        _logger.info("ACTION_OPEN_NEW_BOX: Creating new child lot '%s' for product %s", lot_record.name, env_product.id)
+                        child_lot_record = self.env['stock.lot'].sudo().create({
+                            'name': lot_record.name,
+                            'product_id': env_product.id,
+                            'company_id': self.env.company.id,
+                            'expiration_date': lot_record.expiration_date,
+                            'parent_lot_id': lot_record.id,
+                        })
+                    else:
+                        env_product = child_lot_record.product_id
+
+            # 7. Perform Stock Move
+            try:
+                if not lot_record:
+                    raise Exception("No available box found to open.")
+                
+                self.env['stock.quant'].sudo()._update_available_quantity(box_product, location, -1, lot_id=lot_record)
+                self.env['stock.quant'].sudo()._update_available_quantity(env_product, location, self.envelopes_per_box, lot_id=child_lot_record)
+            except Exception as e:
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': 'Stock Update Failed',
+                        'message': str(e),
+                        'type': 'danger',
+                        'sticky': False,
+                    }
+                }
+
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
-                    'title': 'Configuration Missing',
-                    'message': 'This product must be marked as a Box and linked to an Envelope product.',
-                    'type': 'warning',
+                    'title': 'Box Opened Successfully',
+                    'message': f"Deducted 1 Box from '{self.name}' and added {self.envelopes_per_box} envelopes to stock.",
+                    'type': 'success',
                     'sticky': False,
+                    'next': {'type': 'ir.actions.client', 'tag': 'reload'},
                 }
             }
 
-        if self.qty_available < 1:
+        except Exception as e:
+            _logger.error("Open Box Error: %s", str(e))
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
-                    'title': 'No Full Boxes',
-                    'message': 'You do not have any unopened boxes available.',
+                    'title': 'System Error',
+                    'message': f"An unexpected error occurred: {str(e)}",
                     'type': 'danger',
                     'sticky': False,
                 }
             }
 
-        warehouse = self.env['stock.warehouse'].search([], limit=1)
-        location = warehouse.lot_stock_id if warehouse else None
-        if not location:
-            return
-
-        box_product = self.product_variant_id
-        env_product = self.envelope_child_id.product_variant_id
-
-        if not box_product or not env_product:
-            return
-
-        self.env['stock.quant']._update_available_quantity(box_product, location, -1)
-        self.env['stock.quant']._update_available_quantity(env_product, location, self.envelopes_per_box)
-
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'Box Opened',
-                'message': f'Deducted 1 Box and added {self.envelopes_per_box} envelopes to {self.envelope_child_id.name}.',
-                'type': 'success',
-                'sticky': False,
-            }
-        }
 
     # --- Margin Calculation Logic ---
 
@@ -461,7 +666,91 @@ class ProductTemplate(models.Model):
                 vals["pharmacy_margin"] = margin
                 vals["pharmacy_margin_input"] = str(margin)
 
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        
+        # Auto-create child after creation if box
+        for rec in records:
+            if rec.is_box_product and not rec.envelope_child_id:
+                rec._ensure_child_envelope_created()
+                
+        return records
+
+    def _ensure_child_envelope_created(self):
+        """Helper to create child product if missing."""
+        self.ensure_one()
+        if not self.is_box_product or self.envelope_child_id:
+            return
+            
+        child_name = f"{self.name} envelope"
+        child = self.env['product.template'].sudo().search([
+            '|', ('name', '=', child_name), ('parent_box_id', '=', self.id)
+        ], limit=1)
+        
+        if not child:
+            categ_id = self.categ_id.id
+            if not categ_id:
+                categ = self.env['product.category'].sudo().search([('name', '=', 'All')], limit=1)
+                categ_id = categ.id if categ else 1
+
+            child = self.env['product.template'].sudo().create({
+                'name': child_name,
+                'parent_box_id': self.id,
+                'type': self.type,
+                'uom_id': self.uom_id.id,
+                'uom_po_id': self.uom_po_id.id,
+                'categ_id': categ_id,
+                'list_price': self.envelope_price or (self.list_price / (self.envelopes_per_box or 1)),
+                'standard_price': self.standard_price / (self.envelopes_per_box or 1) if self.envelopes_per_box > 1 else self.standard_price,
+                'tracking': self.tracking,
+                'is_box_product': False,
+                'available_in_pos': True,
+                'sale_ok': True,
+                'purchase_ok': True,
+                'form_id': self.form_id.id,
+                'stratum_id': self.stratum_id.id,
+                'strength_id': self.strength_id.id,
+                'presentation_id': self.presentation_id.id,
+                'atc_id': self.atc_id.id,
+                'composition': [(6, 0, self.composition.ids)],
+            })
+        
+        if child:
+            self.sudo().write({'envelope_child_id': child.id})
+            self.sudo()._sync_lots_to_child()
+
+    def _sync_lots_to_child(self):
+        self.ensure_one()
+        if not self.envelope_child_id or not self.product_variant_ids or not self.envelope_child_id.product_variant_ids:
+            return
+            
+        parent_variant_ids = self.product_variant_ids.ids
+        child_variant_id = self.envelope_child_id.product_variant_ids[0].id
+            
+        # Sync any existing lots from the parent to the child
+        existing_parent_lots = self.env['stock.lot'].sudo().search([
+            ('product_id', 'in', parent_variant_ids),
+            ('company_id', '=', self.env.company.id)
+        ])
+        if existing_parent_lots:
+            lots_to_create = []
+            for p_lot in existing_parent_lots:
+                # Check if already synced
+                exists = self.env['stock.lot'].sudo().search([
+                    ('product_id', '=', child_variant_id),
+                    ('name', '=', p_lot.name),
+                    ('company_id', '=', self.env.company.id)
+                ], limit=1)
+                if not exists:
+                    lots_to_create.append({
+                        'name': p_lot.name,
+                        'product_id': child_variant_id,
+                        'company_id': p_lot.company_id.id,
+                        'expiration_date': p_lot.expiration_date,
+                        'parent_lot_id': p_lot.id,
+                    })
+            if lots_to_create:
+                self.env['stock.lot'].sudo().create(lots_to_create)
+
 
     @api.model
     def _load_pos_data_fields(self, config):
@@ -523,4 +812,13 @@ class ProductTemplate(models.Model):
                 super(ProductTemplate, rec).write(upd)
             return True
 
-        return super().write(vals)
+        # Default write behavior
+        res = super().write(vals)
+        
+        # Auto-create child after write if box
+        if 'is_box_product' in vals or 'envelope_child_id' in vals:
+            for rec in self:
+                if rec.is_box_product and not rec.envelope_child_id:
+                    rec._ensure_child_envelope_created()
+                    
+        return res

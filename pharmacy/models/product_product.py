@@ -25,6 +25,12 @@ class ProductProduct(models.Model):
             fields.append('parent_box_id')
         if 'code' not in fields:
             fields.append('code')
+        if 'envelope_price' not in fields:
+            fields.append('envelope_price')
+        if 'envelope_qty' not in fields:
+            fields.append('envelope_qty')
+        if 'box_qty' not in fields:
+            fields.append('box_qty')
         return fields
 
     @api.model

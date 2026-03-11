@@ -13,3 +13,4 @@ from . import strength
 from . import partner
 from . import pos_order_line
 from . import drug_substitution
+from . import stock_lot

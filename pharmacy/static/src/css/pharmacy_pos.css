@@ -14,3 +14,7 @@
 .product-item:hover { 
     transform: translateY(-1px); 
 }
+/* Increase width of the SelectLotPopup to fit quantity and expiration labels */
+.select-lot-popup .popup {
+    min-width: 650px !important;
+}
