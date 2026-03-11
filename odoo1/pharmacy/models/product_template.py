@@ -87,19 +87,53 @@ class ProductTemplate(models.Model):
         return True
 
     def action_create_child_and_open(self, name):
+        """
+        Called from POS when a box product has no child linked.
+        Creates the child product, links it, and immediately opens one box
+        (adjusts stock). Returns a plain dict safe for JSON/POS RPC.
+        """
         self.ensure_one()
+
+        # 1. Guard: box must be in stock before we bother creating a child
+        if self.qty_available < 1:
+            return {
+                'success': False,
+                'reason': 'out_of_stock',
+                'message': f'The product ({self.name}) is out of stock.',
+            }
+
+        # 2. Create the child product template
         child_vals = {
             'name': name,
-            'type': 'consu', # Fallback to consumable if storable/product fail
+            'type': 'consu',
             'list_price': self.envelope_price or (self.list_price / (self.envelopes_per_box or 1)),
             'standard_price': self.standard_price / (self.envelopes_per_box or 1),
             'parent_box_id': self.id,
             'available_in_pos': True,
-            'tracking': 'none', # AS REQUESTED: No child lots
+            'tracking': 'none',
         }
         child_template = self.env['product.template'].create(child_vals)
+
+        # 3. Link child back to this box
         self.write({'envelope_child_id': child_template.id, 'is_box_product': True})
-        return self.action_open_new_box()
+
+        # 4. Perform the stock adjustment: -1 box, +envelopes_per_box child units
+        warehouse = self.env['stock.warehouse'].search([], limit=1)
+        location = warehouse.lot_stock_id if warehouse else None
+        if location:
+            box_product = self.product_variant_id
+            env_product = child_template.product_variant_id
+            self.env['stock.quant']._update_available_quantity(box_product, location, -1)
+            self.env['stock.quant']._update_available_quantity(
+                env_product, location, self.envelopes_per_box or 1
+            )
+
+        # 5. Return a plain, JSON-serializable result for POS RPC
+        return {
+            'success': True,
+            'child_id': child_template.id,
+            'child_name': child_template.name,
+        }
 
     @api.model
     def _load_pos_data_fields(self, config):

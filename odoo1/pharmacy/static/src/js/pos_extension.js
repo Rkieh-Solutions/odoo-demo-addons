@@ -42,36 +42,72 @@ patch(ControlButtons.prototype, {
         const product = line.product;
         const qty = product.qty_available || 0;
         const templateId = product.product_tmpl_id.id || product.product_tmpl_id;
+        const productName = product.display_name || product.name || _t("Product");
 
+        // 1. Stock check FIRST – applies whether or not there is a child
+        if (qty <= 0) {
+            await this.env.services.dialog.add(AlertDialog, {
+                title: _t("Warning: Out of Stock!"),
+                body: _t(
+                    "Warning: the product (%s) is out of stock.\nThe requested quantity is not available in inventory.",
+                    productName
+                ),
+            });
+            return;
+        }
+
+        // 2. No child linked → open the "create child" box dialog
         if (!product.envelope_child_id) {
             this.env.services.dialog.add(CreateChildProductPopup, {
                 title: _t("📦 Open Box: Create Child Product"),
-                body: _t("This product has no child. Create one?"),
                 confirm: async (name) => {
                     const orm = this.env.services.orm;
                     const notification = this.env.services.notification;
                     try {
-                        await orm.call("product.template", "action_create_child_and_open", [[templateId], name]);
-                        notification.add(_t("Child created and box opened."), { type: "success" });
+                        const result = await orm.call(
+                            "product.template",
+                            "action_create_child_and_open",
+                            [[templateId], name]
+                        );
+
+                        if (result && result.success === false) {
+                            // Backend reported out-of-stock during creation
+                            notification.add(
+                                result.message || _t("Box is out of stock."),
+                                { type: "danger" }
+                            );
+                            return;
+                        }
+
+                        notification.add(
+                            _t('Child product "%s" created and box opened!', result.child_name || name),
+                            { type: "success" }
+                        );
+
+                        // Refresh POS product cache so the new child is visible immediately
+                        try {
+                            await this.pos.data.read(
+                                "product.template",
+                                [templateId],
+                                Object.keys(this.pos.data.fields["product.template"] || {})
+                            );
+                        } catch (_) {
+                            // Cache refresh is best-effort; ignore if not available
+                        }
                     } catch (err) {
-                        notification.add(_t("Error creating child."), { type: "danger" });
+                        this.env.services.notification.add(
+                            _t("Error creating child product. Please try again."),
+                            { type: "danger" }
+                        );
                     }
-                }
+                },
             });
             return;
         }
 
-        if (qty <= 0) {
-            const productName = product.display_name || product.name || _t("Product");
-            await this.env.services.dialog.add(AlertDialog, {
-                title: _t("Warning: Out of Stock!"),
-                body: _t("Waring :the product (%s) is out of stock ,\nThe requested quantity is not available in inventory", productName),
-            });
-            return;
-        }
-
+        // 3. Child exists + stock OK → just open the box
         await this.env.services.orm.call("product.template", "action_open_new_box", [[templateId]]);
-        this.env.services.notification.add(_t("Box opened."), { type: "success" });
+        this.env.services.notification.add(_t("Box opened successfully."), { type: "success" });
     },
     async onClickFindSubstitutes() {
         this.env.services.dialog.add(SubstanceSearchPopup, {
