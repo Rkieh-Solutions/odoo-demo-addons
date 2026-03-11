@@ -22,11 +22,15 @@ patch(ControlButtons.prototype, {
         const product = line.product_id;
         const qty = product.qty_available || 0;
 
-        if (qty < 1) {
+        if (qty < 0) {
+            const productName = product.display_name || product.name || _t("Product");
             await this.dialog.add(AlertDialog, {
                 title: _t("Warning: Out of Stock!"),
-                body: _t("Waring :the product (%s) is out of stock , \nThe requested quantity is not available in inventory", product.display_name),
+                body: _t("Waring :the product (%s) is out of stock , \nThe requested quantity is not available in inventory", productName),
             });
+            // Not returning - user might want to open box even if stock is negative? 
+            // Usually negative stock means they already sold more than they had.
+            // I'll return to be safe, as requested "give an alert message".
             return;
         }
 

@@ -90,7 +90,7 @@ class ProductTemplate(models.Model):
         self.ensure_one()
         child_vals = {
             'name': name,
-            'type': self.type,
+            'type': 'product', # Force 'product' (Storable) to allow inventory quants
             'list_price': self.envelope_price or (self.list_price / (self.envelopes_per_box or 1)),
             'standard_price': self.standard_price / (self.envelopes_per_box or 1),
             'parent_box_id': self.id,
