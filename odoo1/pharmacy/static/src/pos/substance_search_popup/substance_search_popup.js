@@ -1,6 +1,7 @@
 /** @odoo-module */
 import { Component, useState, onRendered, useRef } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
+import { usePos } from "@point_of_sale/app/hooks/pos_hook";
 import { _t } from "@web/core/l10n/translation";
 import { useService } from "@web/core/utils/hooks";
 
@@ -13,7 +14,7 @@ export class SubstanceSearchPopup extends Component {
     };
 
     setup() {
-        this.pos = this.env.services.pos;
+        this.pos = usePos();
         this.state = useState({
             searchTerm: "",
             products: [],
@@ -40,7 +41,7 @@ export class SubstanceSearchPopup extends Component {
     }
 
     findAlternatives(product) {
-        const allProducts = this.pos.db.get_product_by_category(0);
+        const allProducts = this.pos.models["product.product"].getAll();
         const targetComposition = product.composition || [];
 
         if (targetComposition.length > 0) {
@@ -90,7 +91,7 @@ export class SubstanceSearchPopup extends Component {
             return;
         }
 
-        const allProducts = this.pos.db.get_product_by_category(0);
+        const allProducts = this.pos.models["product.product"].getAll();
 
         const filtered = allProducts.filter(product => {
             const name = String(product.display_name || "").toLowerCase();

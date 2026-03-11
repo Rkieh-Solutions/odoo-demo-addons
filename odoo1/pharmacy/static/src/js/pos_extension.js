@@ -1,3 +1,4 @@
+/** @odoo-module */
 import { Component, useState, onRendered, useRef } from "@odoo/owl";
 import { patch } from "@web/core/utils/patch";
 import { ControlButtons } from "@point_of_sale/app/screens/product_screen/control_buttons/control_buttons";
@@ -15,33 +16,30 @@ patch(ControlButtons.prototype, {
         this.dialog = useService("dialog");
     },
     async onClickOpenBox() {
-        const order = this.pos.getOrder();
-        const line = order ? order.getSelectedOrderline() : null;
-        if (!line || !line.product_id) return;
+        const order = this.pos.get_order();
+        const line = order ? order.get_selected_orderline() : null;
+        if (!line || !line.product) return;
 
-        const product = line.product_id;
+        const product = line.product;
         const qty = product.qty_available || 0;
 
         if (qty < 0) {
             const productName = product.display_name || product.name || _t("Product");
-            await this.dialog.add(AlertDialog, {
+            await this.env.services.dialog.add(AlertDialog, {
                 title: _t("Warning: Out of Stock!"),
-                body: _t("Waring :the product (%s) is out of stock , \nThe requested quantity is not available in inventory", productName),
+                body: _t("Waring :the product (%s) is out of stock , The requested quantity is not available in inventory", productName),
             });
-            // Not returning - user might want to open box even if stock is negative? 
-            // Usually negative stock means they already sold more than they had.
-            // I'll return to be safe, as requested "give an alert message".
             return;
         }
 
         if (!product.envelope_child_id) {
-            this.dialog.add(CreateChildProductPopup, {
+            this.env.services.dialog.add(CreateChildProductPopup, {
                 title: _t("Create Child Product"),
                 body: _t("Product %s has no child. Create one?", product.display_name),
                 confirm: async (name) => {
                     const templateId = product.product_tmpl_id.id || product.product_tmpl_id;
-                    const orm = this.orm;
-                    const notification = this.notification;
+                    const orm = this.env.services.orm;
+                    const notification = this.env.services.notification;
                     await orm.call("product.template", "action_create_child_and_open", [[templateId], name]);
                     notification.add(_t("Child created and box opened."), { type: "success" });
                 }
@@ -50,11 +48,11 @@ patch(ControlButtons.prototype, {
         }
 
         const templateId = product.product_tmpl_id.id || product.product_tmpl_id;
-        await this.orm.call("product.template", "action_open_new_box", [[templateId]]);
-        this.notification.add(_t("Box opened."), { type: "success" });
+        await this.env.services.orm.call("product.template", "action_open_new_box", [[templateId]]);
+        this.env.services.notification.add(_t("Box opened."), { type: "success" });
     },
     async onClickFindSubstitutes() {
-        this.dialog.add(SubstanceSearchPopup, {
+        this.env.services.dialog.add(SubstanceSearchPopup, {
             title: _t("Find Substitutes by Ingredient"),
         });
     }
