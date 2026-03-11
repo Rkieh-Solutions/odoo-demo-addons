@@ -6,7 +6,7 @@ import { _t } from "@web/core/l10n/translation";
 
 patch(PosStore.prototype, {
     async addLineToOrder(product, options) {
-        if (product && (product.qty_available || 0) <= 0) {
+        if (product && (product.qty_available || 0) < 0) {
             const productName = product.display_name || product.name || _t("Product");
             this.env.services.dialog.add(AlertDialog, {
                 title: _t("Warning: Out of Stock!"),

@@ -11,6 +11,7 @@ export class SubstitutionPopup extends Component {
         title: { type: String, optional: true },
         substitutes: { type: Array },
         onReplace: { type: Function },
+        onAdd: { type: Function, optional: true },
         close: { type: Function },
     };
 
@@ -34,5 +35,12 @@ export class SubstitutionPopup extends Component {
     async onSelect(substitute) {
         await this.props.onReplace(substitute);
         this.props.close();
+    }
+
+    async onAdd(substitute) {
+        if (this.props.onAdd) {
+            await this.props.onAdd(substitute);
+            this.props.close();
+        }
     }
 }

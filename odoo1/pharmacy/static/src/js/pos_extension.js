@@ -78,6 +78,13 @@ patch(ControlButtons.prototype, {
 
                     this.notification.add(_t("Product replaced with %s", newProduct.display_name), { type: "success" });
                 }
+            },
+            onAdd: async (substitute) => {
+                const newProduct = this.pos.db.get_product_by_id(substitute.product_id);
+                if (newProduct) {
+                    await order.add_product(newProduct, { quantity: 1 });
+                    this.notification.add(_t("Added %s to order", newProduct.display_name), { type: "success" });
+                }
             }
         });
     }

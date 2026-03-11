@@ -26,9 +26,12 @@
                                             <t t-esc="sub.qty_available"/>
                                         </span>
                                     </td>
-                                    <td class="text-end">
-                                        <button class="btn btn-primary btn-sm" t-on-click="() => this.onSelect(sub)">
+                                    <td class="text-end d-flex gap-2 justify-content-end">
+                                        <button class="btn btn-primary btn-sm" t-on-click="() => this.onSelect(sub)" title="Replace Current Line">
                                             Replace
+                                        </button>
+                                        <button class="btn btn-outline-primary btn-sm" t-on-click="() => this.onAdd(sub)" title="Add as New Line">
+                                            Add to Order
                                         </button>
                                     </td>
                                 </tr>
