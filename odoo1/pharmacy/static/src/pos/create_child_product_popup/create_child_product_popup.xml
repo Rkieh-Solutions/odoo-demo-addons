@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <t t-name="pharmacy.CreateChildProductPopup">
-        <Dialog t-att-title="props.title or 'Create Child Product'" size="'md'">
+        <Dialog title="props.title or 'Create Child Product'" size="'md'">
             <div class="create-child-product-popup d-flex flex-column gap-3 mt-3">
                 <div t-if="props.body" class="alert alert-info">
                    <t t-esc="props.body"/>
