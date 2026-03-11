@@ -1,4 +1,5 @@
 from odoo import models, fields, api
+from odoo.tools.float_utils import float_round
 
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
@@ -16,6 +17,7 @@ class PurchaseOrderLine(models.Model):
                 move_vals['product_uom_qty'] *= factor
                 
                 # Divide price unit by envelopes per box to keep inventory valuation correct
+                # (since inventory is stored in Envelopes, the unit cost should be per envelope)
                 if move_vals.get('price_unit'):
                     move_vals['price_unit'] /= factor
         

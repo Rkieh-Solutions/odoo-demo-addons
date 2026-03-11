@@ -1,81 +1,58 @@
 /** @odoo-module */
-import { Component, useState, onRendered, useRef } from "@odoo/owl";
+
 import { patch } from "@web/core/utils/patch";
 import { ControlButtons } from "@point_of_sale/app/screens/product_screen/control_buttons/control_buttons";
 import { useService } from "@web/core/utils/hooks";
-import { usePos } from "@point_of_sale/app/hooks/pos_hook";
-import { CreateChildProductPopup } from "@pharmacy/pos/create_child_product_popup/create_child_product_popup";
 import { SubstanceSearchPopup } from "@pharmacy/pos/substance_search_popup/substance_search_popup";
-import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { _t } from "@web/core/l10n/translation";
 
+// Add "Open Box" and "Find Substitutes" handlers to the ControlButtons (Actions popup)
 patch(ControlButtons.prototype, {
     setup() {
         super.setup();
-        this.pos = usePos();
         this.orm = useService("orm");
         this.notification = useService("notification");
         this.dialog = useService("dialog");
     },
-    _getOrder() {
-        const pos = this.pos || this.env.services.pos;
-        if (!pos) return null;
-        if (typeof pos.get_order === "function") return pos.get_order();
-        if (typeof pos.getOrder === "function") return pos.getOrder();
-        if (pos.get_order) return pos.get_order;
-        if (pos.getOrder) return pos.getOrder;
-        return null;
-    },
-    _getSelectedLine(order) {
-        if (!order) return null;
-        if (typeof order.get_selected_orderline === "function") return order.get_selected_orderline();
-        if (typeof order.getSelectedOrderline === "function") return order.getSelectedOrderline();
-        if (order.get_selected_orderline) return order.get_selected_orderline;
-        if (order.getSelectedOrderline) return order.getSelectedOrderline;
-        return null;
-    },
     async onClickOpenBox() {
-        const order = this._getOrder();
-        const line = this._getSelectedLine(order);
-        if (!line || !line.product) return;
+        const order = this.pos.getOrder();
+        const selectedLine = order ? order.getSelectedOrderline() : null;
 
-        const product = line.product;
-        const qty = product.qty_available || 0;
-        const templateId = product.product_tmpl_id.id || product.product_tmpl_id;
-
-        if (!product.envelope_child_id) {
-            this.env.services.dialog.add(CreateChildProductPopup, {
-                title: _t("📦 Open Box: Create Child Product"),
-                body: _t("This product has no child. Create one?"),
-                confirm: async (name) => {
-                    const orm = this.env.services.orm;
-                    const notification = this.env.services.notification;
-                    try {
-                        await orm.call("product.template", "action_create_child_and_open", [[templateId], name]);
-                        notification.add(_t("Child created and box opened."), { type: "success" });
-                    } catch (err) {
-                        notification.add(_t("Error creating child."), { type: "danger" });
-                    }
-                }
-            });
+        if (!selectedLine || !selectedLine.product_id) {
+            this.notification.add(_t("Please select a product line first."), { type: "warning" });
             return;
         }
 
-        if (qty <= 0) {
-            const productName = product.display_name || product.name || _t("Product");
-            await this.env.services.dialog.add(AlertDialog, {
-                title: _t("Warning: Out of Stock!"),
-                body: _t("Waring :the product (%s) is out of stock ,\nThe requested quantity is not available in inventory", productName),
-            });
+        const product = selectedLine.product_id;
+        let parentTmplId = product.product_tmpl_id;
+        if (typeof parentTmplId === 'object') parentTmplId = parentTmplId.id;
+
+        if (!parentTmplId) {
+            this.notification.add(_t("Template ID not found for this product."), { type: "warning" });
             return;
         }
 
-        await this.env.services.orm.call("product.template", "action_open_new_box", [[templateId]]);
-        this.env.services.notification.add(_t("Box opened."), { type: "success" });
+        try {
+            const result = await this.orm.call("product.template", "action_open_new_box", [parentTmplId]);
+            if (result && result.params && result.params.type === 'danger') {
+                this.notification.add(result.params.message, { type: "danger" });
+            } else {
+                this.notification.add(_t("📦 Box opened successfully! Stock has been updated."), { type: "success" });
+            }
+            if (this.props.close) this.props.close();
+        } catch (error) {
+            console.error("Open Box Error:", error);
+            this.notification.add(_t("Failed to open box. Please check if the product is correctly configured."), { type: "danger" });
+        }
     },
     async onClickFindSubstitutes() {
-        this.env.services.dialog.add(SubstanceSearchPopup, {
-            title: _t("Find Substitutes by Ingredient"),
+        // Now using the improved SubstanceSearchPopup from Pharmacy Extension
+        this.dialog.add(SubstanceSearchPopup, {
+            title: _t("Find Substance / Substitute"),
         });
+
+        if (this.props.close) {
+            this.props.close();
+        }
     }
 });
