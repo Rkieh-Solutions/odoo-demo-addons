@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_pharmacy_root" name="Pharmacy" sequence="1"/>
+    
+    <menuitem id="menu_pharmacy_stock_ops" name="Pharmacy Operations" parent="stock.menu_stock_warehouse_mgmt" action="product.product_template_action_all" sequence="50"/>
+    <menuitem id="menu_pharmacy_pos_products" name="Pharmacy Products" parent="point_of_sale.menu_pos_products" action="product.product_template_action_all" sequence="20"/>
+
+    <menuitem id="menu_pharmacy_config" name="Pharmacy" parent="stock.menu_stock_config_settings" sequence="60"/>
+    
+    <record id="action_pharmacy_form" model="ir.actions.act_window">
+        <field name="name">Forms</field>
+        <field name="res_model">pharmacy.form</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="action_pharmacy_composition" model="ir.actions.act_window">
+        <field name="name">Ingredients</field>
+        <field name="res_model">pharmacy.composition</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_pharmacy_config_forms" name="Forms" parent="menu_pharmacy_config" action="action_pharmacy_form" sequence="10"/>
+    <menuitem id="menu_pharmacy_config_ingredients" name="Ingredients" parent="menu_pharmacy_config" action="action_pharmacy_composition" sequence="15"/>
+</odoo>

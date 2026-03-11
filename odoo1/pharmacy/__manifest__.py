@@ -3,11 +3,15 @@
     'version': '19.0.1.0.0',
     'category': 'Industry',
     'author': 'Rkieh Solutions',
-    'summary': 'Pharmacy Management with Dynamic Box Opening',
-    'depends': ['base', 'product', 'stock', 'point_of_sale'],
+    'summary': 'Advanced Pharmacy Management with Sale/Purchase integration',
+    'depends': ['base', 'product', 'stock', 'point_of_sale', 'sale', 'purchase'],
     'data': [
         'security/ir.model.access.csv',
+        'views/cleanup.xml',
         'views/product_template_views.xml',
+        'views/sale_order_views.xml',
+        'views/master_data_views.xml',
+        'views/menus.xml',
     ],
     'assets': {
         'point_of_sale._assets_pos': [
@@ -19,6 +23,5 @@
     },
     'installable': True,
     'application': True,
-    'web_icon': 'pharmacy,static/description/icon.png',
     'license': 'LGPL-3',
 }

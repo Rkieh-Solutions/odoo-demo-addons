@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Generic View for Master Data -->
+    <record id="view_pharmacy_master_tree" model="ir.ui.view">
+        <field name="name">pharmacy.master.tree</field>
+        <field name="model">pharmacy.atc</field> <!-- Dummy, will be used by inheritance or specific records if needed -->
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <list string="Master Data" editable="bottom">
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Specific Records for each model for simplicity -->
+    <record id="view_pharmacy_atc_tree" model="ir.ui.view">
+        <field name="name">pharmacy.atc.tree</field>
+        <field name="model">pharmacy.atc</field>
+        <field name="arch" type="xml">
+            <list string="ATC Codes" editable="bottom">
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pharmacy_composition_tree" model="ir.ui.view">
+        <field name="name">pharmacy.composition.tree</field>
+        <field name="model">pharmacy.composition</field>
+        <field name="arch" type="xml">
+            <list string="Ingredients" editable="bottom">
+                <field name="name"/>
+                <field name="color" widget="color_picker"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pharmacy_form_tree" model="ir.ui.view">
+        <field name="name">pharmacy.form.tree</field>
+        <field name="model">pharmacy.form</field>
+        <field name="arch" type="xml">
+            <list string="Forms" editable="bottom">
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Placeholder Actions -->
+    <record id="action_pharmacy_atc" model="ir.actions.act_window">
+        <field name="name">ATC Codes</field>
+        <field name="res_model">pharmacy.atc</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

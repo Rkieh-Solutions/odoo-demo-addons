@@ -1,18 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="product_template_form_view_pharmacy_simple" model="ir.ui.view">
-        <field name="name">product.template.form.pharmacy.simple</field>
+    <record id="product_template_form_view_pharmacy" model="ir.ui.view">
+        <field name="name">product.template.form.pharmacy</field>
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_only_form_view"/>
         <field name="arch" type="xml">
-            <xpath expr="//notebook" position="inside">
+            <xpath expr="//group[@name='group_general']" position="inside">
+                <field name="code" string="Code"/>
+                <field name="registration_number" string="Registration No."/>
+                <label for="pharmacy_margin_input" string="Pharmacy Margin (%)"/>
+                <div class="o_row">
+                    <field name="pharmacy_margin_input" class="oe_inline"/>
+                    <span class="text-muted" invisible="not pharmacy_margin">(Actual: <field name="pharmacy_margin" class="oe_inline"/>%)</span>
+                </div>
+            </xpath>
+            <xpath expr="//sheet/notebook" position="inside">
                 <page name="pharmacy_management" string="Pharmacy Management">
                     <group>
-                        <field name="is_box_product"/>
-                        <field name="envelope_child_id"/>
-                        <field name="envelopes_per_box" invisible="not is_box_product"/>
-                        <field name="parent_box_id" readonly="1"/>
-                        <field name="envelope_price"/>
+                        <group name="group_pharmacy_basic" string="Drug Identification">
+                            <field name="atc_id" options="{'no_create': False}"/>
+                            <field name="form_id" options="{'no_create': False}"/>
+                            <field name="strength_id" options="{'no_create': False}"/>
+                            <field name="presentation_id" options="{'no_create': False}"/>
+                            <field name="stratum_id" options="{'no_create': False}"/>
+                        </group>
+                    </group>
+                    <group string="Ingredients &amp; Composition">
+                        <field name="composition" widget="many2many_tags" options="{'color_field': 'color'}" nolabel="1"/>
+                    </group>
+                </page>
+                <page name="box_management" string="Box Management">
+                    <group>
+                        <group name="group_box_config" string="Configuration">
+                            <field name="is_box_product"/>
+                            <field name="envelope_child_id" invisible="not is_box_product" required="is_box_product"/>
+                            <field name="envelopes_per_box" invisible="not is_box_product" required="is_box_product"/>
+                            <field name="parent_box_id" readonly="1" invisible="not parent_box_id"/>
+                            <field name="envelope_price"/>
+                        </group>
+                        <group name="group_box_status" string="Inventory Status">
+                             <field name="envelope_qty" readonly="1" string="Available Loose Envelopes"/>
+                             <field name="qty_available" string="Physical Inventory"/>
+                        </group>
+                    </group>
+                    <group string="Operations">
+                         <div class="alert alert-info" role="status" invisible="not is_box_product">
+                            Opening a box will deduct 1 from this product's stock and add <field name="envelopes_per_box" class="oe_inline"/> to the child product.
+                         </div>
+                         <button name="action_open_new_box" string="Open New Box" type="object" 
+                                 class="btn-primary" icon="fa-archive"
+                                 invisible="not is_box_product"/>
                     </group>
                 </page>
             </xpath>
