@@ -90,7 +90,7 @@ class ProductTemplate(models.Model):
         self.ensure_one()
         child_vals = {
             'name': name,
-            'type': 'storable', # Use 'storable' for Odoo 17 standard
+            'type': 'consu', # Fallback to consumable if storable/product fail
             'list_price': self.envelope_price or (self.list_price / (self.envelopes_per_box or 1)),
             'standard_price': self.standard_price / (self.envelopes_per_box or 1),
             'parent_box_id': self.id,

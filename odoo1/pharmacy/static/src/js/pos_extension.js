@@ -40,8 +40,8 @@ patch(ControlButtons.prototype, {
                 body: _t("Product %s has no child. Create one?", product.display_name),
                 confirm: async (name) => {
                     const templateId = product.product_tmpl_id.id || product.product_tmpl_id;
-                    const orm = this.env.services.orm;
-                    const notification = this.env.services.notification;
+                    const orm = this.orm;
+                    const notification = this.notification;
                     await orm.call("product.template", "action_create_child_and_open", [[templateId], name]);
                     notification.add(_t("Child created and box opened."), { type: "success" });
                 }
