@@ -1,6 +1,6 @@
 {
     'name': 'Pharmacy Management',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.1',
     'category': 'Industry',
     'sequence': 1,
     'summary': 'Advanced Pharmacy Management with Box/Envelope Inventory',
@@ -13,11 +13,14 @@
         - Rx Only drug management.
     """,
     'author': 'Rkiehsoloutions',
-    'depends': ['base', 'product', 'stock', 'point_of_sale', 'product_expiry'],
+    'depends': ['base', 'product', 'stock', 'point_of_sale', 'product_expiry', 'sale_management', 'purchase'],
     'data': [
         'security/ir.model.access.csv',
+        'views/cleanup.xml',
         'wizard/pharmacy_substitute_wizard_views.xml',
         'views/product_template_views.xml',
+        'views/sale_order_views.xml',
+        'views/sale_order_wizard_views.xml',
         'views/atc_views.xml',
         'views/composition_views.xml',
         'views/form_views.xml',
