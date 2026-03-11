@@ -16,7 +16,7 @@ class ProductTemplate(models.Model):
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
-                    'title': 'No Stock',
+                    'title': 'Warning: Out of Stock!',
                     'message': f'Warning: the product ({self.name}) is out of stock. The requested quantity is not available in inventory.',
                     'type': 'danger',
                 }
@@ -55,6 +55,7 @@ class ProductTemplate(models.Model):
             'standard_price': self.standard_price / (self.envelopes_per_box or 1),
             'parent_box_id': self.id,
             'available_in_pos': True,
+            'tracking': 'none',
         }
         child_template = self.env['product.template'].create(child_vals)
         self.write({'envelope_child_id': child_template.id, 'is_box_product': True})
