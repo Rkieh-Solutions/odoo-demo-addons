@@ -6,6 +6,7 @@ class ProductTemplateSubstitution(models.Model):
 
     def get_substitute_products(self, match_mode='overlap', in_stock_only=True, limit=20):
         """Find alternative products based on composition or ATC."""
+        if not self: return []
         self.ensure_one()
         ingredient_ids = self.composition.ids
         domain = [('id', '!=', self.id)]
@@ -14,8 +15,8 @@ class ProductTemplateSubstitution(models.Model):
             if match_mode == 'overlap':
                 domain.append(('composition', 'in', ingredient_ids))
             elif match_mode == 'exact':
-                domain.append(('composition', 'in', ingredient_ids))
-            templates = self.search(domain, limit=limit * 5)
+                domain.append(('composition', '=', ingredient_ids)) # Simplified exact match
+            templates = self.search(domain)
             if match_mode == 'exact':
                 target_set = set(ingredient_ids)
                 templates = templates.filtered(lambda t: set(t.composition.ids) == target_set)

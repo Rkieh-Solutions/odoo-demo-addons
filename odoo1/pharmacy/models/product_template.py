@@ -56,7 +56,7 @@ class ProductTemplate(models.Model):
                 'tag': 'display_notification',
                 'params': {
                     'title': 'Warning: Out of Stock!',
-                    'message': f'Warning: the product ({self.name}) is out of stock. The requested quantity is not available in inventory.',
+                    'message': f'Waring :the product ({self.name}) is out of stock , \nThe requested quantity is not available in inventory',
                     'type': 'danger',
                 }
             }

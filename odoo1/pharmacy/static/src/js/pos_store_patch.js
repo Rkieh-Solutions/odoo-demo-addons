@@ -10,7 +10,7 @@ patch(PosStore.prototype, {
         if (product && (product.qty_available || 0) <= 0) {
             await this.dialog.add(AlertDialog, {
                 title: _t("Warning: Out of Stock!"),
-                body: _t("Warning: the product (%s) is out of stock. The requested quantity is not available in inventory.", product.display_name),
+                body: _t("Waring :the product (%s) is out of stock , \nThe requested quantity is not available in inventory", product.display_name),
             });
         }
         return await super.addLineToOrder(...arguments);

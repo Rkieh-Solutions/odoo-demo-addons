@@ -24,7 +24,7 @@ patch(ControlButtons.prototype, {
         if (qty < 1) {
             await this.dialog.add(AlertDialog, {
                 title: _t("Warning: Out of Stock!"),
-                body: _t("Warning: the product (%s) is out of stock. The requested quantity is not available in inventory.", product.display_name),
+                body: _t("Waring :the product (%s) is out of stock , \nThe requested quantity is not available in inventory", product.display_name),
             });
             return;
         }
@@ -34,14 +34,16 @@ patch(ControlButtons.prototype, {
                 title: _t("Create Child Product"),
                 body: _t("Product %s has no child. Create one?", product.display_name),
                 confirm: async (name) => {
-                    await this.orm.call("product.template", "action_create_child_and_open", [product.product_tmpl_id, name]);
+                    const templateId = Array.isArray(product.product_tmpl_id) ? product.product_tmpl_id[0] : product.product_tmpl_id;
+                    await this.orm.call("product.template", "action_create_child_and_open", [[templateId], name]);
                     this.notification.add(_t("Child created and box opened."), { type: "success" });
                 }
             });
             return;
         }
 
-        await this.orm.call("product.template", "action_open_new_box", [product.product_tmpl_id]);
+        const templateId = Array.isArray(product.product_tmpl_id) ? product.product_tmpl_id[0] : product.product_tmpl_id;
+        await this.orm.call("product.template", "action_open_new_box", [[templateId]]);
         this.notification.add(_t("Box opened."), { type: "success" });
     },
     async onClickFindSubstitutes() {
@@ -50,7 +52,9 @@ patch(ControlButtons.prototype, {
         if (!line || !line.product_id) return;
 
         const product = line.product_id;
-        const results = await this.orm.call("product.template", "get_substitute_products", [product.product_tmpl_id]);
+        const templateId = Array.isArray(product.product_tmpl_id) ? product.product_tmpl_id[0] : product.product_tmpl_id;
+
+        const results = await this.orm.call("product.template", "get_substitute_products", [[templateId]]);
 
         if (results.length === 0) {
             this.notification.add(_t("No substitutes found."), { type: "info" });
