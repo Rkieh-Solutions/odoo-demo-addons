@@ -40,6 +40,7 @@ patch(ControlButtons.prototype, {
         if (!line || !line.product) return;
 
         const product = line.product;
+        const qty = product.qty_available || 0;
         const templateId = product.product_tmpl_id.id || product.product_tmpl_id;
 
         if (!product.envelope_child_id) {
@@ -52,8 +53,6 @@ patch(ControlButtons.prototype, {
                     try {
                         await orm.call("product.template", "action_create_child_and_open", [[templateId], name]);
                         notification.add(_t("Child created and box opened."), { type: "success" });
-                        // The user needs to refresh the POS to see the new product easily
-                        // but the backend connection is now established
                     } catch (err) {
                         notification.add(_t("Error creating child."), { type: "danger" });
                     }
@@ -71,7 +70,6 @@ patch(ControlButtons.prototype, {
             return;
         }
 
-        const templateId = product.product_tmpl_id.id || product.product_tmpl_id;
         await this.env.services.orm.call("product.template", "action_open_new_box", [[templateId]]);
         this.env.services.notification.add(_t("Box opened."), { type: "success" });
     },
