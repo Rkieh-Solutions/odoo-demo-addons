@@ -3,6 +3,7 @@
     <data>
         <!-- Delete any potentially conflicting views with identical external IDs or names -->
         <delete model="ir.ui.view" search="[('name', 'ilike', 'pharmacy'), ('model', '=', 'product.template')]"/>
+        <delete model="ir.ui.view" search="[('name', 'ilike', 'simple')]"/>
         <delete model="ir.model.data" search="[('module', '=', 'pharmacy'), ('model', '=', 'ir.ui.view')]"/>
     </data>
 </odoo>

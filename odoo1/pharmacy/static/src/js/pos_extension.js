@@ -43,5 +43,25 @@ patch(ControlButtons.prototype, {
 
         await this.orm.call("product.template", "action_open_new_box", [product.product_tmpl_id]);
         this.notification.add(_t("Box opened."), { type: "success" });
+    },
+    async onClickFindSubstitutes() {
+        const order = this.pos.getOrder();
+        const line = order ? order.getSelectedOrderline() : null;
+        if (!line || !line.product_id) return;
+
+        const product = line.product_id;
+        const results = await this.orm.call("product.template", "get_substitute_products", [product.product_tmpl_id]);
+
+        if (results.length === 0) {
+            this.notification.add(_t("No substitutes found."), { type: "info" });
+            return;
+        }
+
+        // For now, list them in an alert or we could build a specific popup
+        const names = results.map(r => `${r.display_name} (Stock: ${r.qty_available})`).join("\n");
+        await this.dialog.add(AlertDialog, {
+            title: _t("Substitutes for %s", product.display_name),
+            body: names,
+        });
     }
 });

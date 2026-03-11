@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="pharmacy.ControlButtons" t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('control-buttons')]" position="inside">
+            <button class="control-button btn btn-light rounded-0 fw-bolder border-bottom" t-on-click="onClickOpenBox">
+                <i class="fa fa-archive me-1" /> Open Box
+            </button>
+            <button class="control-button btn btn-light rounded-0 fw-bolder border-bottom" t-on-click="onClickFindSubstitutes">
+                <i class="fa fa-search me-1" /> Find Substitutes
+            </button>
+        </xpath>
+    </t>
+</templates>
