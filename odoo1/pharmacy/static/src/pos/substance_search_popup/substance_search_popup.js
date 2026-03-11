@@ -24,8 +24,9 @@ export class SubstanceSearchPopup extends Component {
         });
         this.searchInput = useRef("search-input");
 
-        const order = this.pos.getOrder();
-        const selectedLine = order?.getSelectedOrderline();
+        const order = this._getOrder();
+        const selectedLine = this._getSelectedLine(order);
+
         if (selectedLine && selectedLine.product) {
             this.state.selectedLine = selectedLine;
             this.state.originalProductName = selectedLine.product.display_name;
@@ -38,6 +39,33 @@ export class SubstanceSearchPopup extends Component {
                 this.searchInput.el.focus();
             }
         });
+    }
+
+    _getOrder() {
+        if (!this.pos) return null;
+        if (typeof this.pos.get_order === "function") return this.pos.get_order();
+        if (typeof this.pos.getOrder === "function") return this.pos.getOrder();
+        if (this.pos.get_order) return this.pos.get_order;
+        if (this.pos.getOrder) return this.pos.getOrder;
+        return null;
+    }
+
+    _getSelectedLine(order) {
+        if (!order) return null;
+        if (typeof order.get_selected_orderline === "function") return order.get_selected_orderline();
+        if (typeof order.getSelectedOrderline === "function") return order.getSelectedOrderline();
+        if (order.get_selected_orderline) return order.get_selected_orderline;
+        if (order.getSelectedOrderline) return order.getSelectedOrderline;
+        return null;
+    }
+
+    _getQuantity(line) {
+        if (!line) return 1;
+        if (typeof line.get_quantity === "function") return line.get_quantity();
+        if (typeof line.getQuantity === "function") return line.getQuantity();
+        if (line.get_quantity) return line.get_quantity;
+        if (line.getQuantity) return line.getQuantity;
+        return (line.quantity || 1);
     }
 
     findAlternatives(product) {
@@ -112,18 +140,21 @@ export class SubstanceSearchPopup extends Component {
     }
 
     async addToOrder(product) {
-        const order = this.pos.getOrder();
-        await order.add_product(product);
+        const order = this._getOrder();
+        if (order) {
+            await order.add_product(product);
+        }
         this.props.close();
     }
 
     async replaceLine(product) {
         if (!this.state.selectedLine) return;
-        const order = this.pos.getOrder();
-        const quantity = this.state.selectedLine.getQuantity();
-
-        order.remove_orderline(this.state.selectedLine);
-        await order.add_product(product, { quantity: quantity });
+        const order = this._getOrder();
+        if (order) {
+            const quantity = this._getQuantity(this.state.selectedLine);
+            order.remove_orderline(this.state.selectedLine);
+            await order.add_product(product, { quantity: quantity });
+        }
         this.props.close();
     }
 }

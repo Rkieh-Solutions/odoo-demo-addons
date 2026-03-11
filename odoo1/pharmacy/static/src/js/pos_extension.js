@@ -15,9 +15,26 @@ patch(ControlButtons.prototype, {
         this.notification = useService("notification");
         this.dialog = useService("dialog");
     },
+    _getOrder() {
+        const pos = this.pos || this.env.services.pos;
+        if (!pos) return null;
+        if (typeof pos.get_order === "function") return pos.get_order();
+        if (typeof pos.getOrder === "function") return pos.getOrder();
+        if (pos.get_order) return pos.get_order;
+        if (pos.getOrder) return pos.getOrder;
+        return null;
+    },
+    _getSelectedLine(order) {
+        if (!order) return null;
+        if (typeof order.get_selected_orderline === "function") return order.get_selected_orderline();
+        if (typeof order.getSelectedOrderline === "function") return order.getSelectedOrderline();
+        if (order.get_selected_orderline) return order.get_selected_orderline;
+        if (order.getSelectedOrderline) return order.getSelectedOrderline;
+        return null;
+    },
     async onClickOpenBox() {
-        const order = this.pos.getOrder();
-        const line = order ? order.getSelectedOrderline() : null;
+        const order = this._getOrder();
+        const line = this._getSelectedLine(order);
         if (!line || !line.product) return;
 
         const product = line.product;
