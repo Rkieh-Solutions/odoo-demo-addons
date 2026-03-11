@@ -259,6 +259,42 @@ class ProductTemplate(models.Model):
             }
         }
 
+    def action_create_child_and_open(self, name):
+        """Creates a new child product template and then opens the first box."""
+        self.ensure_one()
+        if self.envelope_child_id:
+            return self.action_open_new_box()
+
+        # Create new product template for the child
+        child_vals = {
+            'name': name,
+            'type': 'consu' if self.type == 'consu' else 'product',
+            'list_price': self.envelope_price or (self.list_price / (self.envelopes_per_box or 1)),
+            'standard_price': self.standard_price / (self.envelopes_per_box or 1),
+            'uom_id': self.uom_id.id,
+            'uom_po_id': self.uom_po_id.id,
+            'parent_box_id': self.id,
+            'available_in_pos': True,
+            'pos_categ_ids': [(6, 0, self.pos_categ_ids.ids)],
+            'tracking': self.tracking, # Inherit tracking from parent
+        }
+        
+        # Copy pharmacy relevant fields
+        pharm_fields = ['form_id', 'stratum_id', 'strength_id', 'presentation_id', 'atc_id']
+        for field in pharm_fields:
+            if getattr(self, field):
+                child_vals[field] = getattr(self, field).id
+
+        child_template = self.env['product.template'].create(child_vals)
+        
+        # Link to parent
+        self.write({
+            'envelope_child_id': child_template.id,
+            'is_box_product': True
+        })
+        
+        return self.action_open_new_box()
+
     # --- Margin Calculation Logic ---
 
     @staticmethod

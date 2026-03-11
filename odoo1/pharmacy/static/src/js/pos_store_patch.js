@@ -30,14 +30,14 @@ patch(PosStore.prototype, {
 
             if (qty_available <= 0) {
                 await this.dialog.add(AlertDialog, {
-                    title: _t("Out of Stock!"),
-                    body: _t("The product '%s' is completely out of stock. Are you sure you want to add it?", product.display_name),
+                    title: _t("Warning: Out of Stock!"),
+                    body: _t("Warning: the product (%s) is out of stock. The requested quantity is not available in inventory.", product.display_name),
                 });
             } else if (total_planned_qty > qty_available) {
                 await this.dialog.add(AlertDialog, {
-                    title: _t("Low Stock Warning"),
-                    body: _t("The product '%s' only has %s units available. You are adding %s in total. Continue?",
-                        product.display_name, qty_available, total_planned_qty),
+                    title: _t("Warning: Low Stock"),
+                    body: _t("Warning: the product (%s) is out of stock. The requested quantity is not available in inventory. Only %s available.",
+                        product.display_name, qty_available),
                 });
             }
         }
@@ -55,14 +55,13 @@ patch(PosStore.prototype, {
 
             if (overStockLines.length > 0) {
                 const productList = overStockLines.map(line => {
-                    const stock = line.product_id.qty_available || 0;
-                    return `${line.product_id.display_name} (Stock: ${stock}, In Cart: ${line.getQuantity()})`;
+                    return line.product_id.display_name;
                 }).join(", ");
 
                 const confirmed = await ask(this.dialog, {
-                    title: _t("Out of Stock Warning"),
+                    title: _t("Warning: Stock Issues"),
                     body: _t(
-                        "The following products have insufficient stock or are out of stock: %s.\nDo you want to continue to payment?",
+                        "Warning: the product (%s) is out of stock. The requested quantity is not available in inventory. Do you want to continue to payment?",
                         productList
                     ),
                 });
