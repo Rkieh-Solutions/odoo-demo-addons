@@ -1,12 +1,11 @@
 {
     'name': 'Pharmacy Management',
-    'version': '20.0.1.0.2',
+    'version': '19.0.1.0.0',
     'category': 'Industry',
     'author': 'Rkieh Solutions',
     'summary': 'Pharmacy Management with Dynamic Box Opening',
     'depends': ['base', 'product', 'stock', 'point_of_sale'],
     'data': [
-        'views/cleanup.xml',
         'security/ir.model.access.csv',
         'views/product_template_views.xml',
     ],
