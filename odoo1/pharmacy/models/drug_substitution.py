@@ -7,9 +7,10 @@ class ProductTemplateSubstitution(models.Model):
     def get_substitute_products(self, match_mode='overlap', in_stock_only=True, limit=20):
         """Find alternative products based on composition or ATC."""
         if not self: return []
+        target_id = self.ids[0] if self.ids else 0
         self.ensure_one()
         ingredient_ids = self.composition.ids
-        domain = [('id', '!=', self._origin.id if hasattr(self, '_origin') else self.id)]
+        domain = [('id', '!=', target_id)]
 
         if ingredient_ids:
             if match_mode == 'overlap':

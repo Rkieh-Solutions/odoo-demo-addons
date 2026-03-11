@@ -37,8 +37,9 @@ patch(ControlButtons.prototype, {
                 confirm: async (name) => {
                     const templateId = product.product_tmpl_id.id || product.product_tmpl_id;
                     const orm = this.env.services.orm;
+                    const notification = this.env.services.notification;
                     await orm.call("product.template", "action_create_child_and_open", [[templateId], name]);
-                    this.env.services.notification.add(_t("Child created and box opened."), { type: "success" });
+                    notification.add(_t("Child created and box opened."), { type: "success" });
                 }
             });
             return;
