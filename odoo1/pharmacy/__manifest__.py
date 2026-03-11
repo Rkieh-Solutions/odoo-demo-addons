@@ -1,6 +1,6 @@
 {
     'name': 'Pharmacy Management',
-    'version': '19.0.1.0.14',
+    'version': '19.0.1.0.15',
     'category': 'Industry',
     'author': 'Rkieh Solutions',
     'summary': 'Advanced Pharmacy Management with Sale/Purchase integration',

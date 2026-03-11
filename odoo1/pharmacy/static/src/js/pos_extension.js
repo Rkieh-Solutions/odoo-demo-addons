@@ -16,8 +16,8 @@ patch(ControlButtons.prototype, {
         this.dialog = useService("dialog");
     },
     async onClickOpenBox() {
-        const order = this.pos.get_order();
-        const line = order ? order.get_selected_orderline() : null;
+        const order = this.pos.getOrder();
+        const line = order ? order.getSelectedOrderline() : null;
         if (!line || !line.product) return;
 
         const product = line.product;

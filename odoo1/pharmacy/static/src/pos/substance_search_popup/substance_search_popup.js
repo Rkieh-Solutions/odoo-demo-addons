@@ -24,8 +24,8 @@ export class SubstanceSearchPopup extends Component {
         });
         this.searchInput = useRef("search-input");
 
-        const order = this.pos.get_order();
-        const selectedLine = order?.get_selected_orderline();
+        const order = this.pos.getOrder();
+        const selectedLine = order?.getSelectedOrderline();
         if (selectedLine && selectedLine.product) {
             this.state.selectedLine = selectedLine;
             this.state.originalProductName = selectedLine.product.display_name;
@@ -112,15 +112,15 @@ export class SubstanceSearchPopup extends Component {
     }
 
     async addToOrder(product) {
-        const order = this.pos.get_order();
+        const order = this.pos.getOrder();
         await order.add_product(product);
         this.props.close();
     }
 
     async replaceLine(product) {
         if (!this.state.selectedLine) return;
-        const order = this.pos.get_order();
-        const quantity = this.state.selectedLine.get_quantity();
+        const order = this.pos.getOrder();
+        const quantity = this.state.selectedLine.getQuantity();
 
         order.remove_orderline(this.state.selectedLine);
         await order.add_product(product, { quantity: quantity });
