@@ -16,13 +16,12 @@ export class CreateChildProductPopup extends Component {
     setup() {
         this.state = useState({ productName: "" });
         this.inputRef = useRef("name-input");
-        this.onCreate = this.onCreate.bind(this);
         onRendered(() => {
             if (this.inputRef.el) this.inputRef.el.focus();
         });
     }
 
-    async onCreate() {
+    onCreate = async () => {
         if (!this.state.productName.trim()) return;
         await this.props.confirm(this.state.productName.trim());
         this.props.close();

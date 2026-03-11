@@ -3,6 +3,7 @@ import { patch } from "@web/core/utils/patch";
 import { ControlButtons } from "@point_of_sale/app/screens/product_screen/control_buttons/control_buttons";
 import { useService } from "@web/core/utils/hooks";
 import { CreateChildProductPopup } from "@pharmacy/pos/create_child_product_popup/create_child_product_popup";
+import { SubstitutionPopup } from "@pharmacy/pos/substitution_popup/substitution_popup";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { _t } from "@web/core/l10n/translation";
 
@@ -35,8 +36,9 @@ patch(ControlButtons.prototype, {
                 body: _t("Product %s has no child. Create one?", product.display_name),
                 confirm: async (name) => {
                     const templateId = product.product_tmpl_id.id || product.product_tmpl_id;
-                    await this.orm.call("product.template", "action_create_child_and_open", [[templateId], name]);
-                    this.notification.add(_t("Child created and box opened."), { type: "success" });
+                    const orm = this.env.services.orm;
+                    await orm.call("product.template", "action_create_child_and_open", [[templateId], name]);
+                    this.env.services.notification.add(_t("Child created and box opened."), { type: "success" });
                 }
             });
             return;
@@ -61,11 +63,22 @@ patch(ControlButtons.prototype, {
             return;
         }
 
-        // For now, list them in an alert or we could build a specific popup
-        const names = results.map(r => `${r.display_name} (Stock: ${r.qty_available})`).join("\n");
-        await this.dialog.add(AlertDialog, {
+        this.dialog.add(SubstitutionPopup, {
             title: _t("Substitutes for %s", product.display_name),
-            body: names,
+            substitutes: results,
+            onReplace: async (substitute) => {
+                const newProduct = this.pos.db.get_product_by_id(substitute.product_id);
+                if (newProduct) {
+                    const originalLine = order.getSelectedOrderline();
+                    const qty = originalLine.get_quantity();
+
+                    // Remove old line and add new one
+                    order.removeOrderline(originalLine);
+                    await order.add_product(newProduct, { quantity: qty });
+
+                    this.notification.add(_t("Product replaced with %s", newProduct.display_name), { type: "success" });
+                }
+            }
         });
     }
 });

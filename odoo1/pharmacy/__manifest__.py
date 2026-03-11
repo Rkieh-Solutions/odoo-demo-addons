@@ -1,6 +1,6 @@
 {
     'name': 'Pharmacy Management',
-    'version': '19.0.1.0.5',
+    'version': '19.0.1.0.7',
     'category': 'Industry',
     'author': 'Rkieh Solutions',
     'summary': 'Advanced Pharmacy Management with Sale/Purchase integration',
@@ -17,6 +17,8 @@
         'point_of_sale._assets_pos': [
             'pharmacy/static/src/pos/create_child_product_popup/create_child_product_popup.js',
             'pharmacy/static/src/pos/create_child_product_popup/create_child_product_popup.xml',
+            'pharmacy/static/src/pos/substitution_popup/substitution_popup.js',
+            'pharmacy/static/src/pos/substitution_popup/substitution_popup.xml',
             'pharmacy/static/src/xml/pos_templates.xml',
             'pharmacy/static/src/js/pos_extension.js',
             'pharmacy/static/src/js/pos_store_patch.js',
