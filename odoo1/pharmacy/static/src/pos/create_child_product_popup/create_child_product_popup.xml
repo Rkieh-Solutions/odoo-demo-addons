@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="pharmacy.CreateChildProductPopup">
+        <Dialog title="props.title or 'Create Child Product'" footer="false" size="'md'">
+            <div class="create-child-product-popup d-flex flex-column gap-3">
+                <div t-if="props.body" class="alert alert-info">
+                   <strong t-esc="props.body"/>
+                </div>
+                <div class="form-group">
+                    <label>Child Product Name:</label>
+                    <input type="text" class="form-control" t-model="state.productName" t-ref="name-input" t-on-keydown="(ev) => ev.key === 'Enter' and onCreate()"/>
+                </div>
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button class="btn btn-secondary" t-on-click="props.close">Cancel</button>
+                    <button class="btn btn-primary" t-on-click="onCreate" t-att-disabled="!state.productName.trim()">Create</button>
+                </div>
+            </div>
+        </Dialog>
+    </t>
+</templates>
