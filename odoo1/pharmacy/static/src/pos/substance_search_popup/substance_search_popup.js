@@ -70,28 +70,45 @@ export class SubstanceSearchPopup extends Component {
 
     findAlternatives(product) {
         const allProducts = this.pos.models["product.product"].getAll();
-        const targetComposition = product.composition || [];
 
-        if (targetComposition.length > 0) {
-            const matches = allProducts.filter(p => {
+        // Robust Ingredient Extraction
+        let targetComposition = product.composition || [];
+        if (typeof targetComposition === "string" && targetComposition.startsWith("[") && targetComposition.endsWith("]")) {
+            try { targetComposition = JSON.parse(targetComposition); } catch (e) { targetComposition = []; }
+        }
+        const targetText = (product.composition_text || "").toLowerCase().trim();
+
+        let matches = [];
+
+        if (Array.isArray(targetComposition) && targetComposition.length > 0) {
+            matches = allProducts.filter(p => {
                 if (p.id === product.id) return false;
-                const pComp = p.composition || [];
-                return pComp.some(id => targetComposition.includes(id));
+                let pComp = p.composition || [];
+                if (typeof pComp === "string" && pComp.startsWith("[")) {
+                    try { pComp = JSON.parse(pComp); } catch (e) { pComp = []; }
+                }
+                return Array.isArray(pComp) && pComp.some(id => targetComposition.includes(id));
             });
+        }
 
+        // If no ID matches, try text-based matching
+        if (matches.length === 0 && targetText) {
+            this.state.searchTerm = targetText;
+            const terms = targetText.split(",").map(t => t.trim().toLowerCase()).filter(t => t.length > 0);
+
+            matches = allProducts.filter(p => {
+                if (p.id === product.id) return false;
+                const pText = (p.composition_text || "").toLowerCase();
+                const pName = (p.display_name || "").toLowerCase();
+                return terms.some(t => pText.includes(t) || pName.includes(t));
+            });
+        }
+
+        if (matches.length > 0) {
             matches.sort((a, b) => {
-                const aComp = a.composition || [];
-                const bComp = b.composition || [];
-                const aMatchCount = aComp.filter(id => targetComposition.includes(id)).length;
-                const bMatchCount = bComp.filter(id => targetComposition.includes(id)).length;
-
-                const aIsExact = aComp.length === targetComposition.length && aMatchCount === targetComposition.length;
-                const bIsExact = bComp.length === targetComposition.length && bMatchCount === targetComposition.length;
-
-                if (aIsExact && !bIsExact) return -1;
-                if (!aIsExact && bIsExact) return 1;
-
-                return bMatchCount - aMatchCount;
+                const aName = (a.display_name || "").toLowerCase();
+                const bName = (b.display_name || "").toLowerCase();
+                return aName.localeCompare(bName);
             });
 
             this.state.products = matches.slice(0, 50).map(p => ({
@@ -99,9 +116,9 @@ export class SubstanceSearchPopup extends Component {
                 formatted_price: this.env.utils.formatCurrency(p.lst_price)
             }));
             this.state.isShowingAlternatives = true;
-            this.state.searchTerm = "";
-        } else if (product.composition_text) {
-            this.state.searchTerm = product.composition_text;
+            // No need to clear searchTerm if we want it visible
+        } else if (targetText) {
+            this.state.searchTerm = targetText;
             this.updateSearchResults();
         }
     }

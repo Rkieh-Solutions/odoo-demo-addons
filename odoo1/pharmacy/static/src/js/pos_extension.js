@@ -3,6 +3,7 @@ import { Component, useState, onRendered, useRef } from "@odoo/owl";
 import { patch } from "@web/core/utils/patch";
 import { ControlButtons } from "@point_of_sale/app/screens/product_screen/control_buttons/control_buttons";
 import { useService } from "@web/core/utils/hooks";
+import { usePos } from "@point_of_sale/app/hooks/pos_hook";
 import { CreateChildProductPopup } from "@pharmacy/pos/create_child_product_popup/create_child_product_popup";
 import { SubstanceSearchPopup } from "@pharmacy/pos/substance_search_popup/substance_search_popup";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
@@ -11,6 +12,7 @@ import { _t } from "@web/core/l10n/translation";
 patch(ControlButtons.prototype, {
     setup() {
         super.setup();
+        this.pos = usePos();
         this.orm = useService("orm");
         this.notification = useService("notification");
         this.dialog = useService("dialog");

@@ -1,19 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <t t-name="pharmacy.CreateChildProductPopup">
-        <Dialog title="props.title or 'Create Child Product'" size="'md'">
+        <Dialog title="props.title or 'Open Box: Create Child Product'" size="'md'">
             <div class="create-child-product-popup d-flex flex-column gap-3 mt-3">
-                <div t-if="props.body" class="alert alert-info">
-                   <t t-esc="props.body"/>
+                <div class="alert alert-info">
+                    <i class="fa fa-info-circle me-2"/>
+                    This product has no child linked in the <strong>Pharmacy Management</strong> tab. 
+                    Please enter a name below to create and link it automatically.
                 </div>
                 <div class="form-group">
-                    <label>Child Product Name:</label>
-                    <input type="text" class="form-control" t-model="state.productName" t-ref="name-input" t-on-keydown="(ev) => ev.key === 'Enter' and onCreate()"/>
+                    <label class="fw-bold mb-1">New Child Product Name:</label>
+                    <input type="text" 
+                           class="form-control form-control-lg border-primary" 
+                           placeholder="e.g. Tablets, Sachets, etc."
+                           t-model="state.productName" 
+                           t-ref="name-input" 
+                           t-on-keydown="(ev) => ev.key === 'Enter' and onCreate()"/>
                 </div>
             </div>
             <t t-slot="footer">
-                <button class="btn btn-secondary" t-on-click="props.close">Cancel</button>
-                <button class="btn btn-primary" t-on-click="onCreate" t-att-disabled="!state.productName.trim()">Create</button>
+                <button class="btn btn-outline-secondary px-4" t-on-click="props.close">Cancel</button>
+                <button class="btn btn-primary px-4 fw-bold" t-on-click="onCreate" t-att-disabled="!state.productName.trim()">
+                    <i class="fa fa-plus-circle me-1"/> Create and Open Box
+                </button>
             </t>
         </Dialog>
     </t>
