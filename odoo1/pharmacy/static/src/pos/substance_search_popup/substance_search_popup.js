@@ -69,46 +69,49 @@ export class SubstanceSearchPopup extends Component {
     }
 
     findAlternatives(product) {
-        const allProducts = this.pos.models["product.product"].getAll();
+        console.log("SubstanceSearch: Finding alternatives for", product.display_name, "Composition:", product.composition_text);
 
-        // Robust Ingredient Extraction
-        let targetComposition = product.composition || [];
-        if (typeof targetComposition === "string" && targetComposition.startsWith("[") && targetComposition.endsWith("]")) {
-            try { targetComposition = JSON.parse(targetComposition); } catch (e) { targetComposition = []; }
-        }
+        const allProducts = this.pos.models["product.product"].getAll();
         const targetText = (product.composition_text || "").toLowerCase().trim();
 
-        let matches = [];
-
-        if (Array.isArray(targetComposition) && targetComposition.length > 0) {
-            matches = allProducts.filter(p => {
-                if (p.id === product.id) return false;
-                let pComp = p.composition || [];
-                if (typeof pComp === "string" && pComp.startsWith("[")) {
-                    try { pComp = JSON.parse(pComp); } catch (e) { pComp = []; }
-                }
-                return Array.isArray(pComp) && pComp.some(id => targetComposition.includes(id));
-            });
+        if (!targetText) {
+            console.warn("SubstanceSearch: Product has no ingredients summary.");
+            this.state.products = [];
+            this.state.isShowingAlternatives = false;
+            return;
         }
 
-        // If no ID matches, try text-based matching
-        if (matches.length === 0 && targetText) {
-            this.state.searchTerm = targetText;
-            const terms = targetText.split(",").map(t => t.trim().toLowerCase()).filter(t => t.length > 0);
+        // Split target ingredients and clean them
+        const targetTerms = targetText.split(/[,;\n]/).map(t => t.trim().toLowerCase()).filter(t => t.length > 1);
+        console.log("SubstanceSearch: Target terms:", targetTerms);
 
-            matches = allProducts.filter(p => {
-                if (p.id === product.id) return false;
-                const pText = (p.composition_text || "").toLowerCase();
-                const pName = (p.display_name || "").toLowerCase();
-                return terms.some(t => pText.includes(t) || pName.includes(t));
-            });
+        if (targetTerms.length === 0) {
+            this.state.products = [];
+            return;
         }
+
+        // Search for products that share ANY of these terms in their composition_text
+        const matches = allProducts.filter(p => {
+            if (p.id === product.id) return false;
+            const pText = (p.composition_text || "").toLowerCase();
+            const pName = (p.display_name || "").toLowerCase();
+
+            // Match if any ingredient term is contained in substitute's composition or name
+            return targetTerms.some(term => pText.includes(term) || pName.includes(term));
+        });
+
+        console.log("SubstanceSearch: Found matches:", matches.length);
 
         if (matches.length > 0) {
+            // Sort by coincidence (how many terms match)
             matches.sort((a, b) => {
-                const aName = (a.display_name || "").toLowerCase();
-                const bName = (b.display_name || "").toLowerCase();
-                return aName.localeCompare(bName);
+                const aText = (a.composition_text || "").toLowerCase();
+                const bText = (b.composition_text || "").toLowerCase();
+                const aMatches = targetTerms.filter(t => aText.includes(t)).length;
+                const bMatches = targetTerms.filter(t => bText.includes(t)).length;
+
+                if (bMatches !== aMatches) return bMatches - aMatches;
+                return (a.display_name || "").localeCompare(b.display_name || "");
             });
 
             this.state.products = matches.slice(0, 50).map(p => ({
@@ -116,8 +119,9 @@ export class SubstanceSearchPopup extends Component {
                 formatted_price: this.env.utils.formatCurrency(p.lst_price)
             }));
             this.state.isShowingAlternatives = true;
-            // No need to clear searchTerm if we want it visible
-        } else if (targetText) {
+            this.state.searchTerm = targetText; // Show the matched terms in the search bar
+        } else {
+            console.log("SubstanceSearch: Falling back to manual search with:", targetText);
             this.state.searchTerm = targetText;
             this.updateSearchResults();
         }

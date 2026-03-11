@@ -1,0 +1,35 @@
+/* Box-like style for Create Child Product Popup */
+.create-child-product-popup-box {
+    border: 3px dashed #007bff;
+    padding: 20px;
+    border-radius: 10px;
+    background-color: #f8fbff;
+    position: relative;
+    box-shadow: inset 0 0 10px rgba(0, 123, 255, 0.1);
+}
+
+.create-child-product-popup-box::before {
+    content: "\f1b2";
+    /* FontAwesome box icon */
+    font-family: FontAwesome;
+    position: absolute;
+    top: -15px;
+    left: 20px;
+    background: white;
+    padding: 0 10px;
+    color: #007bff;
+    font-size: 1.5rem;
+}
+
+.pos .dialog.create-child-product-popup-dialog .modal-header {
+    background-color: #007bff;
+    color: white;
+}
+
+.pos .dialog.create-child-product-popup-dialog .btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}

@@ -40,28 +40,33 @@ patch(ControlButtons.prototype, {
         if (!line || !line.product) return;
 
         const product = line.product;
-        const qty = product.qty_available || 0;
+        const templateId = product.product_tmpl_id.id || product.product_tmpl_id;
 
-        if (qty < 0) {
-            const productName = product.display_name || product.name || _t("Product");
-            await this.env.services.dialog.add(AlertDialog, {
-                title: _t("Warning: Out of Stock!"),
-                body: _t("Waring :the product (%s) is out of stock ,\nThe requested quantity is not available in inventory", productName),
+        if (!product.envelope_child_id) {
+            this.env.services.dialog.add(CreateChildProductPopup, {
+                title: _t("📦 Open Box: Create Child Product"),
+                body: _t("This product has no child. Create one?"),
+                confirm: async (name) => {
+                    const orm = this.env.services.orm;
+                    const notification = this.env.services.notification;
+                    try {
+                        await orm.call("product.template", "action_create_child_and_open", [[templateId], name]);
+                        notification.add(_t("Child created and box opened."), { type: "success" });
+                        // The user needs to refresh the POS to see the new product easily
+                        // but the backend connection is now established
+                    } catch (err) {
+                        notification.add(_t("Error creating child."), { type: "danger" });
+                    }
+                }
             });
             return;
         }
 
-        if (!product.envelope_child_id) {
-            this.env.services.dialog.add(CreateChildProductPopup, {
-                title: _t("Create Child Product"),
-                body: _t("Product %s has no child. Create one?", product.display_name),
-                confirm: async (name) => {
-                    const templateId = product.product_tmpl_id.id || product.product_tmpl_id;
-                    const orm = this.env.services.orm;
-                    const notification = this.env.services.notification;
-                    await orm.call("product.template", "action_create_child_and_open", [[templateId], name]);
-                    notification.add(_t("Child created and box opened."), { type: "success" });
-                }
+        if (qty <= 0) {
+            const productName = product.display_name || product.name || _t("Product");
+            await this.env.services.dialog.add(AlertDialog, {
+                title: _t("Warning: Out of Stock!"),
+                body: _t("Waring :the product (%s) is out of stock ,\nThe requested quantity is not available in inventory", productName),
             });
             return;
         }

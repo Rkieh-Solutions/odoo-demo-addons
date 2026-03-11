@@ -26,7 +26,7 @@ class ProductTemplate(models.Model):
     presentation_id = fields.Many2one('pharmacy.presentation', string="Presentation")
     stratum_id = fields.Many2one('pharmacy.stratum', string="Stratum")
     composition = fields.Many2many('pharmacy.composition', string="Ingredients")
-    composition_text = fields.Char(string="Composition Summary", compute='_compute_composition_text')
+    composition_text = fields.Char(string="Composition Summary", compute='_compute_composition_text', store=True)
     
     agent_id = fields.Many2one('res.partner', string="Regulatory Agent")
     responsible_party_id = fields.Many2one('res.partner', string="Responsible Party")

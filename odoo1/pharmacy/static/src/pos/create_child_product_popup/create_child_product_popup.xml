@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <t t-name="pharmacy.CreateChildProductPopup">
-        <Dialog title="props.title or 'Open Box: Create Child Product'" size="'md'">
-            <div class="create-child-product-popup d-flex flex-column gap-3 mt-3">
-                <div class="alert alert-info">
-                    <i class="fa fa-info-circle me-2"/>
-                    This product has no child linked in the <strong>Pharmacy Management</strong> tab. 
-                    Please enter a name below to create and link it automatically.
+        <Dialog title="props.title or '📦 Open Box: Create Child Product'" size="'md'" contentClass="'create-child-product-popup-dialog'">
+            <div class="create-child-product-popup create-child-product-popup-box d-flex flex-column gap-3 mt-4">
+                <div class="alert alert-info border-0 bg-transparent p-0 mb-0">
+                    <p class="mb-2">This product has no child linked in <strong>Pharmacy Management</strong>.</p>
+                    <p class="small text-muted mb-0">Enter a name to create and link it automatically as the "Envelope/Child Product".</p>
                 </div>
                 <div class="form-group">
-                    <label class="fw-bold mb-1">New Child Product Name:</label>
+                    <label class="fw-bold mb-1">New Child Name:</label>
                     <input type="text" 
-                           class="form-control form-control-lg border-primary" 
-                           placeholder="e.g. Tablets, Sachets, etc."
+                           class="form-control form-control-lg border-primary shadow-sm" 
+                           placeholder="e.g. Tablets"
                            t-model="state.productName" 
                            t-ref="name-input" 
                            t-on-keydown="(ev) => ev.key === 'Enter' and onCreate()"/>
@@ -20,8 +19,8 @@
             </div>
             <t t-slot="footer">
                 <button class="btn btn-outline-secondary px-4" t-on-click="props.close">Cancel</button>
-                <button class="btn btn-primary px-4 fw-bold" t-on-click="onCreate" t-att-disabled="!state.productName.trim()">
-                    <i class="fa fa-plus-circle me-1"/> Create and Open Box
+                <button class="btn btn-primary px-5 fw-bold" t-on-click="onCreate" t-att-disabled="!state.productName.trim()">
+                    Create
                 </button>
             </t>
         </Dialog>
