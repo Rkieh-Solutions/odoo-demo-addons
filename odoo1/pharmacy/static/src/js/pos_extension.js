@@ -46,7 +46,7 @@ patch(ControlButtons.prototype, {
             const productName = product.display_name || product.name || _t("Product");
             await this.env.services.dialog.add(AlertDialog, {
                 title: _t("Warning: Out of Stock!"),
-                body: _t("Waring :the product (%s) is out of stock , The requested quantity is not available in inventory", productName),
+                body: _t("Waring :the product (%s) is out of stock ,\nThe requested quantity is not available in inventory", productName),
             });
             return;
         }
