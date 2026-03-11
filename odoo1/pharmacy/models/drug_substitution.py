@@ -9,13 +9,13 @@ class ProductTemplateSubstitution(models.Model):
         if not self: return []
         self.ensure_one()
         ingredient_ids = self.composition.ids
-        domain = [('id', '!=', self.id)]
+        domain = [('id', '!=', self._origin.id if hasattr(self, '_origin') else self.id)]
 
         if ingredient_ids:
             if match_mode == 'overlap':
                 domain.append(('composition', 'in', ingredient_ids))
             elif match_mode == 'exact':
-                domain.append(('composition', '=', ingredient_ids)) # Simplified exact match
+                domain.append(('composition', 'in', ingredient_ids))
             templates = self.search(domain)
             if match_mode == 'exact':
                 target_set = set(ingredient_ids)

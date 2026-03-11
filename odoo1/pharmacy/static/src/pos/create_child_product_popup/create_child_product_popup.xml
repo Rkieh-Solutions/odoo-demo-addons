@@ -8,12 +8,12 @@
                 </div>
                 <div class="form-group">
                     <label>Child Product Name:</label>
-                    <input type="text" class="form-control" t-model="state.productName" t-ref="name-input" t-on-keydown="(ev) => ev.key === 'Enter' and onCreate()"/>
+                    <input type="text" class="form-control" t-model="state.productName" t-ref="name-input" t-on-keydown="(ev) => ev.key === 'Enter' and this.onCreate()"/>
                 </div>
             </div>
             <t t-slot="footer">
                 <button class="btn btn-secondary" t-on-click="props.close">Cancel</button>
-                <button class="btn btn-primary" t-on-click="onCreate" t-att-disabled="!state.productName.trim()">Create</button>
+                <button class="btn btn-primary" t-on-click="this.onCreate" t-att-disabled="!state.productName.trim()">Create</button>
             </t>
         </Dialog>
     </t>

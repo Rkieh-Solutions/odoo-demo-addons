@@ -34,7 +34,7 @@ patch(ControlButtons.prototype, {
                 title: _t("Create Child Product"),
                 body: _t("Product %s has no child. Create one?", product.display_name),
                 confirm: async (name) => {
-                    const templateId = Array.isArray(product.product_tmpl_id) ? product.product_tmpl_id[0] : product.product_tmpl_id;
+                    const templateId = product.product_tmpl_id.id || product.product_tmpl_id;
                     await this.orm.call("product.template", "action_create_child_and_open", [[templateId], name]);
                     this.notification.add(_t("Child created and box opened."), { type: "success" });
                 }
@@ -42,7 +42,7 @@ patch(ControlButtons.prototype, {
             return;
         }
 
-        const templateId = Array.isArray(product.product_tmpl_id) ? product.product_tmpl_id[0] : product.product_tmpl_id;
+        const templateId = product.product_tmpl_id.id || product.product_tmpl_id;
         await this.orm.call("product.template", "action_open_new_box", [[templateId]]);
         this.notification.add(_t("Box opened."), { type: "success" });
     },
@@ -52,7 +52,7 @@ patch(ControlButtons.prototype, {
         if (!line || !line.product_id) return;
 
         const product = line.product_id;
-        const templateId = Array.isArray(product.product_tmpl_id) ? product.product_tmpl_id[0] : product.product_tmpl_id;
+        const templateId = product.product_tmpl_id.id || product.product_tmpl_id;
 
         const results = await this.orm.call("product.template", "get_substitute_products", [[templateId]]);
 
