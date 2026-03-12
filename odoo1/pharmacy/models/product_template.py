@@ -275,11 +275,19 @@ class ProductTemplate(models.Model):
                 }
 
             # 2. Minimum safe dictionary for creation
-            # We use getattr/safe defaults for EVERYTHING to avoid 'AttributeError' or 'Invalid Field'
+            # Calculate values safely before dictionary creation
             list_price = self.envelope_price or (self.list_price / (self.envelopes_per_box or 1))
             standard_price = (getattr(self, 'standard_price', 0) or 0) / (self.envelopes_per_box or 1)
-            product_type = getattr(self, 'type', 'consu') or 'consu'
-            categ_id = self.categ_id.id if getattr(self, 'categ_id', False) else False
+            
+            # Determine the correct "Tracked/Storable" type for this Odoo version
+            type_field = self._fields.get('type')
+            valid_types = [s[0] for s in type_field.selection] if type_field and hasattr(type_field, 'selection') else []
+            if 'storable' in valid_types:
+                product_type = 'storable'
+            elif 'product' in valid_types:
+                product_type = 'product'
+            else:
+                product_type = getattr(self, 'type', 'consu') or 'consu'
 
             child_vals = {
                 'name': name,
@@ -291,7 +299,7 @@ class ProductTemplate(models.Model):
                 'standard_price': standard_price,
                 'parent_box_id': self.id,
                 'available_in_pos': True,
-                'tracking': getattr(self, 'tracking', 'none') or 'none',
+                'tracking': 'none', # "By Quantity" (no lots/serials)
             }
 
             # Dynamically add UOM fields only if they exist on the model
