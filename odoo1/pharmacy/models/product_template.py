@@ -266,22 +266,25 @@ class ProductTemplate(models.Model):
                 'message': f'The product ({self.name}) is out of stock.',
             }
 
-        # 2. Create the child product template
+        # 2. Create the child product template inheriting essential data from parent
         child_vals = {
             'name': name,
             'type': 'product',
             'detailed_type': 'product',
             'sale_ok': True,
             'purchase_ok': True,
+            'categ_id': self.categ_id.id,
+            'uom_id': self.uom_id.id,
+            'uom_po_id': self.uom_po_id.id,
             'list_price': self.envelope_price or (self.list_price / (self.envelopes_per_box or 1)),
             'standard_price': self.standard_price / (self.envelopes_per_box or 1),
             'parent_box_id': self.id,
             'available_in_pos': True,
-            'tracking': 'none',
+            'tracking': self.tracking,
         }
         child_template = self.env['product.template'].create(child_vals)
 
-        # 3. Link child back to this box reliably using direct assignment
+        # 3. Link child back to this box reliably and force UI visibility
         self.is_box_product = True
         self.envelope_child_id = child_template.id
         self.flush_recordset(['is_box_product', 'envelope_child_id'])
