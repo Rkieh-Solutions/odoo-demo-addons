@@ -144,3 +144,17 @@ patch(PaymentScreenPaymentLines.prototype, {
         return secondaryOrNull(this.dualCurrency, line.getAmount());
     }
 });
+
+import { OrderReceipt } from "@point_of_sale/app/screens/receipt_screen/receipt/order_receipt";
+patch(OrderReceipt.prototype, {
+    setup() {
+        super.setup(...arguments);
+        this.dualCurrency = useService("dual_currency");
+    },
+    get secondaryReceiptTotal() {
+        const order = this.order;
+        if (!order) return null;
+        const amount = order.priceIncl ?? (typeof order.get_total_with_tax === "function" ? order.get_total_with_tax() : order.totalWithTax) ?? 0;
+        return secondaryOrNull(this.dualCurrency, amount);
+    }
+});

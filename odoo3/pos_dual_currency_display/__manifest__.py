@@ -2,14 +2,22 @@
     'name': 'POS Dual Currency Display',
     'version': '1.0.0',
     'category': 'Point of Sale',
-    'summary': 'Display dual currency in POS without backend impact.',
+    'summary': 'Display a secondary currency alongside the primary currency in the POS interface.',
     'description': """
-        Dual Currency for POS (Odoo 19)
-        - Strictly POS only.
-        - Inherits Odoo Currencies.
-        - Error-free production ready.
+POS Dual Currency Display
+=========================
+
+Adds a configurable secondary currency display to the Odoo Point of Sale.
+
+Features:
+- Show a secondary currency on product cards, order lines, totals, and the payment screen.
+- Secondary currency total is also displayed on the printed receipt.
+- Uses Odoo's built-in currency rates for automatic conversion.
+- Configurable per POS: enable/disable and choose the secondary currency from POS settings.
+- Supports any active or inactive currency defined in Odoo.
+- Clean, non-intrusive display that does not affect backend calculations, invoices, or quotations.
     """,
-    'author': 'Rkieh-Solutions',
+    'author': 'Rkiehsolutions',
     'license': 'LGPL-3',
     'depends': ['point_of_sale'],
     'data': [
@@ -25,5 +33,4 @@
     },
     'installable': True,
     'application': False,
-    'license': 'LGPL-3',
 }

@@ -1,4 +1,4 @@
-from odoo import fields, models, api
+from odoo import api, fields, models
 
 class PosConfig(models.Model):
     _inherit = 'pos.config'
@@ -8,12 +8,11 @@ class PosConfig(models.Model):
 
     @api.model
     def _load_pos_data_read(self, records, config):
-        # We don't override _load_pos_data_fields so that super() reads all default fields.
         read_records = super()._load_pos_data_read(records, config)
         if read_records:
-            # Inject our custom fields into the read records
-            custom_fields = ["show_dual_currency", "secondary_currency_id"]
-            custom_data = records.read(custom_fields, load=False)
-            for record, custom_record in zip(read_records, custom_data):
-                record.update(custom_record)
+            record = read_records[0]
+            # Use _ prefix pattern like Odoo does for _server_version, _base_url etc.
+            # This bypasses the frontend Proxy which drops unknown _id suffixed fields.
+            record['_show_dual_currency'] = config.show_dual_currency
+            record['_secondary_currency_id'] = config.secondary_currency_id.id if config.secondary_currency_id else False
         return read_records
