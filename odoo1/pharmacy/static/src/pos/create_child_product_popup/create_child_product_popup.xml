@@ -23,6 +23,8 @@
                     <input type="number"
                            class="form-control form-control-lg border-primary shadow-sm"
                            placeholder="e.g. 10"
+                           step="any"
+                           inputmode="decimal"
                            t-model="state.envelopesPerBox"
                            t-on-keydown="(ev) => ev.key === 'Enter' and onCreate()"/>
                     <p class="text-muted small mt-1">Number of tablets/envelopes that will be added to stock when opening one box.</p>

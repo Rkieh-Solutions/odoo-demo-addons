@@ -15,7 +15,7 @@ export class CreateChildProductPopup extends Component {
     setup() {
         this.state = useState({
             productName: "",
-            envelopesPerBox: 1
+            envelopesPerBox: "1"
         });
         this.inputRef = useRef("name-input");
         onRendered(() => {
