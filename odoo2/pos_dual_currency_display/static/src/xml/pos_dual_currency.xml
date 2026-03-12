@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-inherit="point_of_sale.ProductCard" t-inherit-mode="extension">
+        <xpath expr="//*[hasclass('product-name')]" position="after">
+            <t t-if="secondaryPrice">
+                <div class="o_pos_secondary_currency text-muted small">
+                    <t t-esc="secondaryPrice"/>
+                </div>
+            </t>
+        </xpath>
+    </t>
+
+    <t t-inherit="point_of_sale.Orderline" t-inherit-mode="extension">
+        <xpath expr="//*[hasclass('price')]" position="after">
+            <t t-if="secondaryLinePrice">
+                <div class="o_pos_secondary_currency text-muted small">
+                    <t t-esc="secondaryLinePrice"/>
+                </div>
+            </t>
+        </xpath>
+    </t>
+
+    <t t-inherit="point_of_sale.OrderDisplay" t-inherit-mode="extension">
+        <xpath expr="//*[hasclass('total')]" position="after">
+            <t t-if="secondaryTotal">
+                <div class="o_pos_secondary_currency text-muted small ms-2">
+                    <t t-esc="secondaryTotal"/>
+                </div>
+            </t>
+        </xpath>
+    </t>
+
+    <t t-inherit="point_of_sale.PaymentScreenPaymentLines" t-inherit-mode="extension">
+        <xpath expr="//*[hasclass('payment-amount')]" position="after">
+            <div t-if="secondaryLineAmount(line)" class="o_pos_secondary_currency text-muted small px-3">
+                <t t-esc="secondaryLineAmount(line)"/>
+            </div>
+        </xpath>
+    </t>
+
+    <t t-inherit="point_of_sale.PaymentScreenStatus" t-inherit-mode="extension">
+        <xpath expr="//*[hasclass('amount')]" position="inside">
+            <div t-if="secondaryStatusAmount" class="o_pos_secondary_currency text-muted fs-4 d-block" style="margin-top: -5px;">
+                <t t-esc="secondaryStatusAmount"/>
+            </div>
+        </xpath>
+    </t>
+
+</templates>
