@@ -270,6 +270,7 @@ class ProductTemplate(models.Model):
         child_vals = {
             'name': name,
             'type': 'product',
+            'detailed_type': 'product',
             'list_price': self.envelope_price or (self.list_price / (self.envelopes_per_box or 1)),
             'standard_price': self.standard_price / (self.envelopes_per_box or 1),
             'parent_box_id': self.id,
@@ -278,8 +279,9 @@ class ProductTemplate(models.Model):
         }
         child_template = self.env['product.template'].create(child_vals)
 
-        # 3. Link child back to this box
-        self.write({'envelope_child_id': child_template.id, 'is_box_product': True})
+        # 3. Link child back to this box reliably using direct assignment
+        self.is_box_product = True
+        self.envelope_child_id = child_template.id
 
         # 4. Perform the stock adjustment: -1 box, +envelopes_per_box child units
         warehouse = self.env['stock.warehouse'].search([], limit=1)
