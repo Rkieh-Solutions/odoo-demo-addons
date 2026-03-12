@@ -272,9 +272,12 @@ class ProductTemplate(models.Model):
             list_price = self.envelope_price or (self.list_price / (self.envelopes_per_box or 1))
             standard_price = self.standard_price / (self.envelopes_per_box or 1)
 
+            # Inherit type from parent box to ensure it's a valid value for this Odoo version
+            product_type = self.type or 'consu'
+
             child_vals = {
                 'name': name,
-                'type': 'product',
+                'type': product_type,
                 'sale_ok': True,
                 'purchase_ok': True,
                 'categ_id': self.categ_id.id,
@@ -286,7 +289,6 @@ class ProductTemplate(models.Model):
             }
 
             # Safely handle UOM fields by checking if they actually exist on the model
-            # This prevents "Invalid field" errors if UOM modules are not fully installed/configured
             fields_obj = self.env['product.template']._fields
             
             if 'uom_id' in fields_obj:
@@ -299,8 +301,10 @@ class ProductTemplate(models.Model):
                 if uom_po:
                     child_vals['uom_po_id'] = uom_po.id
                 elif 'uom_id' in child_vals:
-                    # Fallback to standard UOM if PO UOM doesn't exist but field does
-                    child_vals['uom_po_id'] = child_vals['uom_id']
+                    try:
+                        child_vals['uom_po_id'] = child_vals['uom_id']
+                    except:
+                        pass
 
             child_template = self.env['product.template'].create(child_vals)
         except Exception as e:
