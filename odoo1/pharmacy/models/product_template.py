@@ -285,19 +285,22 @@ class ProductTemplate(models.Model):
                 'tracking': self.tracking or 'none',
             }
 
-            # Safely handle UOM fields as they might be missing in some Odoo configs/versions
-            uom_id = getattr(self, 'uom_id', False)
-            if uom_id:
-                child_vals['uom_id'] = uom_id.id
-            uom_po_id = getattr(self, 'uom_po_id', False)
-            if uom_po_id:
-                child_vals['uom_po_id'] = uom_po_id.id
-            elif uom_id:
-                # Fallback to standard UOM if PO UOM doesn't exist
-                try:
-                    child_vals['uom_po_id'] = uom_id.id
-                except:
-                    pass
+            # Safely handle UOM fields by checking if they actually exist on the model
+            # This prevents "Invalid field" errors if UOM modules are not fully installed/configured
+            fields_obj = self.env['product.template']._fields
+            
+            if 'uom_id' in fields_obj:
+                uom = getattr(self, 'uom_id', False)
+                if uom:
+                    child_vals['uom_id'] = uom.id
+            
+            if 'uom_po_id' in fields_obj:
+                uom_po = getattr(self, 'uom_po_id', False)
+                if uom_po:
+                    child_vals['uom_po_id'] = uom_po.id
+                elif 'uom_id' in child_vals:
+                    # Fallback to standard UOM if PO UOM doesn't exist but field does
+                    child_vals['uom_po_id'] = child_vals['uom_id']
 
             child_template = self.env['product.template'].create(child_vals)
         except Exception as e:
