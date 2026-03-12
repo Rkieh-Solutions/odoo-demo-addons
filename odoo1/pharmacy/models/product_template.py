@@ -275,14 +275,20 @@ class ProductTemplate(models.Model):
                 'sale_ok': True,
                 'purchase_ok': True,
                 'categ_id': self.categ_id.id,
-                'uom_id': self.uom_id.id,
-                'uom_po_id': self.uom_po_id.id,
-                'list_price': self.envelope_price or (self.list_price / (self.envelopes_per_box or 1)),
-                'standard_price': self.standard_price / (self.envelopes_per_box or 1),
                 'parent_box_id': self.id,
                 'available_in_pos': True,
                 'tracking': self.tracking or 'none',
             }
+            # Safely handle UOM fields as they might be missing in some Odoo configs/versions
+            uom_id = getattr(self, 'uom_id', False)
+            if uom_id:
+                child_vals['uom_id'] = uom_id.id
+            uom_po_id = getattr(self, 'uom_po_id', False)
+            if uom_po_id:
+                child_vals['uom_po_id'] = uom_po_id.id
+            elif uom_id:
+                child_vals['uom_po_id'] = uom_id.id
+
             child_template = self.env['product.template'].create(child_vals)
         except Exception as e:
             _logger.error("Pharmacy: Error creating child product: %s", str(e))
