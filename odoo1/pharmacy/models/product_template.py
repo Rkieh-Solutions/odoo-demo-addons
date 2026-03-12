@@ -252,91 +252,92 @@ class ProductTemplate(models.Model):
 
     def action_create_child_and_open(self, name):
         """
-        Called from POS when a box product has no child linked.
-        Creates the child product, links it, and immediately opens one box
-        (adjusts stock). Returns a plain dict safe for JSON/POS RPC.
+        Ultra-Safe version of child product creation for POS.
+        Wraps everything in try-except and returns traceback for diagnostics.
         """
-        self.ensure_one()
-
-        # 1. Guard: box must be in stock before we bother creating a child
-        if self.qty_available < 1:
-            return {
-                'success': False,
-                'reason': 'out_of_stock',
-                'message': f'The product ({self.name}) is out of stock.',
-            }
-
-        # 2. Create the child product template inheriting essential data from parent
         try:
-            # Calculate values safely before dictionary creation
-            list_price = self.envelope_price or (self.list_price / (self.envelopes_per_box or 1))
-            standard_price = self.standard_price / (self.envelopes_per_box or 1)
+            self.ensure_one()
 
-            # Inherit type from parent box to ensure it's a valid value for this Odoo version
-            product_type = self.type or 'consu'
+            # 1. Guard: Check stock before starting
+            if getattr(self, 'qty_available', 0) < 1:
+                return {
+                    'success': False,
+                    'reason': 'out_of_stock',
+                    'message': f'The product ({self.name}) is out of stock.',
+                }
+
+            # 2. Minimum safe dictionary for creation
+            # We use getattr/safe defaults for EVERYTHING to avoid 'AttributeError' or 'Invalid Field'
+            list_price = self.envelope_price or (self.list_price / (self.envelopes_per_box or 1))
+            standard_price = (getattr(self, 'standard_price', 0) or 0) / (self.envelopes_per_box or 1)
+            product_type = getattr(self, 'type', 'consu') or 'consu'
+            categ_id = self.categ_id.id if getattr(self, 'categ_id', False) else False
 
             child_vals = {
                 'name': name,
                 'type': product_type,
                 'sale_ok': True,
                 'purchase_ok': True,
-                'categ_id': self.categ_id.id,
+                'categ_id': categ_id,
                 'list_price': list_price,
                 'standard_price': standard_price,
                 'parent_box_id': self.id,
                 'available_in_pos': True,
-                'tracking': self.tracking or 'none',
+                'tracking': getattr(self, 'tracking', 'none') or 'none',
             }
 
-            # Safely handle UOM fields by checking if they actually exist on the model
+            # Dynamically add UOM fields only if they exist on the model
             fields_obj = self.env['product.template']._fields
-            
             if 'uom_id' in fields_obj:
                 uom = getattr(self, 'uom_id', False)
                 if uom:
                     child_vals['uom_id'] = uom.id
-            
             if 'uom_po_id' in fields_obj:
                 uom_po = getattr(self, 'uom_po_id', False)
                 if uom_po:
                     child_vals['uom_po_id'] = uom_po.id
                 elif 'uom_id' in child_vals:
-                    try:
-                        child_vals['uom_po_id'] = child_vals['uom_id']
-                    except:
-                        pass
+                    child_vals['uom_po_id'] = child_vals['uom_id']
 
+            # CREATE
             child_template = self.env['product.template'].create(child_vals)
-        except Exception as e:
-            _logger.error("Pharmacy: Error creating child product: %s", str(e))
+
+            # 3. LINK (Direct assignment is safer)
+            self.is_box_product = True
+            self.envelope_child_id = child_template.id
+            if hasattr(self, 'flush_recordset'):
+                self.flush_recordset(['is_box_product', 'envelope_child_id'])
+
+            # 4. STOCK ADJUSTMENT (Wrap in its own try to protect the creation)
+            try:
+                warehouse = self.env['stock.warehouse'].search([], limit=1)
+                location = warehouse.lot_stock_id if warehouse else None
+                if location:
+                    box_variant = self.product_variant_id
+                    env_variant = child_template.product_variant_id
+                    if box_variant and env_variant:
+                        self.env['stock.quant']._update_available_quantity(box_variant, location, -1)
+                        self.env['stock.quant']._update_available_quantity(
+                            env_variant, location, self.envelopes_per_box or 1
+                        )
+            except Exception as stock_err:
+                _logger.error("Pharmacy: Stock adjustment skipped during creation: %s", str(stock_err))
+
             return {
-                'success': False,
-                'reason': 'create_error',
-                'message': f'Server Error: {str(e)}',
+                'success': True,
+                'child_id': child_template.id,
+                'child_name': child_template.name,
             }
 
-        # 3. Link child back to this box reliably and force UI visibility
-        self.is_box_product = True
-        self.envelope_child_id = child_template.id
-        self.flush_recordset(['is_box_product', 'envelope_child_id'])
-
-        # 4. Perform the stock adjustment: -1 box, +envelopes_per_box child units
-        warehouse = self.env['stock.warehouse'].search([], limit=1)
-        location = warehouse.lot_stock_id if warehouse else None
-        if location:
-            box_product = self.product_variant_id
-            env_product = child_template.product_variant_id
-            self.env['stock.quant']._update_available_quantity(box_product, location, -1)
-            self.env['stock.quant']._update_available_quantity(
-                env_product, location, self.envelopes_per_box or 1
-            )
-
-        # 5. Return a plain, JSON-serializable result for POS RPC
-        return {
-            'success': True,
-            'child_id': child_template.id,
-            'child_name': child_template.name,
-        }
+        except Exception as e:
+            import traceback
+            error_trace = traceback.format_exc()
+            _logger.error("Pharmacy: ULTRA-SAFE CRASH: %s", error_trace)
+            return {
+                'success': False,
+                'reason': 'server_crash',
+                'message': f'Server Crash: {str(e)}\n\nTrace: {error_trace[:150]}...',
+            }
 
     # --- Margin Calculation Logic ---
 
