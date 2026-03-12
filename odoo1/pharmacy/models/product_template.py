@@ -268,19 +268,23 @@ class ProductTemplate(models.Model):
 
         # 2. Create the child product template inheriting essential data from parent
         try:
+            # Calculate values safely before dictionary creation
+            list_price = self.envelope_price or (self.list_price / (self.envelopes_per_box or 1))
+            standard_price = self.standard_price / (self.envelopes_per_box or 1)
+
             child_vals = {
                 'name': name,
                 'type': 'product',
-                'detailed_type': 'product',
                 'sale_ok': True,
                 'purchase_ok': True,
                 'categ_id': self.categ_id.id,
-                'list_price': self.envelope_price or (self.list_price / (self.envelopes_per_box or 1)),
-                'standard_price': self.standard_price / (self.envelopes_per_box or 1),
+                'list_price': list_price,
+                'standard_price': standard_price,
                 'parent_box_id': self.id,
                 'available_in_pos': True,
                 'tracking': self.tracking or 'none',
             }
+
             # Safely handle UOM fields as they might be missing in some Odoo configs/versions
             uom_id = getattr(self, 'uom_id', False)
             if uom_id:
@@ -289,7 +293,11 @@ class ProductTemplate(models.Model):
             if uom_po_id:
                 child_vals['uom_po_id'] = uom_po_id.id
             elif uom_id:
-                child_vals['uom_po_id'] = uom_id.id
+                # Fallback to standard UOM if PO UOM doesn't exist
+                try:
+                    child_vals['uom_po_id'] = uom_id.id
+                except:
+                    pass
 
             child_template = self.env['product.template'].create(child_vals)
         except Exception as e:
