@@ -271,6 +271,8 @@ class ProductTemplate(models.Model):
             'name': name,
             'type': 'product',
             'detailed_type': 'product',
+            'sale_ok': True,
+            'purchase_ok': True,
             'list_price': self.envelope_price or (self.list_price / (self.envelopes_per_box or 1)),
             'standard_price': self.standard_price / (self.envelopes_per_box or 1),
             'parent_box_id': self.id,
@@ -282,6 +284,7 @@ class ProductTemplate(models.Model):
         # 3. Link child back to this box reliably using direct assignment
         self.is_box_product = True
         self.envelope_child_id = child_template.id
+        self.flush_recordset(['is_box_product', 'envelope_child_id'])
 
         # 4. Perform the stock adjustment: -1 box, +envelopes_per_box child units
         warehouse = self.env['stock.warehouse'].search([], limit=1)
