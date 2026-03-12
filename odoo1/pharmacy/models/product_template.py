@@ -275,6 +275,8 @@ class ProductTemplate(models.Model):
                 'sale_ok': True,
                 'purchase_ok': True,
                 'categ_id': self.categ_id.id,
+                'list_price': self.envelope_price or (self.list_price / (self.envelopes_per_box or 1)),
+                'standard_price': self.standard_price / (self.envelopes_per_box or 1),
                 'parent_box_id': self.id,
                 'available_in_pos': True,
                 'tracking': self.tracking or 'none',
