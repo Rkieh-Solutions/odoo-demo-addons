@@ -4,22 +4,7 @@
         <Dialog title="props.title or '📦 Open Box: Create Child Product'" size="'md'" contentClass="'create-child-product-popup-dialog'">
             <div class="create-child-product-popup create-child-product-popup-box d-flex flex-column gap-3 mt-2">
 
-                <!-- Need Help? banner -->
-                <div class="alert alert-warning d-flex align-items-start gap-2 py-2 px-3 rounded-3 mb-0">
-                    <i class="fa fa-question-circle fa-lg mt-1 text-warning"/>
-                    <div>
-                        <p class="fw-bold mb-1">Need Help?</p>
-                        <p class="mb-1 small">
-                            This product has <strong>no child product</strong> linked in
-                            <strong>Pharmacy Management</strong>.
-                        </p>
-                        <p class="mb-0 small text-muted">
-                            Enter the child product name below and click <strong>Create</strong>.
-                            It will be created automatically and linked as the
-                            "Envelope / Child Product" for this box.
-                        </p>
-                    </div>
-                </div>
+
 
                 <!-- Name input -->
                 <div class="form-group">
