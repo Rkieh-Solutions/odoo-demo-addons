@@ -1,9 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data>
-        <!-- Delete any potentially conflicting views with identical external IDs or names -->
-        <delete model="ir.ui.view" search="[('name', 'ilike', 'pharmacy'), ('model', '=', 'product.template')]"/>
-        <delete model="ir.ui.view" search="[('name', 'ilike', 'simple')]"/>
-        <delete model="ir.model.data" search="[('module', '=', 'pharmacy'), ('model', '=', 'ir.ui.view')]"/>
-    </data>
+    <!-- 
+        URGENT NUCLEAR CLEANUP: 
+        This file aggressively deletes all potential conflicting views from the database 
+        before Odoo tries to load the new ones in this version (20.0.1.0.2).
+    -->
+    
+    <!-- Delete old modules' views by search string in name (very aggressive) -->
+    <delete model="ir.ui.view" search="[('name', 'ilike', 'pharmacy'), ('model', '=', 'product.template')]"/>
+    <delete model="ir.ui.view" search="[('name', 'ilike', 'inherit.composition')]"/>
+    <delete model="ir.ui.view" search="[('name', 'ilike', 'product.template.search.pharmacy')]"/>
+
+    <!-- Delete potential model data records from both possible module names -->
+    <delete model="ir.model.data" search="[('module', 'in', ['pharmacy', 'phar']), ('model', '=', 'ir.ui.view')]"/>
+
 </odoo>

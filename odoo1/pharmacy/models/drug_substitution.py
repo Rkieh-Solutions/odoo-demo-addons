@@ -5,30 +5,43 @@ class ProductTemplateSubstitution(models.Model):
     _inherit = "product.template"
 
     def get_substitute_products(self, match_mode='overlap', in_stock_only=True, limit=20):
-        """Find alternative products based on composition or ATC."""
-        if not self: return []
-        target_id = self.ids[0] if self.ids else 0
+        """Find alternative products based on composition or ATC. Returns list of dicts."""
+        import logging
+        _logger = logging.getLogger(__name__)
+        _logger.info("Substitution: Called for template %s (%s)", self.id, self.name)
+        
         self.ensure_one()
         ingredient_ids = self.composition.ids
-        domain = [('id', '!=', target_id)]
+        _logger.info("Substitution: Ingredients found: %s", ingredient_ids)
+        
+        domain = [('id', '!=', self.id)]
 
         if ingredient_ids:
             if match_mode == 'overlap':
                 domain.append(('composition', 'in', ingredient_ids))
             elif match_mode == 'exact':
                 domain.append(('composition', 'in', ingredient_ids))
-            templates = self.search(domain)
+            
+            _logger.info("Substitution: Searching with domain %s", domain)
+            templates = self.search(domain, limit=limit * 5)
+            _logger.info("Substitution: Search found %s templates", len(templates))
+            
             if match_mode == 'exact':
                 target_set = set(ingredient_ids)
                 templates = templates.filtered(lambda t: set(t.composition.ids) == target_set)
+                _logger.info("Substitution: Exact match filtered to %s", len(templates))
         elif self.atc_id:
+            # Fallback to ATC if ingredients missing
+            _logger.info("Substitution: Falling back to ATC %s", self.atc_id.name)
             domain.append(('atc_id', '=', self.atc_id.id))
             templates = self.search(domain, limit=limit)
         else:
+            _logger.info("Substitution: No ingredients or ATC found")
             return []
 
         if in_stock_only:
             templates = templates.filtered(lambda t: t.qty_available > 0)
+            _logger.info("Substitution: Stocks filtered to %s", len(templates))
 
         results = []
         for t in templates[:limit]:
@@ -41,6 +54,7 @@ class ProductTemplateSubstitution(models.Model):
                 'composition_text': t.composition_text,
                 'qty_available': t.qty_available,
             })
+        _logger.info("Substitution: Returning %s results", len(results))
         return results
 
 class PharmacySubstituteWizard(models.TransientModel):
@@ -48,7 +62,12 @@ class PharmacySubstituteWizard(models.TransientModel):
     _description = 'Drug Substitution'
 
     product_id = fields.Many2one('product.product', string='Product', readonly=True)
-    match_mode = fields.Selection([('overlap', 'Ingredient Overlap'), ('exact', 'Exact Set')], string='Mode', default='overlap', required=True)
+    
+    match_mode = fields.Selection([
+        ('overlap', 'Ingredient Overlap'),
+        ('exact', 'Exact Set')
+    ], string='Mode', default='overlap', required=True)
+    
     in_stock_only = fields.Boolean(string='In Stock Only', default=True)
     limit = fields.Integer(string='Limit', default=20)
     line_ids = fields.One2many('pharmacy.substitute.line', 'wizard_id', string='Substitutes')
@@ -56,8 +75,14 @@ class PharmacySubstituteWizard(models.TransientModel):
     @api.onchange('product_id', 'match_mode', 'in_stock_only', 'limit')
     def _onchange_options(self):
         self.line_ids = [(5, 0, 0)]
-        if not self.product_id: return
-        alts_data = self.product_id.product_tmpl_id.get_substitute_products(self.match_mode, self.in_stock_only, self.limit)
+        product = self.product_id
+            
+        if not product:
+            return
+        
+        tpl = product.product_tmpl_id
+        alts_data = tpl.get_substitute_products(self.match_mode, self.in_stock_only, self.limit)
+        
         lines = []
         for data in alts_data:
             lines.append((0, 0, {
@@ -70,12 +95,27 @@ class PharmacySubstituteWizard(models.TransientModel):
 class PharmacySubstituteLine(models.TransientModel):
     _name = 'pharmacy.substitute.line'
     _description = 'Substitution Candidate'
+
     wizard_id = fields.Many2one('pharmacy.substitute')
     product_id = fields.Many2one('product.product', string='Product')
     composition_text = fields.Char(string='Ingredients')
     qty_available = fields.Float(string='Stock')
 
     def action_replace(self):
+        self.ensure_one()
+        target_product_id = self.product_id.id
+        target_product_name = self.product_id.display_name
+            
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'substitute_replace',
+            'params': {
+                'product_id': target_product_id,
+                'product_name': target_product_name,
+            }
+        }
+
+    def action_add_new(self):
         self.ensure_one()
         return {
             'type': 'ir.actions.client',
