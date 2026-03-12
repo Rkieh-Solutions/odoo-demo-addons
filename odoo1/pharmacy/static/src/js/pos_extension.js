@@ -92,7 +92,7 @@ patch(ControlButtons.prototype, {
 
                 this.dialog.add(CreateChildProductPopup, {
                     title: _t("📦 Open Box: Create Child Product"),
-                    confirm: async (name) => {
+                    confirm: async (name, qty) => {
                         // Capture services from global environment to avoid lifecycle "destroyed" errors
                         const orm = posStore.env.services.orm;
                         const notification = posStore.env.services.notification;
@@ -101,7 +101,7 @@ patch(ControlButtons.prototype, {
                             const result = await orm.call(
                                 "product.template",
                                 "action_create_child_and_open",
-                                [[templateId], name]
+                                [[templateId], name, qty]
                             );
 
                             console.log("[Pharmacy] result:", result);

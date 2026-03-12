@@ -250,13 +250,21 @@ class ProductTemplate(models.Model):
 
         return True
 
-    def action_create_child_and_open(self, name):
+    def action_create_child_and_open(self, name, qty=1):
         """
         Ultra-Safe version of child product creation for POS.
+        Now accepts 'qty' which is the envelopes_per_box count entered by user.
         Wraps everything in try-except and returns traceback for diagnostics.
         """
         try:
             self.ensure_one()
+
+            # 0. Update envelopes_per_box on parent if provided
+            qty = float(qty) if qty else 1.0
+            if qty > 0:
+                self.envelopes_per_box = qty
+                if hasattr(self, 'flush_recordset'):
+                    self.flush_recordset(['envelopes_per_box'])
 
             # 1. Guard: Check stock before starting
             if getattr(self, 'qty_available', 0) < 1:

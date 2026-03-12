@@ -13,7 +13,10 @@ export class CreateChildProductPopup extends Component {
 
 
     setup() {
-        this.state = useState({ productName: "" });
+        this.state = useState({
+            productName: "",
+            envelopesPerBox: 1
+        });
         this.inputRef = useRef("name-input");
         onRendered(() => {
             if (this.inputRef.el) this.inputRef.el.focus();
@@ -22,8 +25,9 @@ export class CreateChildProductPopup extends Component {
 
     onCreate = async () => {
         if (!this.state.productName.trim()) return;
+        const qty = parseFloat(this.state.envelopesPerBox) || 1;
         try {
-            await this.props.confirm(this.state.productName.trim());
+            await this.props.confirm(this.state.productName.trim(), qty);
         } finally {
             this.props.close();
         }

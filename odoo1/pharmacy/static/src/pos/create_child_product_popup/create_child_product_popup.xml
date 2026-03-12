@@ -31,6 +31,17 @@
                            t-ref="name-input"
                            t-on-keydown="(ev) => ev.key === 'Enter' and onCreate()"/>
                 </div>
+
+                <!-- Envelopes per Box input -->
+                <div class="form-group">
+                    <label class="fw-bold mb-1">Envelopes in Box:</label>
+                    <input type="number"
+                           class="form-control form-control-lg border-primary shadow-sm"
+                           placeholder="e.g. 10"
+                           t-model="state.envelopesPerBox"
+                           t-on-keydown="(ev) => ev.key === 'Enter' and onCreate()"/>
+                    <p class="text-muted small mt-1">Number of tablets/envelopes that will be added to stock when opening one box.</p>
+                </div>
             </div>
             <t t-slot="footer">
                 <button class="btn btn-outline-secondary px-4" t-on-click="props.close">Cancel</button>
