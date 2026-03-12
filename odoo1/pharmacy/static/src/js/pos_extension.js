@@ -128,8 +128,9 @@ patch(ControlButtons.prototype, {
 
                         } catch (err) {
                             console.error("[Pharmacy] Create child error:", err);
+                            const errMsg = (err && err.message) || (err && err.data && err.data.message) || _t("Unknown Error");
                             this.notification.add(
-                                _t("Error creating child product. Please try again."),
+                                _t("Error creating child product: %s", errMsg),
                                 { type: "danger" }
                             );
                         }
