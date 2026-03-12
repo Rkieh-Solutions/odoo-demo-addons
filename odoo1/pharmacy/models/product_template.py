@@ -250,10 +250,10 @@ class ProductTemplate(models.Model):
 
         return True
 
-    def action_create_child_and_open(self, name, qty=1):
+    def action_create_child_and_open(self, name, qty=1, price=0.0, tracking='none'):
         """
         Ultra-Safe version of child product creation for POS.
-        Now accepts 'qty' which is the envelopes_per_box count entered by user.
+        Now accepts 'qty', 'price', and 'tracking' method.
         Wraps everything in try-except and returns traceback for diagnostics.
         """
         try:
@@ -276,7 +276,7 @@ class ProductTemplate(models.Model):
 
             # 2. Minimum safe dictionary for creation
             # Calculate values safely before dictionary creation
-            list_price = self.envelope_price or (self.list_price / (self.envelopes_per_box or 1))
+            list_price = float(price) if price and float(price) > 0 else (self.envelope_price or (self.list_price / (self.envelopes_per_box or 1)))
             standard_price = (getattr(self, 'standard_price', 0) or 0) / (self.envelopes_per_box or 1)
             
             # Determine the correct "Tracked/Storable" type for this Odoo version
@@ -300,7 +300,7 @@ class ProductTemplate(models.Model):
                 'standard_price': standard_price,
                 'parent_box_id': self.id,
                 'available_in_pos': True,
-                'tracking': 'none', # "By Quantity" (no lots/serials)
+                'tracking': tracking or 'none',
             }
 
             # Dynamically add UOM fields only if they exist on the model

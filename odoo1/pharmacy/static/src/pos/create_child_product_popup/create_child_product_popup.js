@@ -15,7 +15,9 @@ export class CreateChildProductPopup extends Component {
     setup() {
         this.state = useState({
             productName: "",
-            envelopesPerBox: "1"
+            envelopesPerBox: "1",
+            envelopePrice: "",
+            tracking: "none"
         });
         this.inputRef = useRef("name-input");
         onRendered(() => {
@@ -26,8 +28,11 @@ export class CreateChildProductPopup extends Component {
     onCreate = async () => {
         if (!this.state.productName.trim()) return;
         const qty = parseFloat(this.state.envelopesPerBox) || 1;
+        const price = parseFloat(this.state.envelopePrice) || 0;
+        const tracking = this.state.tracking;
+
         try {
-            await this.props.confirm(this.state.productName.trim(), qty);
+            await this.props.confirm(this.state.productName.trim(), qty, price, tracking);
         } finally {
             this.props.close();
         }
