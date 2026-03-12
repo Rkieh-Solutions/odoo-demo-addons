@@ -22,7 +22,10 @@ export class CreateChildProductPopup extends Component {
 
     onCreate = async () => {
         if (!this.state.productName.trim()) return;
-        await this.props.confirm(this.state.productName.trim());
-        this.props.close();
+        try {
+            await this.props.confirm(this.state.productName.trim());
+        } finally {
+            this.props.close();
+        }
     }
 }

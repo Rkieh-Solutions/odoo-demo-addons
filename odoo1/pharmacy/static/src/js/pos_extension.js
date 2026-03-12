@@ -93,8 +93,12 @@ patch(ControlButtons.prototype, {
                 this.dialog.add(CreateChildProductPopup, {
                     title: _t("📦 Open Box: Create Child Product"),
                     confirm: async (name) => {
+                        // Capture services from global environment to avoid lifecycle "destroyed" errors
+                        const orm = posStore.env.services.orm;
+                        const notification = posStore.env.services.notification;
+
                         try {
-                            const result = await this.orm.call(
+                            const result = await orm.call(
                                 "product.template",
                                 "action_create_child_and_open",
                                 [[templateId], name]
@@ -103,14 +107,14 @@ patch(ControlButtons.prototype, {
                             console.log("[Pharmacy] result:", result);
 
                             if (result && result.success === false) {
-                                this.notification.add(
+                                notification.add(
                                     result.message || _t("Box is out of stock."),
                                     { type: "danger" }
                                 );
                                 return;
                             }
 
-                            this.notification.add(
+                            notification.add(
                                 _t('Child product "%s" created and box opened!', (result && result.child_name) || name),
                                 { type: "success" }
                             );
@@ -129,7 +133,7 @@ patch(ControlButtons.prototype, {
                         } catch (err) {
                             console.error("[Pharmacy] Create child error:", err);
                             const errMsg = (err && err.message) || (err && err.data && err.data.message) || _t("Unknown Error");
-                            this.notification.add(
+                            notification.add(
                                 _t("Error creating child product: %s", errMsg),
                                 { type: "danger" }
                             );
