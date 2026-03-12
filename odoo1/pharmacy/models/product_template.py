@@ -280,6 +280,7 @@ class ProductTemplate(models.Model):
             standard_price = (getattr(self, 'standard_price', 0) or 0) / (self.envelopes_per_box or 1)
             
             # Determine the correct "Tracked/Storable" type for this Odoo version
+            categ_id = self.categ_id.id if getattr(self, 'categ_id', False) else False
             type_field = self._fields.get('type')
             valid_types = [s[0] for s in type_field.selection] if type_field and hasattr(type_field, 'selection') else []
             if 'storable' in valid_types:
