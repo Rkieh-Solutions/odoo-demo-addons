@@ -303,8 +303,11 @@ class ProductTemplate(models.Model):
                 'tracking': tracking or 'none',
             }
 
-            # Dynamically add UOM fields only if they exist on the model
+            # Dynamically add fields only if they exist on the model
             fields_obj = self.env['product.template']._fields
+            if 'is_storable' in fields_obj:
+                child_vals['is_storable'] = True
+            
             if 'uom_id' in fields_obj:
                 uom = getattr(self, 'uom_id', False)
                 if uom:
@@ -621,3 +624,15 @@ class ProductTemplate(models.Model):
             return True
 
         return super().write(vals)
+    def get_diagnostic_fields(self):
+        """Diagnostic to see all boolean and selection fields on this product."""
+        self.ensure_one()
+        fields_data = {}
+        for name, field in self._fields.items():
+            if field.type in ['boolean', 'selection']:
+                fields_data[name] = {
+                    'value': getattr(self, name),
+                    'label': field.string,
+                    'type': field.type
+                }
+        return fields_data
