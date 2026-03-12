@@ -17,9 +17,9 @@
                            t-on-keydown="(ev) => ev.key === 'Enter' and onCreate()"/>
                 </div>
 
-                <!-- Envelopes per Box input -->
+                <!-- Quantity per Box input -->
                 <div class="form-group">
-                    <label class="fw-bold mb-1">Envelopes in Box:</label>
+                    <label class="fw-bold mb-1">Quantity in Box:</label>
                     <input type="number"
                            class="form-control form-control-lg border-primary shadow-sm"
                            placeholder="e.g. 10"
