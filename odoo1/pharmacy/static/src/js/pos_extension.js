@@ -161,16 +161,40 @@ patch(ControlButtons.prototype, {
                                                 posStore.searchProductWord = searchWord;
                                             }
 
-                                            // AUTOMATION: Click "Search more" automatically if it appears
+                                            // THE "SEARCH MORE" AUTOMATION
+                                            // 1. Try direct code execution for maximum speed
+                                            try {
+                                                if (typeof posStore.searchProductFromServer === "function") {
+                                                    posStore.searchProductFromServer();
+                                                } else if (typeof posStore.fetchProductsFromDatabase === "function") {
+                                                    posStore.fetchProductsFromDatabase();
+                                                }
+                                            } catch (cmdErr) {
+                                                console.warn("[Pharmacy] Direct search command failed:", cmdErr);
+                                            }
+
+                                            // 2. DOM-based "Auto-Clicker" fallback (Guaranteed if button appears)
+                                            // We check every 100ms for 5 seconds to ensure we catch the button
                                             const dbSearchInterval = setInterval(() => {
-                                                const searchMoreBtn = document.querySelector('.search-more-button, .btn-secondary.search-more, .database-search');
-                                                if (searchMoreBtn) {
-                                                    console.log("[Pharmacy] Auto-clicking Search More");
+                                                // Try multiple selectors common in Odoo POS
+                                                const selectors = ['.search-more-button', '.btn-secondary.search-more', '.database-search', '.pos-search-more'];
+                                                let searchMoreBtn = document.querySelector(selectors.join(', '));
+
+                                                // Last resort: find button by its visible text "Search more"
+                                                if (!searchMoreBtn) {
+                                                    const buttons = document.querySelectorAll('button, .button, div[role="button"]');
+                                                    searchMoreBtn = Array.from(buttons).find(b =>
+                                                        b.textContent.toLowerCase().includes('search more')
+                                                    );
+                                                }
+
+                                                if (searchMoreBtn && searchMoreBtn.offsetParent !== null) { // exists and is visible
+                                                    console.log("[Pharmacy] Auto-clicking Search More button");
                                                     searchMoreBtn.click();
                                                     clearInterval(dbSearchInterval);
                                                 }
                                             }, 100);
-                                            setTimeout(() => clearInterval(dbSearchInterval), 3000);
+                                            setTimeout(() => clearInterval(dbSearchInterval), 5000);
 
                                             // Global update event
                                             if (typeof posStore.trigger === "function") {
