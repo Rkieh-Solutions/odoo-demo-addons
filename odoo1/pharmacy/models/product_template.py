@@ -346,6 +346,7 @@ class ProductTemplate(models.Model):
             return {
                 'success': True,
                 'child_id': child_template.id,
+                'child_variant_id': child_template.product_variant_id.id if child_template.product_variant_id else None,
                 'child_name': child_template.name,
             }
 
