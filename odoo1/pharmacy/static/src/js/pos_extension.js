@@ -115,7 +115,7 @@ patch(ControlButtons.prototype, {
                             }
 
                             notification.add(
-                                _t('Child product "%s" created successfully!'),
+                                _t('Child product "%s" created successfully!', (result && result.child_name) || name),
                                 { type: "success" }
                             );
 
@@ -123,16 +123,17 @@ patch(ControlButtons.prototype, {
                             // This bypasses the need for a full reload or clicking "Search More"
                             if (result && result.child_variant_id) {
                                 try {
-                                    console.log("[Pharmacy] Fetching specific product variant:", result.child_variant_id);
+                                    console.log("[Pharmacy] Fetching specific product variant details for injection, ID:", result.child_variant_id);
 
-                                    // Fetch the full product data from the server
+                                    // Fetch the product data. We use a more limited set of fields initially but ensure display_name is there.
+                                    // In Odoo, search_read usually returns all common fields if fields are not specified.
                                     const products = await orm.call("product.product", "search_read", [
                                         [["id", "=", result.child_variant_id]],
                                     ]);
 
                                     if (products && products.length > 0) {
                                         const newProduct = products[0];
-                                        console.log("[Pharmacy] Injecting new product into POS:", newProduct.display_name);
+                                        console.log("[Pharmacy] Fetched product data:", newProduct);
 
                                         // 1. Add to the local DB for searching
                                         if (posStore.db && typeof posStore.db.add_products === "function") {
