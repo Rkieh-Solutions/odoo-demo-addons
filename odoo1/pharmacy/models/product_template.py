@@ -250,10 +250,10 @@ class ProductTemplate(models.Model):
 
         return True
 
-    def action_create_child_and_open(self, name, qty=1, price=0.0, tracking='none'):
+    def action_create_child_and_open(self, name, qty=1, price=0.0):
         """
         Ultra-Safe version of child product creation for POS.
-        Now accepts 'qty', 'price', and 'tracking' method.
+        Now accepts 'qty' and 'price'.
         Wraps everything in try-except and returns traceback for diagnostics.
         """
         try:
@@ -300,7 +300,7 @@ class ProductTemplate(models.Model):
                 'standard_price': standard_price,
                 'parent_box_id': self.id,
                 'available_in_pos': True,
-                'tracking': tracking or 'none',
+                'tracking': 'none', # "By Quantity" (no lots) as default
             }
 
             # Dynamically add fields only if they exist on the model

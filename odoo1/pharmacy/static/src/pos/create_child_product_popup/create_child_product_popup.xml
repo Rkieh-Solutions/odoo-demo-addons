@@ -34,22 +34,10 @@
                     <label class="fw-bold mb-1">Envelope Sales Price:</label>
                     <input type="number"
                            class="form-control form-control-lg border-primary shadow-sm"
-                           placeholder="Leave empty for auto-calc"
                            step="any"
                            inputmode="decimal"
                            t-model="state.envelopePrice"
                            t-on-keydown="(ev) => ev.key === 'Enter' and onCreate()"/>
-                </div>
-
-                <!-- Tracking selection -->
-                <div class="form-group">
-                    <label class="fw-bold mb-1">Inventory Tracking:</label>
-                    <select class="form-select form-select-lg border-primary shadow-sm"
-                            t-model="state.tracking">
-                        <option value="none">By Quantity (No Lots)</option>
-                        <option value="lot">By Lots</option>
-                        <option value="serial">By Unique Serial Number</option>
-                    </select>
                 </div>
 
                 <p class="text-muted small mt-1">New product will be created, linked to this box, and stock will be adjusted.</p>
