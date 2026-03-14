@@ -146,18 +146,26 @@ patch(ControlButtons.prototype, {
                                         }
 
                                         // 3. Automatically search for it so it appears on screen immediately
-                                        if (typeof posStore.setSelectedCategoryId === "function") {
-                                            posStore.setSelectedCategoryId(0); // Home category
-                                        }
-                                        if (typeof posStore.setSearchWord === "function") {
-                                            posStore.setSearchWord(result.child_name);
-                                        } else if (posStore.searchProductWord !== undefined) {
-                                            posStore.searchProductWord = result.child_name;
-                                        }
+                                        // Use a tiny timeout to ensure the DB and Models have fully digested the new record
+                                        setTimeout(() => {
+                                            try {
+                                                if (typeof posStore.setSelectedCategoryId === "function") {
+                                                    posStore.setSelectedCategoryId(0); // Home category
+                                                }
+                                                if (typeof posStore.setSearchWord === "function") {
+                                                    posStore.setSearchWord(""); // Clear first
+                                                    posStore.setSearchWord(result.child_name);
+                                                } else if (posStore.searchProductWord !== undefined) {
+                                                    posStore.searchProductWord = result.child_name;
+                                                }
+                                                console.log("[Pharmacy] Auto-search applied for:", result.child_name);
+                                            } catch (searchErr) {
+                                                console.warn("[Pharmacy] Search trigger error:", searchErr);
+                                            }
+                                        }, 100);
                                     }
                                 } catch (injectErr) {
                                     console.error("[Pharmacy] SILENT FAIL: Could not direct-inject specific product:", injectErr);
-                                    // NO RELOAD - Per user request, we must never refresh or show "three dots"
                                 }
                             }
                         } catch (err) {
