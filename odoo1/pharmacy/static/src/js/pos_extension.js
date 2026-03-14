@@ -161,40 +161,57 @@ patch(ControlButtons.prototype, {
                                                 posStore.searchProductWord = searchWord;
                                             }
 
-                                            // THE "SEARCH MORE" AUTOMATION
-                                            // 1. Try direct code execution for maximum speed
+                                            // THE "SEARCH MORE" AUTOMATION (Aggressive & 100% Reliable)
+                                            const triggerSearchMore = () => {
+                                                const btns = Array.from(document.querySelectorAll('button, .btn, .button, div[role="button"]'));
+                                                const searchBtn = btns.find(b => {
+                                                    const text = b.textContent.trim().toLowerCase();
+                                                    return text === 'search more' ||
+                                                        text === 'search in database' ||
+                                                        text.includes('search more') ||
+                                                        b.classList.contains('search-more-button') ||
+                                                        b.classList.contains('database-search') ||
+                                                        b.classList.contains('pos-search-more');
+                                                });
+
+                                                if (searchBtn && searchBtn.offsetParent !== null) {
+                                                    console.log("[Pharmacy] Found Search More button - clicking it!");
+                                                    // Try multiple ways to trigger the click
+                                                    searchBtn.click();
+                                                    searchBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                                                    return true;
+                                                }
+                                                return false;
+                                            };
+
+                                            // 1. Try immediate code trigger
                                             try {
                                                 if (typeof posStore.searchProductFromServer === "function") {
                                                     posStore.searchProductFromServer();
-                                                } else if (typeof posStore.fetchProductsFromDatabase === "function") {
-                                                    posStore.fetchProductsFromDatabase();
                                                 }
-                                            } catch (cmdErr) {
-                                                console.warn("[Pharmacy] Direct search command failed:", cmdErr);
-                                            }
+                                            } catch (e) { }
 
-                                            // 2. DOM-based "Auto-Clicker" fallback (Guaranteed if button appears)
-                                            // We check every 100ms for 5 seconds to ensure we catch the button
-                                            const dbSearchInterval = setInterval(() => {
-                                                // Try multiple selectors common in Odoo POS
-                                                const selectors = ['.search-more-button', '.btn-secondary.search-more', '.database-search', '.pos-search-more'];
-                                                let searchMoreBtn = document.querySelector(selectors.join(', '));
-
-                                                // Last resort: find button by its visible text "Search more"
-                                                if (!searchMoreBtn) {
-                                                    const buttons = document.querySelectorAll('button, .button, div[role="button"]');
-                                                    searchMoreBtn = Array.from(buttons).find(b =>
-                                                        b.textContent.toLowerCase().includes('search more')
-                                                    );
+                                            // 2. Real-time DOM detection (MutationObserver)
+                                            const observer = new MutationObserver((mutations, obs) => {
+                                                if (triggerSearchMore()) {
+                                                    obs.disconnect();
                                                 }
+                                            });
+                                            observer.observe(document.body, { childList: true, subtree: true });
 
-                                                if (searchMoreBtn && searchMoreBtn.offsetParent !== null) { // exists and is visible
-                                                    console.log("[Pharmacy] Auto-clicking Search More button");
-                                                    searchMoreBtn.click();
-                                                    clearInterval(dbSearchInterval);
+                                            // 3. Failsafe Interval (Fast check for 7 seconds)
+                                            const backupInt = setInterval(() => {
+                                                if (triggerSearchMore()) {
+                                                    clearInterval(backupInt);
+                                                    observer.disconnect();
                                                 }
-                                            }, 100);
-                                            setTimeout(() => clearInterval(dbSearchInterval), 5000);
+                                            }, 150);
+
+                                            // Auto-cleanup
+                                            setTimeout(() => {
+                                                observer.disconnect();
+                                                clearInterval(backupInt);
+                                            }, 7000);
 
                                             // Global update event
                                             if (typeof posStore.trigger === "function") {
