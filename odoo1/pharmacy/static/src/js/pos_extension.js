@@ -119,16 +119,21 @@ patch(ControlButtons.prototype, {
                                 { type: "success" }
                             );
 
-                            // Best-effort POS cache refresh
+                            // Automatically trigger the native "Reload Data" action
                             try {
-                                if (posStore && posStore.data && typeof posStore.data.read === "function") {
-                                    await posStore.data.read(
-                                        "product.template",
-                                        [templateId],
-                                        Object.keys(posStore.data.fields["product.template"] || {})
-                                    );
+                                if (posStore && typeof posStore.load_server_data === "function") {
+                                    console.log("[Pharmacy] Triggering POS load_server_data...");
+                                    await posStore.load_server_data();
+                                } else if (posStore && posStore.env && posStore.env.services && posStore.env.services.action) {
+                                    console.log("[Pharmacy] Triggering client reload action...");
+                                    posStore.env.services.action.doAction({ type: "ir.actions.client", tag: "reload" });
+                                } else {
+                                    console.warn("[Pharmacy] Could not find native reload. Forcing window reload.");
+                                    window.location.reload();
                                 }
-                            } catch (_) { /* ignore */ }
+                            } catch (reloadErr) {
+                                console.warn("[Pharmacy] Error during auto-reload:", reloadErr);
+                            }
 
                         } catch (err) {
                             console.error("[Pharmacy] Create child error:", err);
