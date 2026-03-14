@@ -152,15 +152,27 @@ patch(ControlButtons.prototype, {
                                             }
 
                                             // Trigger the search
+                                            const searchWord = result.child_name;
                                             if (typeof posStore.setSearchWord === "function") {
-                                                posStore.setSearchWord(""); // Flash clear
-                                                posStore.setSearchWord(result.child_name);
+                                                posStore.setSearchWord("");
+                                                posStore.setSearchWord(searchWord);
                                             } else {
                                                 posStore.searchProductWord = "";
-                                                posStore.searchProductWord = result.child_name;
+                                                posStore.searchProductWord = searchWord;
                                             }
 
-                                            // Final touch: trigger a global update event if the UI is stubborn
+                                            // AUTOMATION: Click "Search more" automatically if it appears
+                                            const dbSearchInterval = setInterval(() => {
+                                                const searchMoreBtn = document.querySelector('.search-more-button, .btn-secondary.search-more, .database-search');
+                                                if (searchMoreBtn) {
+                                                    console.log("[Pharmacy] Auto-clicking Search More");
+                                                    searchMoreBtn.click();
+                                                    clearInterval(dbSearchInterval);
+                                                }
+                                            }, 100);
+                                            setTimeout(() => clearInterval(dbSearchInterval), 3000);
+
+                                            // Global update event
                                             if (typeof posStore.trigger === "function") {
                                                 posStore.trigger('update-product-list');
                                             }
