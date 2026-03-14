@@ -16,30 +16,6 @@ patch(ControlButtons.prototype, {
         this.orm = useService("orm");
         this.notification = useService("notification");
         this.dialog = useService("dialog");
-
-        // Restore auto-search if the POS just reloaded from creating a child product
-        const pendingSearch = window.localStorage.getItem('pharmacy_auto_search_product');
-        if (pendingSearch) {
-            window.localStorage.removeItem('pharmacy_auto_search_product');
-            setTimeout(() => {
-                try {
-                    console.log("[Pharmacy] Restoring auto-search after reload for:", pendingSearch);
-                    const posStore = this.pos || (this.env && this.env.services && this.env.services.pos);
-                    if (posStore) {
-                        if (typeof posStore.setSelectedCategoryId === "function") {
-                            posStore.setSelectedCategoryId(0);
-                        }
-                        if (typeof posStore.setSearchWord === "function") {
-                            posStore.setSearchWord(pendingSearch);
-                        } else if (posStore.searchProductWord !== undefined) {
-                            posStore.searchProductWord = pendingSearch;
-                        }
-                    }
-                } catch (e) {
-                    console.warn("[Pharmacy] Error restoring auto-search:", e);
-                }
-            }, 800); // Small delay to let the POS finish mounting its products
-        }
     },
 
     async onClickOpenBox() {
@@ -139,27 +115,53 @@ patch(ControlButtons.prototype, {
                             }
 
                             notification.add(
-                                _t('Child product "%s" created! Refreshing data...', (result && result.child_name) || name),
+                                _t('Child product "%s" created successfully!'),
                                 { type: "success" }
                             );
 
-                            // Trigger the native Odoo POS "Full Synchronization" to guarantee new data
-                            if (result && result.child_name) {
-                                window.localStorage.setItem('pharmacy_auto_search_product', result.child_name);
-                            }
+                            // Directly fetch and inject the NEW product into the POS local database
+                            // This bypasses the need for a full reload or clicking "Search More"
+                            if (result && result.child_variant_id) {
+                                try {
+                                    console.log("[Pharmacy] Fetching specific product variant:", result.child_variant_id);
 
-                            try {
-                                if (posStore && posStore.data && typeof posStore.data.read === "function") {
-                                    console.log("[Pharmacy] Triggering Full Synchronization via posStore.data.read()...");
-                                    await posStore.data.read();
-                                } else {
-                                    // Fallback if data.read is not available
-                                    console.log("[Pharmacy] posStore.data.read() not found, using window reload fallback...");
-                                    window.location.reload();
+                                    // Fetch the full product data from the server
+                                    const products = await orm.call("product.product", "search_read", [
+                                        [["id", "=", result.child_variant_id]],
+                                    ]);
+
+                                    if (products && products.length > 0) {
+                                        const newProduct = products[0];
+                                        console.log("[Pharmacy] Injecting new product into POS:", newProduct.display_name);
+
+                                        // 1. Add to the local DB for searching
+                                        if (posStore.db && typeof posStore.db.add_products === "function") {
+                                            posStore.db.add_products([newProduct]);
+                                        }
+
+                                        // 2. Add to the data models if available (Odoo 17+)
+                                        if (posStore.models && posStore.models["product.product"]) {
+                                            // Ensure the product is correctly formatted for the model
+                                            posStore.models["product.product"].add([newProduct]);
+                                        }
+
+                                        // 3. Automatically search for it so it appears on screen immediately
+                                        if (typeof posStore.setSelectedCategoryId === "function") {
+                                            posStore.setSelectedCategoryId(0); // Home category
+                                        }
+                                        if (typeof posStore.setSearchWord === "function") {
+                                            posStore.setSearchWord(result.child_name);
+                                        } else if (posStore.searchProductWord !== undefined) {
+                                            posStore.searchProductWord = result.child_name;
+                                        }
+                                    }
+                                } catch (injectErr) {
+                                    console.warn("[Pharmacy] Could not direct-inject specific product:", injectErr);
+                                    // Fallback only if direct injection fails
+                                    if (posStore.data && typeof posStore.data.read === "function") {
+                                        await posStore.data.read();
+                                    }
                                 }
-                            } catch (error) {
-                                console.error("[Pharmacy] Error during Full Synchronization:", error);
-                                window.location.reload();
                             }
                         } catch (err) {
                             console.error("[Pharmacy] Create child error:", err);
