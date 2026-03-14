@@ -303,6 +303,16 @@ class ProductTemplate(models.Model):
                 'tracking': 'none', # "By Quantity" (no lots) as default
             }
 
+            # Copy POS category if it exists
+            if hasattr(self, 'pos_categ_id') and self.pos_categ_id:
+                child_vals['pos_categ_id'] = self.pos_categ_id.id
+            elif 'pos_categ_id' in self.env['product.template']._fields:
+                # Fallback check if it's on the parent
+                parent_pos_categ = getattr(self, 'pos_categ_id', False)
+                if parent_pos_categ:
+                    child_vals['pos_categ_id'] = parent_pos_categ.id
+
+
             # Dynamically add fields only if they exist on the model
             fields_obj = self.env['product.template']._fields
             if 'is_storable' in fields_obj:

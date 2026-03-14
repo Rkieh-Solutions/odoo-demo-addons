@@ -143,16 +143,24 @@ patch(ControlButtons.prototype, {
                                 { type: "success" }
                             );
 
-                            // Specifically force a complete, automatic window refresh as requested
-                            // This absolutely guarantees the new product is fetched and "Search More" is bypassed
+                            // Trigger the native Odoo POS "Full Synchronization" to guarantee new data
                             if (result && result.child_name) {
                                 window.localStorage.setItem('pharmacy_auto_search_product', result.child_name);
                             }
 
-                            setTimeout(() => {
-                                console.log("[Pharmacy] Force refreshing POS...");
+                            try {
+                                if (posStore && posStore.data && typeof posStore.data.read === "function") {
+                                    console.log("[Pharmacy] Triggering Full Synchronization via posStore.data.read()...");
+                                    await posStore.data.read();
+                                } else {
+                                    // Fallback if data.read is not available
+                                    console.log("[Pharmacy] posStore.data.read() not found, using window reload fallback...");
+                                    window.location.reload();
+                                }
+                            } catch (error) {
+                                console.error("[Pharmacy] Error during Full Synchronization:", error);
                                 window.location.reload();
-                            }, 500);
+                            }
                         } catch (err) {
                             console.error("[Pharmacy] Create child error:", err);
                             const errMsg = (err && err.message) || (err && err.data && err.data.message) || _t("Unknown Error");
