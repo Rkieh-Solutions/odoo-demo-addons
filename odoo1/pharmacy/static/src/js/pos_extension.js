@@ -119,57 +119,12 @@ patch(ControlButtons.prototype, {
                                 { type: "success" }
                             );
 
-                            // 1. Trigger native soft "Reload Data" (loads categories and general items)
-                            try {
-                                if (posStore && typeof posStore.load_server_data === "function") {
-                                    console.log("[Pharmacy] Triggering POS load_server_data...");
-                                    await posStore.load_server_data();
-                                } else if (posStore && posStore.env && posStore.env.services && posStore.env.services.action) {
-                                    posStore.env.services.action.doAction('reload_context');
-                                }
-                            } catch (e) {
-                                console.warn("[Pharmacy] Error softly reloading POS data:", e);
-                            }
-
-                            // 2. specifically force-inject the NEW product into the POS local database
-                            // so it appears immediately without needing "Search More"
-                            if (result && result.child_variant_id) {
-                                try {
-                                    console.log("[Pharmacy] Fetching specific product variant:", result.child_variant_id);
-                                    if (posStore && typeof posStore._loadProducts === "function") {
-                                        await posStore._loadProducts([result.child_variant_id]);
-                                    } else if (posStore && posStore.db && typeof posStore.db.add_products === "function") {
-                                        // Fallback manual ORM fetch for older versions
-                                        const newProducts = await orm.call("product.product", "search_read", [
-                                            [["id", "=", result.child_variant_id]],
-                                        ]);
-                                        if (newProducts && newProducts.length > 0) {
-                                            posStore.db.add_products(newProducts);
-                                        }
-                                    }
-                                } catch (injectErr) {
-                                    console.warn("[Pharmacy] Could not force-inject specific product:", injectErr);
-                                }
-                            }
-
-                            // 3. Automatically search for the new product so it appears on screen immediately
-                            try {
-                                if (result && result.child_name && posStore) {
-                                    console.log("[Pharmacy] Auto-searching for new product:", result.child_name);
-                                    if (typeof posStore.setSelectedCategoryId === "function") {
-                                        posStore.setSelectedCategoryId(0); // Reset to "Home" category first
-                                    }
-                                    if (typeof posStore.setSearchWord === "function") {
-                                        posStore.setSearchWord(result.child_name);
-                                    } else if (posStore.searchProductWord !== undefined) {
-                                        posStore.searchProductWord = result.child_name;
-                                    }
-                                }
-                            } catch (searchErr) {
-                                console.warn("[Pharmacy] Could not auto-search product:", searchErr);
-                            }
-
-
+                            // Specifically force a complete, automatic window refresh as requested
+                            // This absolutely guarantees the new product is fetched and "Search More" is bypassed
+                            setTimeout(() => {
+                                console.log("[Pharmacy] Force refreshing POS...");
+                                window.location.reload();
+                            }, 500);
                         } catch (err) {
                             console.error("[Pharmacy] Create child error:", err);
                             const errMsg = (err && err.message) || (err && err.data && err.data.message) || _t("Unknown Error");
