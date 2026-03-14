@@ -152,6 +152,24 @@ patch(ControlButtons.prototype, {
                                 }
                             }
 
+                            // 3. Automatically search for the new product so it appears on screen immediately
+                            try {
+                                if (result && result.child_name && posStore) {
+                                    console.log("[Pharmacy] Auto-searching for new product:", result.child_name);
+                                    if (typeof posStore.setSelectedCategoryId === "function") {
+                                        posStore.setSelectedCategoryId(0); // Reset to "Home" category first
+                                    }
+                                    if (typeof posStore.setSearchWord === "function") {
+                                        posStore.setSearchWord(result.child_name);
+                                    } else if (posStore.searchProductWord !== undefined) {
+                                        posStore.searchProductWord = result.child_name;
+                                    }
+                                }
+                            } catch (searchErr) {
+                                console.warn("[Pharmacy] Could not auto-search product:", searchErr);
+                            }
+
+
                         } catch (err) {
                             console.error("[Pharmacy] Create child error:", err);
                             const errMsg = (err && err.message) || (err && err.data && err.data.message) || _t("Unknown Error");
