@@ -16,6 +16,30 @@ patch(ControlButtons.prototype, {
         this.orm = useService("orm");
         this.notification = useService("notification");
         this.dialog = useService("dialog");
+
+        // Restore auto-search if the POS just reloaded from creating a child product
+        const pendingSearch = window.localStorage.getItem('pharmacy_auto_search_product');
+        if (pendingSearch) {
+            window.localStorage.removeItem('pharmacy_auto_search_product');
+            setTimeout(() => {
+                try {
+                    console.log("[Pharmacy] Restoring auto-search after reload for:", pendingSearch);
+                    const posStore = this.pos || (this.env && this.env.services && this.env.services.pos);
+                    if (posStore) {
+                        if (typeof posStore.setSelectedCategoryId === "function") {
+                            posStore.setSelectedCategoryId(0);
+                        }
+                        if (typeof posStore.setSearchWord === "function") {
+                            posStore.setSearchWord(pendingSearch);
+                        } else if (posStore.searchProductWord !== undefined) {
+                            posStore.searchProductWord = pendingSearch;
+                        }
+                    }
+                } catch (e) {
+                    console.warn("[Pharmacy] Error restoring auto-search:", e);
+                }
+            }, 800); // Small delay to let the POS finish mounting its products
+        }
     },
 
     async onClickOpenBox() {
@@ -121,6 +145,10 @@ patch(ControlButtons.prototype, {
 
                             // Specifically force a complete, automatic window refresh as requested
                             // This absolutely guarantees the new product is fetched and "Search More" is bypassed
+                            if (result && result.child_name) {
+                                window.localStorage.setItem('pharmacy_auto_search_product', result.child_name);
+                            }
+
                             setTimeout(() => {
                                 console.log("[Pharmacy] Force refreshing POS...");
                                 window.location.reload();
