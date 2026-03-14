@@ -119,61 +119,58 @@ patch(ControlButtons.prototype, {
                                 { type: "success" }
                             );
 
-                            // Directly fetch and inject the NEW product into the POS local database
-                            // This bypasses the need for a full reload or clicking "Search More"
+                            // Directly sync the NEW product into the POS reactive models
+                            // This uses the native Odoo 17 data.read logic but for a SINGLE record to avoid "Three Dots"
                             if (result && result.child_variant_id) {
                                 try {
-                                    console.log("[Pharmacy] Fetching full product details for variant:", result.child_variant_id);
+                                    console.log("[Pharmacy] Guaranteed Sync for variant ID:", result.child_variant_id);
 
-                                    // Fetch the product with explicit fields often required by POS
-                                    const products = await orm.call("product.product", "search_read", [
-                                        [["id", "=", result.child_variant_id]],
-                                        ["display_name", "lst_price", "standard_price", "categ_id", "pos_categ_id", "taxes_id", "barcode", "default_code", "to_weight", "uom_id", "available_in_pos", "tracking"]
-                                    ]);
-
-                                    if (products && products.length > 0) {
-                                        const newProduct = products[0];
-                                        console.log("[Pharmacy] Injecting new product:", newProduct);
-
-                                        // 1. Add to the local DB for searching (critical for search result visibility)
-                                        if (posStore.db && typeof posStore.db.add_products === "function") {
-                                            posStore.db.add_products([newProduct]);
-                                        }
-
-                                        // 2. Add to the data models (reactive models used by Owl components)
-                                        if (posStore.data && posStore.data.models && posStore.data.models["product.product"]) {
-                                            posStore.data.models["product.product"].add([newProduct]);
-                                        }
-
-                                        // 3. Automatically search for it so it appears on screen immediately
-                                        setTimeout(() => {
-                                            try {
-                                                console.log("[Pharmacy] Triggering search for:", result.child_name);
-
-                                                // Clear category filter FIRST to ensure the product is visible regardless of its category
-                                                if (posStore.category_id !== undefined) posStore.category_id = 0;
-                                                if (typeof posStore.setSelectedCategoryId === "function") {
-                                                    posStore.setSelectedCategoryId(0);
-                                                }
-
-                                                // Apply search word
-                                                if (typeof posStore.setSearchWord === "function") {
-                                                    posStore.setSearchWord(result.child_name);
-                                                } else {
-                                                    posStore.searchProductWord = result.child_name;
-                                                }
-
-                                                // Trigger a UI refresh if possible (some versions use this)
-                                                if (typeof posStore.trigger === "function") {
-                                                    posStore.trigger('update-product-list');
-                                                }
-                                            } catch (searchErr) {
-                                                console.warn("[Pharmacy] Search trigger error:", searchErr);
-                                            }
-                                        }, 200);
+                                    // 1. Use the native Model.read to fetch and add the record reactively
+                                    if (posStore.data && posStore.data.models && posStore.data.models["product.product"]) {
+                                        await posStore.data.models["product.product"].read([result.child_variant_id]);
+                                        console.log("[Pharmacy] Product synced into Models.");
                                     }
-                                } catch (injectErr) {
-                                    console.error("[Pharmacy] Silent injection failure:", injectErr);
+
+                                    // 2. Also add to legacy DB just in case search index relies on it
+                                    if (posStore.db && typeof posStore.db.add_products === "function") {
+                                        // Fetch minimal data for the legacy DB if needed, or re-read from models
+                                        const loadedProduct = posStore.data.models["product.product"].get(result.child_variant_id);
+                                        if (loadedProduct) {
+                                            posStore.db.add_products([loadedProduct]);
+                                        }
+                                    }
+
+                                    // 3. FORCE VISIBILITY: Clear category and apply search with a small delay for UI stabilization
+                                    setTimeout(() => {
+                                        try {
+                                            console.log("[Pharmacy] Forcing visibility for:", result.child_name);
+
+                                            // Reset category to "Home" (All Products)
+                                            if (posStore.category_id !== undefined) posStore.category_id = 0;
+                                            if (typeof posStore.setSelectedCategoryId === "function") {
+                                                posStore.setSelectedCategoryId(0);
+                                            }
+
+                                            // Trigger the search
+                                            if (typeof posStore.setSearchWord === "function") {
+                                                posStore.setSearchWord(""); // Flash clear
+                                                posStore.setSearchWord(result.child_name);
+                                            } else {
+                                                posStore.searchProductWord = "";
+                                                posStore.searchProductWord = result.child_name;
+                                            }
+
+                                            // Final touch: trigger a global update event if the UI is stubborn
+                                            if (typeof posStore.trigger === "function") {
+                                                posStore.trigger('update-product-list');
+                                            }
+                                        } catch (uiErr) {
+                                            console.warn("[Pharmacy] UI update warning:", uiErr);
+                                        }
+                                    }, 150);
+                                } catch (syncErr) {
+                                    console.error("[Pharmacy] Guaranteed sync failed:", syncErr);
+                                    // NO RELOAD - per user request, we avoid the disruptive refresh if possible
                                 }
                             }
                         } catch (err) {
