@@ -156,11 +156,8 @@ patch(ControlButtons.prototype, {
                                         }
                                     }
                                 } catch (injectErr) {
-                                    console.warn("[Pharmacy] Could not direct-inject specific product:", injectErr);
-                                    // Fallback only if direct injection fails
-                                    if (posStore.data && typeof posStore.data.read === "function") {
-                                        await posStore.data.read();
-                                    }
+                                    console.error("[Pharmacy] SILENT FAIL: Could not direct-inject specific product:", injectErr);
+                                    // NO RELOAD - Per user request, we must never refresh or show "three dots"
                                 }
                             }
                         } catch (err) {
