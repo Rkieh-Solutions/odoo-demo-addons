@@ -115,25 +115,15 @@ patch(ControlButtons.prototype, {
                             }
 
                             notification.add(
-                                _t('Child product "%s" created and box opened!', (result && result.child_name) || name),
+                                _t('Child product "%s" created! Reloading POS...', (result && result.child_name) || name),
                                 { type: "success" }
                             );
 
-                            // Automatically trigger the native "Reload Data" action
-                            try {
-                                if (posStore && typeof posStore.load_server_data === "function") {
-                                    console.log("[Pharmacy] Triggering POS load_server_data...");
-                                    await posStore.load_server_data();
-                                } else if (posStore && posStore.env && posStore.env.services && posStore.env.services.action) {
-                                    console.log("[Pharmacy] Triggering client reload action...");
-                                    posStore.env.services.action.doAction({ type: "ir.actions.client", tag: "reload" });
-                                } else {
-                                    console.warn("[Pharmacy] Could not find native reload. Forcing window reload.");
-                                    window.location.reload();
-                                }
-                            } catch (reloadErr) {
-                                console.warn("[Pharmacy] Error during auto-reload:", reloadErr);
-                            }
+                            // Force a completely clean hardware reload to guarantee new product is found
+                            setTimeout(() => {
+                                console.log("[Pharmacy] Forcing window reload to fetch new product...");
+                                window.location.reload();
+                            }, 1500);
 
                         } catch (err) {
                             console.error("[Pharmacy] Create child error:", err);
