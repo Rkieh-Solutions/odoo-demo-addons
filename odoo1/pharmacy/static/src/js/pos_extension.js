@@ -115,15 +115,22 @@ patch(ControlButtons.prototype, {
                             }
 
                             notification.add(
-                                _t('Child product "%s" created! Reloading POS...', (result && result.child_name) || name),
+                                _t('Child product "%s" created! Refreshing data...', (result && result.child_name) || name),
                                 { type: "success" }
                             );
 
-                            // Force a completely clean hardware reload to guarantee new product is found
-                            setTimeout(() => {
-                                console.log("[Pharmacy] Forcing window reload to fetch new product...");
-                                window.location.reload();
-                            }, 1500);
+                            // Trigger native soft "Reload Data"
+                            try {
+                                if (posStore && typeof posStore.load_server_data === "function") {
+                                    console.log("[Pharmacy] Triggering POS load_server_data...");
+                                    await posStore.load_server_data();
+                                } else if (posStore && posStore.env && posStore.env.services && posStore.env.services.action) {
+                                    // Fallback for older/different Odoo versions
+                                    posStore.env.services.action.doAction('reload_context');
+                                }
+                            } catch (e) {
+                                console.warn("[Pharmacy] Error softly reloading POS data:", e);
+                            }
 
                         } catch (err) {
                             console.error("[Pharmacy] Create child error:", err);
