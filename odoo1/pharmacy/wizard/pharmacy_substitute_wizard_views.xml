@@ -18,13 +18,13 @@
                 <notebook>
                     <page string="Substitutes">
                         <field name="line_ids" readonly="1">
-                            <tree decoration-success="qty_available > 0" decoration-danger="qty_available == 0">
+                            <list decoration-success="qty_available > 0" decoration-danger="qty_available == 0">
                                 <field name="product_id"/>
                                 <field name="composition_text"/>
                                 <field name="qty_available"/>
                                 <button name="action_replace" string="Replace Original" type="object" icon="fa-exchange"/>
                                 <button name="action_add_new" string="Add to Order" type="object" icon="fa-plus"/>
-                            </tree>
+                            </list>
                         </field>
                     </page>
                 </notebook>
