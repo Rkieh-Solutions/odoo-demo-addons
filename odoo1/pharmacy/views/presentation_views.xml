@@ -5,10 +5,10 @@
         <field name="name">pharmacy.presentation.tree</field>
         <field name="model">pharmacy.presentation</field>
         <field name="arch" type="xml">
-            <list editable="bottom" sample="1">
+            <tree editable="bottom" sample="1">
                 <field name="name"/>
                 <field name="active" widget="boolean_toggle"/>
-            </list>
+            </tree>
         </field>
     </record>
 
@@ -49,7 +49,7 @@
     <record id="action_pharmacy_presentation" model="ir.actions.act_window">
         <field name="name">Presentations</field>
         <field name="res_model">pharmacy.presentation</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">tree,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create a new Presentation classification.

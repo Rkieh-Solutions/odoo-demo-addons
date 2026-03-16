@@ -17,11 +17,11 @@
         <field name="name">pharmacy.composition.tree</field>
         <field name="model">pharmacy.composition</field>
         <field name="arch" type="xml">
-            <list editable="bottom">
+            <tree editable="bottom">
                 <field name="name"/>
                 <field name="color" widget="color_picker"/>
                 <field name="active" widget="boolean_toggle"/>
-            </list>
+            </tree>
         </field>
     </record>
 
@@ -29,7 +29,7 @@
     <record id="action_pharmacy_composition" model="ir.actions.act_window">
         <field name="name">Ingredients</field>
         <field name="res_model">pharmacy.composition</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">tree,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create a new active ingredient.
