@@ -161,30 +161,35 @@ patch(ControlButtons.prototype, {
                                                 posStore.searchProductWord = searchWord;
                                             }
 
-                                            // THE "SEARCH MORE" AUTOMATION (Aggressive & 100% Reliable)
-                                            const triggerSearchMore = () => {
-                                                const btns = Array.from(document.querySelectorAll('button, .btn, .button, div[role="button"]'));
-                                                const searchBtn = btns.find(b => {
-                                                    const text = b.textContent.trim().toLowerCase();
-                                                    return text === 'search more' ||
-                                                        text === 'search in database' ||
-                                                        text.includes('search more') ||
-                                                        b.classList.contains('search-more-button') ||
-                                                        b.classList.contains('database-search') ||
-                                                        b.classList.contains('pos-search-more');
+                                            // THE "RELOAD DATA" AUTOMATION (Aggressive & 100% Reliable)
+                                            const triggerReloadData = () => {
+                                                // 1. Try to find the "Reload Data" button directly in the DOM
+                                                const allItems = Array.from(document.querySelectorAll('.o-dropdown-item, .dropdown-item, span, div'));
+                                                const reloadBtn = allItems.find(el => {
+                                                    const text = el.textContent.trim();
+                                                    return text === 'Reload Data' || text === 'تحديث البيانات'; // Support common translations if needed
                                                 });
 
-                                                if (searchBtn && searchBtn.offsetParent !== null) {
-                                                    console.log("[Pharmacy] Found Search More button - clicking it!");
-                                                    // Try multiple ways to trigger the click
-                                                    searchBtn.click();
-                                                    searchBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                                                if (reloadBtn && reloadBtn.offsetParent !== null) {
+                                                    console.log("[Pharmacy] Found Reload Data button - clicking it!");
+                                                    reloadBtn.click();
+                                                    // Also trigger mouse events for robustness
+                                                    reloadBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                                                    reloadBtn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
                                                     return true;
+                                                }
+
+                                                // 2. If not found, try to open the POS Burger Menu first
+                                                // Common selectors for the POS menu button
+                                                const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, .menu-button, .pos-burger-menu, .navbar-button, .o_header_user_menu');
+                                                if (burgerBtn && !reloadBtn) {
+                                                    console.log("[Pharmacy] Opening burger menu to find Reload Data...");
+                                                    burgerBtn.click();
                                                 }
                                                 return false;
                                             };
 
-                                            // 1. Try immediate code trigger
+                                            // 1. Try immediate code trigger for search word
                                             try {
                                                 if (typeof posStore.searchProductFromServer === "function") {
                                                     posStore.searchProductFromServer();
@@ -193,7 +198,7 @@ patch(ControlButtons.prototype, {
 
                                             // 2. Real-time DOM detection (MutationObserver)
                                             const observer = new MutationObserver((mutations, obs) => {
-                                                if (triggerSearchMore()) {
+                                                if (triggerReloadData()) {
                                                     obs.disconnect();
                                                 }
                                             });
@@ -201,17 +206,17 @@ patch(ControlButtons.prototype, {
 
                                             // 3. Failsafe Interval (Fast check for 7 seconds)
                                             const backupInt = setInterval(() => {
-                                                if (triggerSearchMore()) {
+                                                if (triggerReloadData()) {
                                                     clearInterval(backupInt);
                                                     observer.disconnect();
                                                 }
-                                            }, 150);
+                                            }, 250);
 
                                             // Auto-cleanup
                                             setTimeout(() => {
                                                 observer.disconnect();
                                                 clearInterval(backupInt);
-                                            }, 7000);
+                                            }, 8000);
 
                                             // Global update event
                                             if (typeof posStore.trigger === "function") {

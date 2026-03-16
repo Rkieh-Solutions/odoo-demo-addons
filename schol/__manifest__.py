@@ -1,5 +1,5 @@
 {
-    'name': "schol",
+    'name': "Schol (School Management)",
 
     'summary': "Short (1 phrase/line) summary of the module's purpose",
 
@@ -29,5 +29,6 @@ Long description of module's purpose
     'demo': [
         'demo/demo.xml',
     ],
+    'application': True,
 }
 
