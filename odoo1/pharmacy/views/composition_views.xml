@@ -17,11 +17,11 @@
         <field name="name">pharmacy.composition.tree</field>
         <field name="model">pharmacy.composition</field>
         <field name="arch" type="xml">
-            <tree editable="bottom">
+            <list editable="bottom">
                 <field name="name"/>
                 <field name="color" widget="color_picker"/>
                 <field name="active" widget="boolean_toggle"/>
-            </tree>
+            </list>
         </field>
     </record>
 
