@@ -8,3 +8,4 @@ access_pharmacy_presentation,pharmacy.presentation,model_pharmacy_presentation,b
 access_pharmacy_atc,pharmacy.atc,model_pharmacy_atc,base.group_user,1,1,1,1
 access_pharmacy_substitute,pharmacy.substitute,model_pharmacy_substitute,base.group_user,1,1,1,1
 access_pharmacy_substitute_line,pharmacy.substitute.line,model_pharmacy_substitute_line,base.group_user,1,1,1,1
+access_sale_order_open_box_wizard,sale.order.open.box.wizard,model_sale_order_open_box_wizard,base.group_user,1,1,1,1

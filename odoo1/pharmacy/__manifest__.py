@@ -13,7 +13,7 @@
         - Rx Only drug management.
     """,
     'author': 'Rkiehsoloutions',
-    'depends': ['base', 'product', 'stock', 'point_of_sale', 'product_expiry'],
+    'depends': ['base', 'product', 'stock', 'point_of_sale', 'product_expiry', 'sale', 'purchase'],
     'data': [
         'security/ir.model.access.csv',
         'wizard/pharmacy_substitute_wizard_views.xml',
@@ -26,6 +26,8 @@
         'views/stratum_views.xml',
         'views/strength_views.xml',
         'views/pharmacy_config_views.xml',
+        'views/sale_order_views.xml',
+        'views/sale_order_wizard_views.xml',
         'views/menus.xml',
     ],
     'assets': {
