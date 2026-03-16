@@ -5,10 +5,10 @@
         <field name="name">pharmacy.strength.tree</field>
         <field name="model">pharmacy.strength</field>
         <field name="arch" type="xml">
-            <tree editable="bottom" sample="1">
+            <list editable="bottom" sample="1">
                 <field name="name"/>
                 <field name="active" widget="boolean_toggle"/>
-            </tree>
+            </list>
         </field>
     </record>
 
