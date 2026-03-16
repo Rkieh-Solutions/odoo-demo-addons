@@ -5,17 +5,17 @@
         <field name="name">pharmacy.form.tree</field>
         <field name="model">pharmacy.form</field>
         <field name="arch" type="xml">
-            <tree editable="bottom">
+            <list editable="bottom">
                 <field name="name"/>
                 <field name="active" widget="boolean_toggle"/>
-            </tree>
+            </list>
         </field>
     </record>
 
     <record id="action_pharmacy_form" model="ir.actions.act_window">
         <field name="name">Forms</field>
         <field name="res_model">pharmacy.form</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
     </record>
 
     <!-- 2. Presentations -->
@@ -23,17 +23,17 @@
         <field name="name">pharmacy.presentation.tree</field>
         <field name="model">pharmacy.presentation</field>
         <field name="arch" type="xml">
-            <tree editable="bottom">
+            <list editable="bottom">
                 <field name="name"/>
                 <field name="active" widget="boolean_toggle"/>
-            </tree>
+            </list>
         </field>
     </record>
 
     <record id="action_pharmacy_presentation" model="ir.actions.act_window">
         <field name="name">Presentations</field>
         <field name="res_model">pharmacy.presentation</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
     </record>
 
     <!-- 3. Strengths -->
@@ -41,17 +41,17 @@
         <field name="name">pharmacy.strength.tree</field>
         <field name="model">pharmacy.strength</field>
         <field name="arch" type="xml">
-            <tree editable="bottom">
+            <list editable="bottom">
                 <field name="name"/>
                 <field name="active" widget="boolean_toggle"/>
-            </tree>
+            </list>
         </field>
     </record>
 
     <record id="action_pharmacy_strength" model="ir.actions.act_window">
         <field name="name">Strengths</field>
         <field name="res_model">pharmacy.strength</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
     </record>
 
     <!-- 4. ATC Codes -->
@@ -59,19 +59,19 @@
         <field name="name">pharmacy.atc.tree</field>
         <field name="model">pharmacy.atc</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="name"/>
                 <field name="description"/>
                 <field name="parent_id"/>
                 <field name="level"/>
-            </tree>
+            </list>
         </field>
     </record>
 
     <record id="action_pharmacy_atc" model="ir.actions.act_window">
         <field name="name">ATC Codes</field>
         <field name="res_model">pharmacy.atc</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
     </record>
 
     <!-- 5. Strata -->
@@ -79,24 +79,24 @@
         <field name="name">pharmacy.stratum.tree</field>
         <field name="model">pharmacy.stratum</field>
         <field name="arch" type="xml">
-            <tree editable="bottom">
+            <list editable="bottom">
                 <field name="name"/>
                 <field name="active" widget="boolean_toggle"/>
-            </tree>
+            </list>
         </field>
     </record>
 
     <record id="action_pharmacy_stratum" model="ir.actions.act_window">
         <field name="name">Strata</field>
         <field name="res_model">pharmacy.stratum</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
     </record>
 
     <!-- 6. Agents (Res Partners) -->
     <record id="action_pharmacy_agents" model="ir.actions.act_window">
         <field name="name">Pharmacy Agents</field>
         <field name="res_model">res.partner</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="domain">[('is_company', '=', True)]</field>
         <field name="context">{'default_is_company': True}</field>
     </record>
@@ -105,7 +105,7 @@
     <record id="action_pharmacy_composition" model="ir.actions.act_window">
         <field name="name">Ingredients</field>
         <field name="res_model">pharmacy.composition</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create a new active ingredient.

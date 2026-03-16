@@ -5,13 +5,13 @@
         <field name="name">pharmacy.atc.tree</field>
         <field name="model">pharmacy.atc</field>
         <field name="arch" type="xml">
-            <tree sample="1">
+            <list sample="1">
                 <field name="name"/>
                 <field name="description"/>
                 <field name="level" optional="show"/>
                 <field name="parent_id" optional="hide"/>
                 <field name="active" widget="boolean_toggle"/>
-            </tree>
+            </list>
         </field>
     </record>
 
