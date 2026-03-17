@@ -131,79 +131,76 @@ patch(ControlButtons.prototype, {
      * ULTIMATE "SEARCH MORE" DISCOVERY AUTOMATION
      * Targeted specifically for the purple button discovery workflow.
      */
-    _performUltimateSearchMoreClick(searchWord, initialDelay = 400) {
+    _performUltimateSearchMoreClick(searchWord, initialDelay = 300) {
         const posStore = this.pos || (this.env && this.env.services && this.env.services.pos);
         if (!posStore) return;
 
         setTimeout(() => {
-            console.log("[Pharmacy] ULTIMATE 'Search more' started for:", searchWord);
+            console.log("[Pharmacy] STARTING SEARCH-MORE AUTOMATION FOR:", searchWord);
 
-            const setWord = (w) => {
+            const forceSearchState = (w) => {
                 const currentSearch = typeof posStore.getSearchWord === "function" ? posStore.getSearchWord() : posStore.searchProductWord;
-                if (currentSearch !== w || (posStore.category_id !== 0 && posStore.category_id !== undefined)) {
-                    // Reset category to "All" (0) immediately to ensure the search is global
-                    if (posStore.category_id !== 0) {
-                        if (typeof posStore.setSelectedCategoryId === "function") posStore.setSelectedCategoryId(0);
-                        else posStore.category_id = 0;
-                    }
+                // If search word is different or category isn't 0, force it
+                if (currentSearch !== w || (posStore.selectedCategoryId !== 0 && posStore.selectedCategoryId !== undefined)) {
+                    if (posStore.setSelectedCategoryId) posStore.setSelectedCategoryId(0);
+                    else posStore.selectedCategoryId = 0;
 
-                    if (typeof posStore.setSearchWord === "function") posStore.setSearchWord(w);
+                    if (posStore.setSearchWord) posStore.setSearchWord(w);
                     else posStore.searchProductWord = w;
 
-                    // Trigger a re-render if possible through the store's internal mechanisms
-                    if (typeof posStore.trigger === "function") posStore.trigger("update-search");
+                    // Force Odoo to re-render search results
+                    if (posStore.trigger) posStore.trigger("update-search");
                 }
             };
 
-            let heartbeatCounter = 0;
-            const maxHeartbeats = 600; // 30 seconds (be patient for slow servers)
+            let attempts = 0;
+            const maxAttempts = 500; // ~25 seconds
             let clickCount = 0;
 
-            const runner = setInterval(() => {
-                heartbeatCounter++;
+            const discoveryLoop = setInterval(() => {
+                attempts++;
+                forceSearchState(searchWord);
 
-                // Keep the search word and category 0 active
-                setWord(searchWord);
+                // ULTRA-AGGRESSIVE BUTTON SEARCH
+                // 1. Specific Odoo classes (Visible only)
+                let targetBtn = document.querySelector('.search-more-button:not(.d-none), .pos-search-more:not(.d-none), .o_pos_search_more');
 
-                // Step 1: Specific Selectors
-                let targetBtn = document.querySelector('.search-more-button:not(.d-none), .pos-search-more:not(.d-none), button.search-more:not(.d-none), .o_pos_search_more');
-
-                // Step 2: Multilingual XPath
+                // 2. Multilingual Text XPath (Visible only)
                 if (!targetBtn || targetBtn.offsetParent === null) {
-                    const smXpath = "//*[contains(translate(normalize-space(.), 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد')]";
-                    const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                    targetBtn = smRes.singleNodeValue;
-                    if (targetBtn && targetBtn.tagName !== 'BUTTON' && !targetBtn.classList.contains('btn')) {
+                    const xpath = "//*[(contains(translate(., 'SEARCH', 'search'), 'search') and contains(translate(., 'MORE', 'more'), 'more')) or contains(., 'بحث عن المزيد')]";
+                    const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                    targetBtn = result.singleNodeValue;
+                    if (targetBtn && targetBtn.tagName !== 'BUTTON') {
                         targetBtn = targetBtn.closest('button, .btn, .o-btn');
                     }
                 }
 
-                // Step 3: Global text scan (Deepest fallback - extremely robust)
+                // 3. Bruteforce text match on all buttons (Visible only)
                 if (!targetBtn || targetBtn.offsetParent === null) {
-                    const allPossible = document.querySelectorAll('button, .btn, .o-btn, .button, .pos-button');
-                    targetBtn = Array.from(allPossible).find(b => {
-                        const t = b.textContent.toLowerCase();
-                        return (t.includes('search more') || t.includes('بحث عن المزيد')) && b.offsetParent !== null;
-                    });
+                    targetBtn = Array.from(document.querySelectorAll('button, .btn, .o-btn, .button'))
+                        .find(b => {
+                            const t = b.textContent.toLowerCase();
+                            return (t.includes('search more') || t.includes('بحث عن المزيد')) && b.offsetParent !== null;
+                        });
                 }
 
                 if (targetBtn && targetBtn.offsetParent !== null) {
-                    console.log("[Pharmacy] DISCOVERY SUCCESS: Clicking 'Search more' button.");
+                    console.log("[Pharmacy] CLICKING SEARCH-MORE BUTTON...");
                     this._robustClick(targetBtn);
                     clickCount++;
 
-                    // After clicking successfully 3 times, we stop to let Odoo finish its RPC
-                    if (clickCount >= 3) {
-                        console.log("[Pharmacy] Click confirmed.");
-                        clearInterval(runner);
+                    // Stop after 5 successful clicks to ensure Odoo registers it
+                    if (clickCount >= 5) {
+                        clearInterval(discoveryLoop);
+                        console.log("[Pharmacy] DISCOVERY COMPLETE.");
                     }
                 }
 
-                if (heartbeatCounter >= maxHeartbeats) {
-                    clearInterval(runner);
-                    console.log("[Pharmacy] Discovery automation finished.");
+                if (attempts >= maxAttempts) {
+                    clearInterval(discoveryLoop);
+                    console.log("[Pharmacy] DISCOVERY TIMEOUT.");
                 }
-            }, 60); // 60ms pulse for high responsiveness
+            }, 50); // High-speed 50ms heartbeat
 
         }, initialDelay);
     },
