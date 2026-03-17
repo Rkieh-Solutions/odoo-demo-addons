@@ -85,9 +85,9 @@ patch(ControlButtons.prototype, {
                                 { type: "success" }
                             );
 
-                            // Trigger ULTIMATE Search-To-Cart Automation
-                            console.log("[Pharmacy] Creation successful. Triggering Robust Auto-Search-To-Cart...");
-                            this._performAutoSearchAutomation(result?.child_name || name, 1300);
+                            // Trigger ULTIMATE RESTORED 5-Step Automation
+                            console.log("[Pharmacy] Creation successful. Restoring 5-Step Reload sequence...");
+                            this._ultimatePOSReloadAutomation(result?.child_name || name, 1300);
 
                         } catch (err) {
                             console.error("[Pharmacy] Create child error:", err);
@@ -106,7 +106,7 @@ patch(ControlButtons.prototype, {
 
                 // Trigger automation for existing box opening
                 const searchName = result?.child_name || product.display_name || product.name;
-                this._performAutoSearchAutomation(searchName, 600);
+                this._ultimatePOSReloadAutomation(searchName, 600);
             }
         } catch (topErr) {
             console.error("[Pharmacy] onClickOpenBox error:", topErr);
@@ -114,70 +114,102 @@ patch(ControlButtons.prototype, {
     },
 
     /**
-     * ROBUST SEARCH-TO-CART AUTOMATION
-     * 1. Persistent Search Word setting
-     * 2. Multiple "Search more" detection (Class + XPath + Text)
-     * 3. Automatic Product Card selection
+     * ULTIMATE 5-STEP HANDS-OFF AUTOMATION (RESTORED)
+     * 1. Search for Product
+     * 2. Click "Search more"
+     * 3. Open Burger Menu
+     * 4. Click "Reload Data"
+     * 5. Click "Full" Sync
      */
-    _performAutoSearchAutomation(searchWord, initialDelay = 800) {
+    _ultimatePOSReloadAutomation(searchWord, initialDelay = 800) {
         const posStore = this.pos || (this.env && this.env.services && this.env.services.pos);
         if (!posStore) return;
 
         setTimeout(() => {
-            console.log("[Pharmacy] ROBUST SEARCH-TO-CART starting for:", searchWord);
+            console.log("[Pharmacy] ULTIMATE sequence RESTORING for:", searchWord);
 
             const setWord = (w) => {
                 if (posStore.category_id !== undefined && posStore.category_id !== 0) posStore.category_id = 0;
                 if (typeof posStore.setSelectedCategoryId === "function") posStore.setSelectedCategoryId(0);
-                if (typeof posStore.setSearchWord === "function") {
-                    posStore.setSearchWord(w);
-                } else {
-                    posStore.searchProductWord = w;
-                }
+                if (typeof posStore.setSearchWord === "function") posStore.setSearchWord(w);
+                else posStore.searchProductWord = w;
             };
 
-            let smClicked = false;
+            let searchMoreClicked = false;
+            let menuChainTriggered = false;
+            let reloadClicked = false;
             let heartbeatCounter = 0;
-            const maxHeartbeats = 80; // 24 seconds total
+            const maxHeartbeats = 250;
 
             const runner = setInterval(() => {
                 heartbeatCounter++;
 
-                // STEP 1: Keep Search Word alive until we see the button or the product
-                setWord(searchWord);
-
-                // STEP 2: Detect and click "Search more"
-                if (!smClicked) {
-                    // Try multiple methods to find the button
-                    const smXpath = "//*[contains(translate(normalize-space(.), 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد')]";
-                    const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                    const smBtn = smRes.singleNodeValue || document.querySelector('.search-more-button, .pos-search-more, button:contains("Search more")');
-
-                    if (smBtn && smBtn.offsetParent !== null) {
-                        console.log("[Search-To-Cart] Found Search More - CLICKING!");
-                        this._robustClick(smBtn);
-                        smClicked = true;
-                        return; // Wait for results to load
-                    }
+                // STEP 1: Keep Search Word active
+                if (!searchMoreClicked) {
+                    setWord(searchWord);
                 }
 
-                // STEP 3: Click the Product Card
-                const productCards = document.querySelectorAll('.product-card, .product, .product-item, .product-list .product, .search-result-item');
-                const targetCard = Array.from(productCards).find(card => {
-                    const text = card.textContent.toLowerCase();
-                    return text.includes(searchWord.toLowerCase());
-                });
-
-                if (targetCard && targetCard.offsetParent !== null) {
-                    console.log("[Search-To-Cart] PRODUCT FOUND! Clicking to add to order...");
-                    this._robustClick(targetCard);
+                // STEP 5: Modal Watcher (Full Sync Button) - GLOBAL FINALIZER
+                const xpathFull = "//*[translate(normalize-space(text()), 'FULL', 'full')='full' or text()='كامل' or contains(text(), 'Full')]";
+                const resFull = document.evaluate(xpathFull, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                const btnFull = resFull.singleNodeValue;
+                if (btnFull && btnFull.offsetParent !== null) {
+                    console.log("[Ultimate] STEP 5: Clicking Full Sync!");
+                    this._robustClick(btnFull);
                     clearInterval(runner);
                     return;
                 }
 
+                // STEP 2: Search More Detector
+                if (!searchMoreClicked) {
+                    const smXpath = "//*[contains(translate(., 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد')]";
+                    const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                    const smBtn = smRes.singleNodeValue || document.querySelector('.search-more-button, .pos-search-more');
+
+                    if (smBtn && smBtn.offsetParent !== null) {
+                        console.log("[Ultimate] STEP 2: Clicking Search More...");
+                        this._robustClick(smBtn);
+                        searchMoreClicked = true;
+                        setTimeout(() => { menuChainTriggered = true; }, 500);
+                    } else if (heartbeatCounter > 12 && !menuChainTriggered) {
+                        console.log("[Ultimate] STEP 2 bypass: skipping to menu.");
+                        menuChainTriggered = true;
+                    }
+                }
+
+                // STEP 3 & 4: Menu Chain
+                if (menuChainTriggered && !reloadClicked) {
+                    const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu, .o_dropdown_menu');
+                    if (!menuOpen) {
+                        // STEP 3: Burger Menu
+                        const burger = document.querySelector('.pos-right-header .o_top_menu_item, .pos-burger-menu, .o_pos_burger_menu, .navbar-button, button[title*="Menu"], .fa-bars');
+                        if (burger && burger.offsetParent !== null) {
+                            console.log("[Ultimate] STEP 3: Opening Menu...");
+                            this._robustClick(burger);
+                        }
+                    } else {
+                        // STEP 4: Reload Data
+                        const items = menuOpen.querySelectorAll('.dropdown-item, .o-dropdown-item, .pos-burger-menu-items span, a, button');
+                        const reloadBtn = Array.from(items).find(el => {
+                            const t = el.textContent.trim().toLowerCase();
+                            return (t.includes('reload') && t.includes('data')) || t.includes('تحديث البيانات');
+                        });
+
+                        if (reloadBtn && reloadBtn.offsetParent !== null) {
+                            console.log("[Ultimate] STEP 4: Clicking Reload Data!");
+                            this._robustClick(reloadBtn);
+                            reloadClicked = true;
+                        } else if (heartbeatCounter % 10 === 0) {
+                            console.log("[Ultimate] STEP 3 retry: reopening...");
+                            this._robustClick(document.body);
+                            menuChainTriggered = false;
+                        }
+                    }
+                }
+
                 if (heartbeatCounter >= maxHeartbeats) {
                     clearInterval(runner);
-                    console.log("[Search-To-Cart] Automation Timeout - Product not found or results area failed to load.");
+                    console.log("[Ultimate] Sequence Timeout.");
                 }
             }, 300);
 
