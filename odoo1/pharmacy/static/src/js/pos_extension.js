@@ -128,87 +128,88 @@ patch(ControlButtons.prototype, {
     },
 
     /**
-     * ULTIMATE FAILSAFE SEARCH MORE CLICKER
-     * This is designed to find and click the button even if it's buried in the DOM
-     * or has unusual attributes.
+     * ULTRA-AGGRESSIVE BRUTEFORCE SEARCH MORE CLICKER
+     * This version scans the entire DOM for the text "Search more" and clicks everything that matches.
      */
     _performUltimateSearchMoreClick(searchWord, initialDelay = 50) {
-        console.log("[Pharmacy] STARTING ULTIMATE SEARCH-MORE CLICKER FOR: " + searchWord);
+        console.warn("[Pharmacy] !!! ULTIMATE BRUTEFORCE CLICKER STARTING !!! Word: " + searchWord);
         const posStore = this.pos || (this.env && this.env.services && this.env.services.pos);
         if (!posStore) return;
 
         setTimeout(() => {
-            const syncSearchState = (w) => {
-                // 1. Force POS Store State
+            // 1. RELENTLESS STATE SYNC
+            const sync = () => {
+                // Force All categories
                 if (posStore.setSelectedCategoryId) posStore.setSelectedCategoryId(0);
+                if (posStore.set_category) posStore.set_category(0);
                 if (posStore.selectedCategoryId !== undefined) posStore.selectedCategoryId = 0;
                 if (posStore.category_id !== undefined) posStore.category_id = 0;
-                if (posStore.setSearchWord) posStore.setSearchWord(w);
-                else posStore.searchProductWord = w;
 
-                // 2. Force Physical Input Boxes
-                const inputs = document.querySelectorAll('input');
-                inputs.forEach(inp => {
-                    const place = (inp.placeholder || "").toLowerCase();
-                    if (place.includes('search') || place.includes('بحث')) {
-                        if (inp.value !== w) {
-                            inp.value = w;
-                            inp.dispatchEvent(new Event('input', { bubbles: true }));
-                            inp.dispatchEvent(new Event('change', { bubbles: true }));
+                // Force search word
+                if (posStore.setSearchWord) posStore.setSearchWord(searchWord);
+                else if (posStore.set_search_word) posStore.set_search_word(searchWord);
+                else posStore.searchProductWord = searchWord;
+
+                // Force physical input
+                document.querySelectorAll('input').forEach(i => {
+                    const p = (i.placeholder || "").toLowerCase();
+                    if (p.includes('search') || p.includes('بحث')) {
+                        if (i.value !== searchWord) {
+                            i.value = searchWord;
+                            i.dispatchEvent(new Event('input', { bubbles: true }));
+                            i.dispatchEvent(new Event('change', { bubbles: true }));
                         }
                     }
                 });
 
-                // 3. Trigger Odoo Re-render
                 if (posStore.trigger) posStore.trigger("update-search");
             };
 
-            syncSearchState(searchWord);
+            sync();
 
+            // 2. RELENTLESS CLICKING HEARTBEAT
             let clickCount = 0;
-            let totalTicks = 0;
-            const maxTicks = 1000; // ~50 seconds
+            let ticks = 0;
+            const maxTicks = 600; // 30 seconds
 
             const hunter = setInterval(() => {
-                totalTicks++;
+                ticks++;
+                if (ticks % 5 === 0) sync(); // Re-sync every 250ms
 
-                // Keep the search word locked in every few heartbeats
-                if (totalTicks % 10 === 0) syncSearchState(searchWord);
+                // FIND AND CLICK EVERYTHING WITH THE TEXT
+                const allElements = document.querySelectorAll('*');
+                let foundMatch = false;
 
-                // FIND THE BUTTON (High-Res Scan)
-                let btn = null;
-
-                // Priority 1: Direct Selectors
-                btn = document.querySelector('.search-more-button, button.search-more, .pos-search-more, .o_pos_search_more');
-
-                // Priority 2: Global Search for text "Search more"
-                if (!btn || btn.offsetParent === null) {
-                    const allEls = document.querySelectorAll('button, .btn, .button, div, span');
-                    btn = Array.from(allEls).find(el => {
+                allElements.forEach(el => {
+                    // Only target terminal nodes or buttons to avoid clicking containers too high up
+                    if (el.children.length === 0 || el.tagName === 'BUTTON' || el.classList.contains('btn') || el.classList.contains('button')) {
                         const text = (el.textContent || "").trim().toLowerCase();
-                        // Check for English and Arabic variants
-                        return (text.includes('search more') || text.includes('بحث عن المزيد')) &&
-                            (el.offsetWidth > 0 || el.offsetHeight > 0);
-                    });
-                }
+                        if (text === 'search more' || text === 'بحث عن المزيد') {
+                            if (el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0) {
+                                foundMatch = true;
+                                this._robustClick(el);
+                                // Also try the parent just in case the text is in a span inside a button
+                                if (el.parentElement && (el.parentElement.tagName === 'BUTTON' || el.parentElement.classList.contains('btn'))) {
+                                    this._robustClick(el.parentElement);
+                                }
+                            }
+                        }
+                    }
+                });
 
-                if (btn) {
-                    console.log("[Pharmacy] BUTTON FOUND! Attempting robust clicks...");
-                    this._robustClick(btn);
+                if (foundMatch) {
                     clickCount++;
-
-                    // Relentlessly click 20 times to bypass any event blockers
-                    if (clickCount >= 20) {
-                        console.log("[Pharmacy] Automation finished successfully.");
+                    if (clickCount >= 30) {
+                        console.log("[Pharmacy] Clicking confirmed, stopping hunter.");
                         clearInterval(hunter);
                     }
                 }
 
-                if (totalTicks >= maxTicks) {
-                    console.log("[Pharmacy] Search-more hunter timeout.");
+                if (ticks >= maxTicks) {
+                    console.log("[Pharmacy] Hunter timeout.");
                     clearInterval(hunter);
                 }
-            }, 50);
+            }, 50); // High frequency heartbeat
 
         }, initialDelay);
     },
@@ -216,16 +217,20 @@ patch(ControlButtons.prototype, {
     _robustClick(el) {
         if (!el) return;
         try {
-            // Standard action
+            // Primary click
             if (typeof el.click === 'function') el.click();
 
-            // Redundant Event Dispatching
-            const events = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'];
-            events.forEach(name => {
-                const cls = (window.PointerEvent && name.includes('pointer')) ? PointerEvent : MouseEvent;
-                const ev = new cls(name, {
-                    bubbles: true, cancelable: true, view: window, button: 0, buttons: 1, isTrusted: true
-                });
+            // Redundant events to satisfy all possible frameworks
+            const eventTypes = ['mousedown', 'mouseup', 'click', 'pointerdown', 'pointerup', 'touchstart', 'touchend'];
+            eventTypes.forEach(type => {
+                let ev;
+                if (type.startsWith('touch')) {
+                    ev = new CustomEvent(type, { bubbles: true, cancelable: true });
+                } else if (type.startsWith('pointer')) {
+                    ev = new PointerEvent(type, { bubbles: true, cancelable: true, view: window, isTrusted: true, button: 0, buttons: 1 });
+                } else {
+                    ev = new MouseEvent(type, { bubbles: true, cancelable: true, view: window, isTrusted: true, button: 0, buttons: 1 });
+                }
                 el.dispatchEvent(ev);
             });
         } catch (e) {
