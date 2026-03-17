@@ -128,80 +128,87 @@ patch(ControlButtons.prototype, {
     },
 
     /**
-     * ULTIMATE "SEARCH MORE" DISCOVERY AUTOMATION
-     * Targeted specifically for the purple button discovery workflow.
+     * ULTIMATE FAILSAFE SEARCH MORE CLICKER
+     * This is designed to find and click the button even if it's buried in the DOM
+     * or has unusual attributes.
      */
-    _performUltimateSearchMoreClick(searchWord, initialDelay = 100) {
-        console.log("[Pharmacy] STARTING ULTIMATE DISCOVERY FOR: " + searchWord);
+    _performUltimateSearchMoreClick(searchWord, initialDelay = 50) {
+        console.log("[Pharmacy] STARTING ULTIMATE SEARCH-MORE CLICKER FOR: " + searchWord);
         const posStore = this.pos || (this.env && this.env.services && this.env.services.pos);
         if (!posStore) return;
 
         setTimeout(() => {
-            // 1. FORCE STATE (Store + Input)
-            const syncSearchUI = (w) => {
-                // Force internal store state
+            const syncSearchState = (w) => {
+                // 1. Force POS Store State
                 if (posStore.setSelectedCategoryId) posStore.setSelectedCategoryId(0);
                 if (posStore.selectedCategoryId !== undefined) posStore.selectedCategoryId = 0;
                 if (posStore.category_id !== undefined) posStore.category_id = 0;
-
                 if (posStore.setSearchWord) posStore.setSearchWord(w);
                 else posStore.searchProductWord = w;
 
-                // Force physical input element (Odoo sometimes loses track)
-                const input = document.querySelector('.search-bar-container input, .pos-search-bar input, .search-box input');
-                if (input && input.value !== w) {
-                    input.value = w;
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                    input.dispatchEvent(new Event('change', { bubbles: true }));
-                }
+                // 2. Force Physical Input Boxes
+                const inputs = document.querySelectorAll('input');
+                inputs.forEach(inp => {
+                    const place = (inp.placeholder || "").toLowerCase();
+                    if (place.includes('search') || place.includes('بحث')) {
+                        if (inp.value !== w) {
+                            inp.value = w;
+                            inp.dispatchEvent(new Event('input', { bubbles: true }));
+                            inp.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    }
+                });
 
-                // Trigger Odoo's internal search logic
+                // 3. Trigger Odoo Re-render
                 if (posStore.trigger) posStore.trigger("update-search");
             };
 
-            syncSearchUI(searchWord);
+            syncSearchState(searchWord);
 
-            // 2. RELENTLESS DISCOVERY HEARTBEAT
-            let tick = 0;
             let clickCount = 0;
-            const maxTicks = 800; // 40 seconds duration
+            let totalTicks = 0;
+            const maxTicks = 1000; // ~50 seconds
 
-            const loop = setInterval(() => {
-                tick++;
+            const hunter = setInterval(() => {
+                totalTicks++;
 
-                // Re-sync UI every 500ms to ensure it stays locked on the right product
-                if (tick % 10 === 0) syncSearchUI(searchWord);
+                // Keep the search word locked in every few heartbeats
+                if (totalTicks % 10 === 0) syncSearchState(searchWord);
 
-                // AGGRESSIVE BUTTON HUNT
-                // Strategy A: Direct Selectors
-                let btn = document.querySelector('.search-more-button:not(.d-none), .pos-search-more:not(.d-none), .o_pos_search_more:not(.d-none)');
+                // FIND THE BUTTON (High-Res Scan)
+                let btn = null;
 
-                // Strategy B: Global Text Scan (Fallback)
+                // Priority 1: Direct Selectors
+                btn = document.querySelector('.search-more-button, button.search-more, .pos-search-more, .o_pos_search_more');
+
+                // Priority 2: Global Search for text "Search more"
                 if (!btn || btn.offsetParent === null) {
-                    const allButtons = document.querySelectorAll('button, .btn, .o-btn, .pos-button');
-                    btn = Array.from(allButtons).find(el => {
-                        const txt = (el.textContent || "").toLowerCase();
-                        return (txt.includes('search more') || txt.includes('بحث عن المزيد')) && el.offsetParent !== null;
+                    const allEls = document.querySelectorAll('button, .btn, .button, div, span');
+                    btn = Array.from(allEls).find(el => {
+                        const text = (el.textContent || "").trim().toLowerCase();
+                        // Check for English and Arabic variants
+                        return (text.includes('search more') || text.includes('بحث عن المزيد')) &&
+                            (el.offsetWidth > 0 || el.offsetHeight > 0);
                     });
                 }
 
-                if (btn && btn.offsetParent !== null) {
-                    console.log("[Pharmacy] DISCOVERY SUCCESS: Clicking 'Search more' button automatically.");
+                if (btn) {
+                    console.log("[Pharmacy] BUTTON FOUND! Attempting robust clicks...");
                     this._robustClick(btn);
                     clickCount++;
 
-                    // Keep clicking for a few heartbeats to overcome Odoo's UI debouncing
-                    if (clickCount >= 10) {
-                        console.log("[Pharmacy] Discovery complete.");
-                        clearInterval(loop);
+                    // Relentlessly click 20 times to bypass any event blockers
+                    if (clickCount >= 20) {
+                        console.log("[Pharmacy] Automation finished successfully.");
+                        clearInterval(hunter);
                     }
                 }
 
-                if (tick >= maxTicks) {
-                    console.log("[Pharmacy] Discovery timeout reached.");
-                    clearInterval(loop);
+                if (totalTicks >= maxTicks) {
+                    console.log("[Pharmacy] Search-more hunter timeout.");
+                    clearInterval(hunter);
                 }
-            }, 50); // 20 times per second
+            }, 50);
 
         }, initialDelay);
     },
@@ -209,10 +216,12 @@ patch(ControlButtons.prototype, {
     _robustClick(el) {
         if (!el) return;
         try {
-            // Native click
-            el.click();
-            // Synthetic events for redundant event listeners (mousedown, mouseup, click)
-            ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'].forEach(name => {
+            // Standard action
+            if (typeof el.click === 'function') el.click();
+
+            // Redundant Event Dispatching
+            const events = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'];
+            events.forEach(name => {
                 const cls = (window.PointerEvent && name.includes('pointer')) ? PointerEvent : MouseEvent;
                 const ev = new cls(name, {
                     bubbles: true, cancelable: true, view: window, button: 0, buttons: 1, isTrusted: true
@@ -220,7 +229,7 @@ patch(ControlButtons.prototype, {
                 el.dispatchEvent(ev);
             });
         } catch (e) {
-            console.error("[Pharmacy] Robust click failed:", e);
+            console.error("[Pharmacy] Click failed:", e);
         }
     },
 
