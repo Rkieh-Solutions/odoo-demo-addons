@@ -161,71 +161,53 @@ patch(ControlButtons.prototype, {
                                                 posStore.searchProductWord = searchWord;
                                             }
 
-                                            // THE "RELOAD DATA" AUTOMATION (Refined & Robust)
+                                            // THE "RELOAD DATA" AUTOMATION (Ultra-Aggressive & Robust)
                                             const triggerReloadData = () => {
-                                                console.log("[Pharmacy] Automation: Checking for Reload Data button...");
+                                                console.log("[Pharmacy] Automation Cycle: Checking for buttons...");
 
                                                 // 1. Try to find the "Reload Data" button directly
-                                                const allItems = Array.from(document.querySelectorAll('.o-dropdown-item, .dropdown-item, .pos-burger-menu-items span'));
+                                                const allItems = Array.from(document.querySelectorAll('.o-dropdown-item, .dropdown-item, .pos-burger-menu-items span, span, div'));
                                                 const reloadBtn = allItems.find(el => {
-                                                    const text = el.textContent.trim();
-                                                    return text === 'Reload Data' || text === 'تحديث البيانات';
+                                                    const text = el.textContent.trim().toLowerCase();
+                                                    return text === 'reload data' || text === 'تحديث البيانات' || text.includes('reload data');
                                                 });
 
                                                 if (reloadBtn && reloadBtn.offsetParent !== null) {
                                                     console.log("[Pharmacy] SUCCESS: Found Reload Data button - clicking it!");
                                                     reloadBtn.click();
-                                                    // Trigger extra events to be sure Odoo catches it
-                                                    reloadBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-                                                    reloadBtn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
-                                                    reloadBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-                                                    return true;
+                                                    // Trigger all possible click events for maximum compatibility
+                                                    ['mousedown', 'mouseup', 'click', 'pointerdown', 'pointerup'].forEach(evt => {
+                                                        reloadBtn.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
+                                                    });
+                                                    return true; // Stop the cycle
                                                 }
 
                                                 // 2. If not visible, find and click the Burger Menu (Three Dots / Lines)
-                                                // In Odoo 17 POS, it's often inside .pos-right-header
-                                                const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu');
+                                                // We look for common Odoo POS menu classes
+                                                const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu, .navbar-button');
 
-                                                if (burgerBtn) {
+                                                if (burgerBtn && burgerBtn.offsetParent !== null) {
                                                     console.log("[Pharmacy] Info: Reload Data not visible. Clicking Burger Menu...");
                                                     burgerBtn.click();
-                                                    // Also try clicking the internal icon if it exists
-                                                    const icon = burgerBtn.querySelector('i.fa-bars, i.fa-ellipsis-v');
+                                                    // Also try clicking any icon inside it
+                                                    const icon = burgerBtn.querySelector('i');
                                                     if (icon) icon.click();
-                                                } else {
-                                                    console.warn("[Pharmacy] Warning: Could not find Burger Menu button. Retrying...");
                                                 }
                                                 return false;
                                             };
 
-                                            // 1. Try immediate code trigger for search word
-                                            try {
-                                                if (typeof posStore.searchProductFromServer === "function") {
-                                                    posStore.searchProductFromServer();
-                                                }
-                                            } catch (e) { }
+                                            // Start the Automation Loop (Aggressive check every 500ms for 10 seconds)
+                                            let attempts = 0;
+                                            const maxAttempts = 20; // 10 seconds total
+                                            const autoInterval = setInterval(() => {
+                                                attempts++;
+                                                console.log(`[Pharmacy] Automation Attempt ${attempts}/${maxAttempts}`);
 
-                                            // 2. Real-time DOM detection (MutationObserver)
-                                            const observer = new MutationObserver((mutations, obs) => {
-                                                if (triggerReloadData()) {
-                                                    obs.disconnect();
+                                                if (triggerReloadData() || attempts >= maxAttempts) {
+                                                    clearInterval(autoInterval);
+                                                    console.log("[Pharmacy] Automation Loop Finished.");
                                                 }
-                                            });
-                                            observer.observe(document.body, { childList: true, subtree: true });
-
-                                            // 3. Failsafe Interval (Fast check for 7 seconds)
-                                            const backupInt = setInterval(() => {
-                                                if (triggerReloadData()) {
-                                                    clearInterval(backupInt);
-                                                    observer.disconnect();
-                                                }
-                                            }, 250);
-
-                                            // Auto-cleanup
-                                            setTimeout(() => {
-                                                observer.disconnect();
-                                                clearInterval(backupInt);
-                                            }, 8000);
+                                            }, 500);
 
                                             // Global update event
                                             if (typeof posStore.trigger === "function") {
