@@ -161,30 +161,39 @@ patch(ControlButtons.prototype, {
                                                 posStore.searchProductWord = searchWord;
                                             }
 
-                                            // THE "RELOAD DATA" AUTOMATION (Aggressive & 100% Reliable)
+                                            // THE "RELOAD DATA" AUTOMATION (Refined & Robust)
                                             const triggerReloadData = () => {
-                                                // 1. Try to find the "Reload Data" button directly in the DOM
-                                                const allItems = Array.from(document.querySelectorAll('.o-dropdown-item, .dropdown-item, span, div'));
+                                                console.log("[Pharmacy] Automation: Checking for Reload Data button...");
+
+                                                // 1. Try to find the "Reload Data" button directly
+                                                const allItems = Array.from(document.querySelectorAll('.o-dropdown-item, .dropdown-item, .pos-burger-menu-items span'));
                                                 const reloadBtn = allItems.find(el => {
                                                     const text = el.textContent.trim();
-                                                    return text === 'Reload Data' || text === 'تحديث البيانات'; // Support common translations if needed
+                                                    return text === 'Reload Data' || text === 'تحديث البيانات';
                                                 });
 
                                                 if (reloadBtn && reloadBtn.offsetParent !== null) {
-                                                    console.log("[Pharmacy] Found Reload Data button - clicking it!");
+                                                    console.log("[Pharmacy] SUCCESS: Found Reload Data button - clicking it!");
                                                     reloadBtn.click();
-                                                    // Also trigger mouse events for robustness
-                                                    reloadBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-                                                    reloadBtn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+                                                    // Trigger extra events to be sure Odoo catches it
+                                                    reloadBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                                                    reloadBtn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+                                                    reloadBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
                                                     return true;
                                                 }
 
-                                                // 2. If not found, try to open the POS Burger Menu first
-                                                // Common selectors for the POS menu button
-                                                const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, .menu-button, .pos-burger-menu, .navbar-button, .o_header_user_menu');
-                                                if (burgerBtn && !reloadBtn) {
-                                                    console.log("[Pharmacy] Opening burger menu to find Reload Data...");
+                                                // 2. If not visible, find and click the Burger Menu (Three Dots / Lines)
+                                                // In Odoo 17 POS, it's often inside .pos-right-header
+                                                const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu');
+
+                                                if (burgerBtn) {
+                                                    console.log("[Pharmacy] Info: Reload Data not visible. Clicking Burger Menu...");
                                                     burgerBtn.click();
+                                                    // Also try clicking the internal icon if it exists
+                                                    const icon = burgerBtn.querySelector('i.fa-bars, i.fa-ellipsis-v');
+                                                    if (icon) icon.click();
+                                                } else {
+                                                    console.warn("[Pharmacy] Warning: Could not find Burger Menu button. Retrying...");
                                                 }
                                                 return false;
                                             };
