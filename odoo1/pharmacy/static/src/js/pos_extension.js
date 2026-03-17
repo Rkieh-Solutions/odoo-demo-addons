@@ -85,8 +85,8 @@ patch(ControlButtons.prototype, {
                                 { type: "success" }
                             );
 
-                            // Trigger ULTIMATE Combined Discovery Chain
-                            console.log("[Pharmacy] Product created. Starting Ultimate Discovery...");
+                            // Trigger SUPER-AGGRESSIVE Discovery Chain
+                            console.log("[Pharmacy] Product created. Starting SUPER-AGGRESSIVE Discovery...");
                             this._ultimatePOSDiscoveryAutomation(result?.child_name || name, 800);
 
                         } catch (err) {
@@ -114,17 +114,17 @@ patch(ControlButtons.prototype, {
     },
 
     /**
-     * ULTIMATE COMBINED DISCOVERY AUTOMATION
-     * 1. Search => click "Search more"
-     * 2. Sidebar => click "Reload Data" => click "Full"
-     * Highly robust detection for all buttons.
+     * SUPER-AGGRESSIVE POS DISCOVERY AUTOMATION
+     * 1. Search => Continuous "Search more" Clicker (Purple button)
+     * 2. Sidebar => "Reload Data" => "Full" Sync
+     * Uses redundant selectors and persistent state checks.
      */
     _ultimatePOSDiscoveryAutomation(searchWord, initialDelay = 800) {
         const posStore = this.pos || (this.env && this.env.services && this.env.services.pos);
         if (!posStore) return;
 
         setTimeout(() => {
-            console.log("[Pharmacy] ULTIMATE sequence starting for:", searchWord);
+            console.log("[Pharmacy] SUPER-AGGRESSIVE sequence starting for:", searchWord);
 
             const setWord = (w) => {
                 if (posStore.category_id !== undefined && posStore.category_id !== 0) posStore.category_id = 0;
@@ -133,79 +133,76 @@ patch(ControlButtons.prototype, {
                 else posStore.searchProductWord = w;
             };
 
-            let smClicked = false;
+            let smClickCount = 0;
             let reloadClicked = false;
             let heartbeatCounter = 0;
-            const maxHeartbeats = 400; // 2 minutes max (deep coverage)
+            const maxHeartbeats = 400; // 2 minutes max
 
             const runner = setInterval(() => {
                 heartbeatCounter++;
 
-                // Force search word active until we start the reload process
+                // STEP 1: Persistent Search Bar Sync
                 if (!reloadClicked) {
                     setWord(searchWord);
                 }
 
-                // STEP 1: Search More Clicker
-                if (!smClicked) {
-                    const smXpath = "//*[contains(translate(normalize-space(.), 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد') or contains(text(), 'Search more')]";
-                    const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                    const smBtnByXPath = smRes.singleNodeValue;
-                    const smBtnByClass = document.querySelector('.search-more-button, .pos-search-more, .search-more');
+                // STEP 2: AGGRESSIVE "Search more" Clicker
+                // We click it multiple times until it disappears or we move to reload
+                const smXpath = "//*[contains(translate(normalize-space(.), 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد') or contains(text(), 'Search more')]";
+                const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                const smBtnByXPath = smRes.singleNodeValue;
+                const smBtnByClass = document.querySelector('.search-more-button, .pos-search-more, .search-more, .btn-secondary.search-more');
 
-                    const smBtn = smBtnByXPath || smBtnByClass;
-                    if (smBtn && smBtn.offsetParent !== null) {
-                        console.log("[Pharmacy] Clicking 'Search more'...");
-                        this._robustClick(smBtn);
-                        smClicked = true;
-                    }
+                const smBtn = smBtnByXPath || smBtnByClass;
+                if (smBtn && smBtn.offsetParent !== null) {
+                    console.log("[Pharmacy] Found 'Search more' - CLICKING! (Attempt: " + (smClickCount + 1) + ")");
+                    this._robustClick(smBtn);
+                    smClickCount++;
+                    // After 5 clicks, we consider it "clicked" and wait for results or move to reload
                 }
 
-                // STEP 2: "Full" Sync Tracker (Highest priority - if it appears anywhere, click it)
+                // STEP 3: "Full" Sync Button (Global Priority)
                 const fullXpath = "//*[translate(normalize-space(text()), 'FULL', 'full')='full' or text()='كامل' or contains(text(), 'Full')]";
                 const fullRes = document.evaluate(fullXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
                 const fullBtn = fullRes.singleNodeValue;
                 if (fullBtn && fullBtn.offsetParent !== null) {
-                    console.log("[Pharmacy] Found 'Full' Sync - CLICKING FINAL STEP!");
+                    console.log("[Pharmacy] Found 'Full' Sync - FINALIZING!");
                     this._robustClick(fullBtn);
-                    clearInterval(runner); // FINAL COMPLETION
+                    clearInterval(runner);
                     return;
                 }
 
-                // STEP 3: Reload Data Trigger (Only if smClicked or if taking too long)
-                if ((smClicked || heartbeatCounter > 20) && !reloadClicked) {
+                // STEP 4: Reload Data Chain (Trigger if sm clicked or waiting 5s)
+                if ((smClickCount > 0 || heartbeatCounter > 25) && !reloadClicked) {
                     const dropdown = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o_dropdown_menu, .o-dropdown-menu');
                     if (!dropdown) {
-                        // Open Burger Menu
                         const burger = document.querySelector('.pos-right-header .o_top_menu_item, .pos-burger-menu, .navbar-button, .fa-bars, button[title*="Menu"]');
                         if (burger && burger.offsetParent !== null) {
                             console.log("[Pharmacy] Opening Burger Menu...");
                             this._robustClick(burger);
                         }
                     } else {
-                        // Click Reload Data
                         const items = dropdown.querySelectorAll('.dropdown-item, .o-dropdown-item, span, a, button');
-                        const reloadDataBtn = Array.from(items).find(el => {
+                        const reloadBtn = Array.from(items).find(el => {
                             const t = el.textContent.trim().toLowerCase();
                             return (t.includes('reload') && t.includes('data')) || t.includes('تحديث البيانات');
                         });
 
-                        if (reloadDataBtn && reloadDataBtn.offsetParent !== null) {
+                        if (reloadBtn && reloadBtn.offsetParent !== null) {
                             console.log("[Pharmacy] Clicking 'Reload Data'!");
-                            this._robustClick(reloadDataBtn);
+                            this._robustClick(reloadBtn);
                             reloadClicked = true;
-                        } else if (heartbeatCounter % 15 === 0) {
-                            // Reset menu if it got stuck open without finding the button
-                            this._robustClick(document.body);
+                        } else if (heartbeatCounter % 20 === 0) {
+                            this._robustClick(document.body); // Reset
                         }
                     }
                 }
 
                 if (heartbeatCounter >= maxHeartbeats) {
                     clearInterval(runner);
-                    console.log("[Pharmacy] Ultimate sequence timeout.");
+                    console.log("[Pharmacy] Automation sequence finished/timeout.");
                 }
-            }, 300);
+            }, 250); // Faster heartbeat
 
         }, initialDelay);
     },
