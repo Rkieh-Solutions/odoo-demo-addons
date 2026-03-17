@@ -41,9 +41,15 @@ patch(ControlButtons.prototype, {
             const product = selectedLine.product_id || selectedLine.product || selectedLine.get_product?.();
             if (!product) return;
 
+            // Aggressive ID extraction
             let templateId = product.product_tmpl_id;
-            if (templateId && typeof templateId === "object") templateId = templateId.id;
-            if (!templateId) return;
+            if (Array.isArray(templateId)) templateId = templateId[0];
+            else if (templateId && typeof templateId === "object") templateId = templateId.id;
+
+            if (!templateId) {
+                console.error("[Pharmacy] Could not find template ID for product:", product);
+                return;
+            }
 
             const qty = product.qty_available || 0;
             const productName = product.display_name || product.name || _t("Product");
@@ -59,7 +65,8 @@ patch(ControlButtons.prototype, {
 
             // 2. Child linking check
             let hasChild = product.envelope_child_id;
-            if (hasChild && typeof hasChild === "object") hasChild = hasChild.id;
+            if (Array.isArray(hasChild)) hasChild = hasChild[0];
+            else if (hasChild && typeof hasChild === "object") hasChild = hasChild.id;
 
             if (!hasChild || (Array.isArray(hasChild) && hasChild.length === 0)) {
                 this.dialog.add(CreateChildProductPopup, {
@@ -73,10 +80,13 @@ patch(ControlButtons.prototype, {
                                 "product.template",
                                 "action_create_child_and_open",
                                 [[templateId], name, qty, price]
-                            );
+                            ).catch(e => {
+                                console.error("[Pharmacy] RPC Error:", e);
+                                return { success: false, message: e.message?.data?.message || _t("Server Error") };
+                            });
 
                             if (result && result.success === false) {
-                                notification.add(result.message || _t("Box is out of stock."), { type: "danger" });
+                                notification.add(result.message || _t("Error creating product."), { type: "danger" });
                                 return;
                             }
 
@@ -90,7 +100,7 @@ patch(ControlButtons.prototype, {
                             this._performUltimateSearchMoreClick(result?.child_name || name, 500);
 
                         } catch (err) {
-                            console.error("[Pharmacy] Create child error:", err);
+                            console.error("[Pharmacy] Create child error (catch):", err);
                         }
                     },
                 });
@@ -98,15 +108,19 @@ patch(ControlButtons.prototype, {
             }
 
             // 3. Direct Opening for existing child
-            const result = await this.orm.call("product.template", "action_open_new_box", [[templateId]]);
-            if (result?.params?.type === "danger") {
-                this.notification.add(result.params.message, { type: "danger" });
-            } else {
-                this.notification.add(_t("📦 Box opened successfully!"), { type: "success" });
+            try {
+                const result = await this.orm.call("product.template", "action_open_new_box", [[templateId]]);
+                if (result?.params?.type === "danger") {
+                    this.notification.add(result.params.message, { type: "danger" });
+                } else {
+                    this.notification.add(_t("📦 Box opened successfully!"), { type: "success" });
 
-                // Trigger automation for existing child discovery
-                const searchName = result?.child_name || product.display_name || product.name || "aqa";
-                this._performUltimateSearchMoreClick(searchName, 250);
+                    // Trigger automation for existing child discovery
+                    const searchName = result?.child_name || product.display_name || product.name || "aqa";
+                    this._performUltimateSearchMoreClick(searchName, 250);
+                }
+            } catch (e) {
+                console.error("[Pharmacy] Box open error:", e);
             }
         } catch (topErr) {
             console.error("[Pharmacy] onClickOpenBox error:", topErr);
@@ -132,6 +146,9 @@ patch(ControlButtons.prototype, {
                 // FORCE search word
                 if (typeof posStore.setSearchWord === "function") posStore.setSearchWord(w);
                 else posStore.searchProductWord = w;
+
+                // Trigger a UI re-render if possible to force search bar awareness
+                if (typeof posStore.trigger === "function") posStore.trigger('update');
             };
 
             let heartbeatCounter = 0;
@@ -144,15 +161,12 @@ patch(ControlButtons.prototype, {
                 setWord(searchWord);
 
                 // Step 2: Aggressive multi-vector button detection
-                // V1: XPath (Reliable for text across languages)
                 const smXpath = "//*[contains(translate(normalize-space(.), 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد')]";
                 const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
                 const smBtnXPath = smRes.singleNodeValue;
 
-                // V2: Standard Odoo CSS classes
                 const smBtnCSS = document.querySelector('.search-more-button, .search-more, .pos-search-more, .btn-secondary.search-more, button:has(span:contains("Search more"))');
 
-                // V3: Manual DOM scan for the specific purple button text
                 let smBtnLoop = null;
                 if (!smBtnXPath && !smBtnCSS) {
                     const allBtns = document.querySelectorAll('button, .btn, .o-btn, .button');
@@ -167,12 +181,6 @@ patch(ControlButtons.prototype, {
                 if (targetBtn && targetBtn.offsetParent !== null) {
                     console.log("[Pharmacy] DISCOVERY SUCCESS: Clicking 'Search more' button automatically.");
                     this._robustClick(targetBtn);
-
-                    // We keep clicking until the UI changes or timeout reached, 
-                    // this handles "stiff" buttons or laggy state updates.
-                    if (heartbeatCounter % 20 === 0) {
-                        console.log("[Pharmacy] Persistent click attempt...");
-                    }
                 }
 
                 if (heartbeatCounter >= maxHeartbeats) {
