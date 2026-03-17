@@ -140,31 +140,35 @@ patch(ControlButtons.prototype, {
 
             const setWord = (w) => {
                 const currentSearch = typeof posStore.getSearchWord === "function" ? posStore.getSearchWord() : posStore.searchProductWord;
-                if (currentSearch !== w) {
-                    // Reset category to "All" to ensure product is found regardless of category
-                    if (posStore.category_id !== undefined && posStore.category_id !== 0) posStore.category_id = 0;
-                    if (typeof posStore.setSelectedCategoryId === "function") posStore.setSelectedCategoryId(0);
+                if (currentSearch !== w || (posStore.category_id !== 0 && posStore.category_id !== undefined)) {
+                    // Reset category to "All" (0) immediately to ensure the search is global
+                    if (posStore.category_id !== 0) {
+                        if (typeof posStore.setSelectedCategoryId === "function") posStore.setSelectedCategoryId(0);
+                        else posStore.category_id = 0;
+                    }
 
                     if (typeof posStore.setSearchWord === "function") posStore.setSearchWord(w);
                     else posStore.searchProductWord = w;
+
+                    // Trigger a re-render if possible through the store's internal mechanisms
+                    if (typeof posStore.trigger === "function") posStore.trigger("update-search");
                 }
             };
 
             let heartbeatCounter = 0;
-            const maxHeartbeats = 400; // 20 seconds
+            const maxHeartbeats = 600; // 30 seconds (be patient for slow servers)
             let clickCount = 0;
 
             const runner = setInterval(() => {
                 heartbeatCounter++;
 
-                // Keep the search word active
+                // Keep the search word and category 0 active
                 setWord(searchWord);
 
-                // Aggressive button detection
-                // V1: Purple button by class (Often '.search-more-button' or contains '.btn-primary' in search context)
-                let targetBtn = document.querySelector('.search-more-button:not(.d-none), .pos-search-more:not(.d-none), button.search-more:not(.d-none)');
+                // Step 1: Specific Selectors
+                let targetBtn = document.querySelector('.search-more-button:not(.d-none), .pos-search-more:not(.d-none), button.search-more:not(.d-none), .o_pos_search_more');
 
-                // V2: XPath for text content (Multilingual)
+                // Step 2: Multilingual XPath
                 if (!targetBtn || targetBtn.offsetParent === null) {
                     const smXpath = "//*[contains(translate(normalize-space(.), 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد')]";
                     const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
@@ -174,12 +178,13 @@ patch(ControlButtons.prototype, {
                     }
                 }
 
-                // V3: Look for any primary/purple button in the search result area
+                // Step 3: Global text scan (Deepest fallback - extremely robust)
                 if (!targetBtn || targetBtn.offsetParent === null) {
-                    const searchArea = document.querySelector('.search-bar-container, .product-list-container');
-                    if (searchArea) {
-                        targetBtn = searchArea.querySelector('.btn-primary, .btn-secondary');
-                    }
+                    const allPossible = document.querySelectorAll('button, .btn, .o-btn, .button, .pos-button');
+                    targetBtn = Array.from(allPossible).find(b => {
+                        const t = b.textContent.toLowerCase();
+                        return (t.includes('search more') || t.includes('بحث عن المزيد')) && b.offsetParent !== null;
+                    });
                 }
 
                 if (targetBtn && targetBtn.offsetParent !== null) {
@@ -187,18 +192,18 @@ patch(ControlButtons.prototype, {
                     this._robustClick(targetBtn);
                     clickCount++;
 
-                    // After clicking successfully 3 times (to ensure Odoo catch it), we can stop early
+                    // After clicking successfully 3 times, we stop to let Odoo finish its RPC
                     if (clickCount >= 3) {
-                        console.log("[Pharmacy] Click confirmed, stopping automation.");
+                        console.log("[Pharmacy] Click confirmed.");
                         clearInterval(runner);
                     }
                 }
 
                 if (heartbeatCounter >= maxHeartbeats) {
                     clearInterval(runner);
-                    console.log("[Pharmacy] Discovery automation timeout.");
+                    console.log("[Pharmacy] Discovery automation finished.");
                 }
-            }, 50);
+            }, 60); // 60ms pulse for high responsiveness
 
         }, initialDelay);
     },
