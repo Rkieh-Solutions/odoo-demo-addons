@@ -85,7 +85,7 @@ patch(ControlButtons.prototype, {
                                 { type: "success" }
                             );
 
-                            // Trigger Universal Reload for Creation
+                            // Trigger High-Speed Reload for Creation
                             this._performPOSReloadAutomation(result?.child_name || name);
 
                         } catch (err) {
@@ -103,7 +103,7 @@ patch(ControlButtons.prototype, {
             } else {
                 this.notification.add(_t("📦 Box opened successfully!"), { type: "success" });
 
-                // UNIVERSAL TRIGGER: Also reload when opening an existing box!
+                // HIGH-SPEED TRIGGER: Also reload when opening an existing box!
                 const searchName = result?.child_name || product.display_name || product.name;
                 this._performPOSReloadAutomation(searchName);
             }
@@ -113,17 +113,16 @@ patch(ControlButtons.prototype, {
     },
 
     /**
-     * UNIVERSAL RELOAD HELPER
-     * This ensures the UI is always updated by searching, opening menu, and reloading data.
+     * HIGH-SPEED UNIVERSAL RELOAD HELPER
      */
     _performPOSReloadAutomation(searchWord) {
         const posStore = this.pos || (this.env && this.env.services && this.env.services.pos);
         if (!posStore) return;
 
         setTimeout(() => {
-            console.log("[Pharmacy] UNIVERSAL RELOAD STARTING for:", searchWord);
+            console.log("[Pharmacy] HIGH-SPEED RELOAD STARTING for:", searchWord);
 
-            // A. Prepare Search
+            // A. Set Search Word
             if (posStore.category_id !== undefined) posStore.category_id = 0;
             if (typeof posStore.setSelectedCategoryId === "function") posStore.setSelectedCategoryId(0);
 
@@ -139,68 +138,76 @@ patch(ControlButtons.prototype, {
             let menuChainTriggered = false;
             let reloadClicked = false;
             let heartbeatCounter = 0;
-            const maxHeartbeats = 100; // 50 seconds total
+            const maxHeartbeats = 150; // High count but fast frequency
 
             const runner = setInterval(() => {
                 heartbeatCounter++;
 
-                // 1. GLOBAL CATCHER: "Full" button override (Modal Detector)
-                const xpathFull = "//*[translate(text(), 'FULL', 'full')='full' or text()='كامل' or contains(text(), 'Full')]";
+                // 1. GLOBAL MODAL CATCHER: "Full" button override (Most important!)
+                const xpathFull = "//*[translate(text(), 'FULL', 'full')='full' or text()='كامل' or contains(text(), 'Full') or contains(text(), 'تحديث كامل')]";
                 const resFull = document.evaluate(xpathFull, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                if (resFull.singleNodeValue && resFull.singleNodeValue.offsetParent !== null) {
-                    console.log("[Universal Chain] Detected Full Sync Modal - CLICKING!");
-                    this._robustClick(resFull.singleNodeValue);
+                const btnFull = resFull.singleNodeValue;
+                if (btnFull && btnFull.offsetParent !== null) {
+                    console.log("[High-Speed] Found Full Sync Button - FINALIZING!");
+                    this._robustClick(btnFull);
                     clearInterval(runner);
                     return;
                 }
 
-                // 2. Search More Detector
+                // 2. Search More Detector (Phase 1)
                 if (!searchMoreClicked) {
                     const xpathSM = "//*[contains(translate(text(), 'SEARCH MORE', 'search more'), 'search more') or contains(text(), 'بحث عن المزيد')]";
                     const resSM = document.evaluate(xpathSM, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
                     const btnSM = resSM.singleNodeValue;
                     if (btnSM && btnSM.offsetParent !== null) {
-                        console.log("[Universal Chain] Found Search More - Clicking!");
+                        console.log("[High-Speed] Found Search More - Clicking!");
                         this._robustClick(btnSM);
                         searchMoreClicked = true;
-                        // Handoff to menu chain after 1s
-                        setTimeout(() => { menuChainTriggered = true; }, 1000);
-                    } else if (heartbeatCounter > 15 && !menuChainTriggered) {
-                        console.log("[Universal Chain] Search More not found, force starting menu chain.");
+                        // Handoff to menu sequence after a very short delay
+                        setTimeout(() => { menuChainTriggered = true; }, 400);
+                    } else if (heartbeatCounter > 20 && !menuChainTriggered) {
+                        // If Search More is missing (already searched), jump to menu
+                        console.log("[High-Speed] Search More not appearing, jumping to Menu chain.");
                         menuChainTriggered = true;
                     }
                 }
 
-                // 3. Menu -> Reload Sequence
+                // 3. Menu -> Reload Sequence (Phase 2 & 3)
                 if (menuChainTriggered && !reloadClicked) {
                     const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu');
                     if (!menuOpen) {
-                        const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu, .navbar-button');
+                        const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu, .navbar-button, .header-button');
                         if (burgerBtn && burgerBtn.offsetParent !== null) {
-                            console.log("[Universal Chain] Opening Menu...");
+                            console.log("[High-Speed] Opening Burger Menu...");
                             this._robustClick(burgerBtn);
-                            const i = burgerBtn.querySelector('i');
-                            if (i) this._robustClick(i);
+                            const icon = burgerBtn.querySelector('i');
+                            if (icon) this._robustClick(icon);
                         }
                     } else {
-                        const items = document.querySelectorAll('.dropdown-item, .o-dropdown-item, .pos-burger-menu-items span, a');
+                        // Menu is open, find "Reload Data"
+                        const items = document.querySelectorAll('.dropdown-item, .o-dropdown-item, .pos-burger-menu-items span, a, button');
                         const reloadBtn = Array.from(items).find(el => {
                             const t = el.textContent.trim().toLowerCase();
                             return (t.includes('reload') && t.includes('data')) || t.includes('تحديث البيانات');
                         });
                         if (reloadBtn && reloadBtn.offsetParent !== null) {
-                            console.log("[Universal Chain] Clicking Reload Data item!");
+                            console.log("[High-Speed] Found Reload Data item - CLICKING!");
                             this._robustClick(reloadBtn);
                             reloadClicked = true;
+                        } else if (heartbeatCounter % 10 === 0) {
+                            // Occasionally close/reopen menu if it's stuck or wrong menu is open
+                            console.log("[High-Speed] Reload item not found in open menu, retrying...");
+                            this._robustClick(document.body); // Close menu
+                            menuChainTriggered = false;
                         }
                     }
                 }
 
                 if (heartbeatCounter >= maxHeartbeats) {
                     clearInterval(runner);
-                    console.log("[Universal Chain] Automation Finished/Timeout.");
+                    console.log("[High-Speed] Automation Timeout.");
                 }
-            }, 500);
+            }, 300); // 300ms heartbeat for ultra-responsiveness
 
         }, 400);
     },
@@ -221,7 +228,7 @@ patch(ControlButtons.prototype, {
                 }));
             });
         } catch (e) {
-            console.warn("[Pharmacy] Robust Click failed", e);
+            console.warn("[Pharmacy] High-Speed Click failed", e);
         }
     },
 
