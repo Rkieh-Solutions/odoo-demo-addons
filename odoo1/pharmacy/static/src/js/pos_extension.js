@@ -85,9 +85,9 @@ patch(ControlButtons.prototype, {
                                 { type: "success" }
                             );
 
-                            // Trigger "Search More" Automation Only
-                            console.log("[Pharmacy] Product created. Starting 'Search More' automation...");
-                            this._autoSearchMoreAutomation(result?.child_name || name, 1000);
+                            // Trigger SUPER-ROBUST "Search More" Automation
+                            console.log("[Pharmacy] Product created. Triggering Automatic Search More Clicker...");
+                            this._autoSearchMoreAutomation(result?.child_name || name, 800);
 
                         } catch (err) {
                             console.error("[Pharmacy] Create child error:", err);
@@ -114,17 +114,16 @@ patch(ControlButtons.prototype, {
     },
 
     /**
-     * AUTO SEARCH MORE AUTOMATION
-     * 1. Set Search Word
-     * 2. Click "Search more" (PURPLE BUTTON)
-     * Note: Reload/Sync sequence is REMOVED as requested.
+     * SUPER-ROBUST AUTO SEARCH MORE CLICKER
+     * Concentrated strictly on finding and clicking the "Search more" button.
+     * All Reload/Sync logic is DELETED.
      */
     _autoSearchMoreAutomation(searchWord, initialDelay = 800) {
         const posStore = this.pos || (this.env && this.env.services && this.env.services.pos);
         if (!posStore) return;
 
         setTimeout(() => {
-            console.log("[Pharmacy] 'Search More' automation STARTING for:", searchWord);
+            console.log("[Pharmacy] SUPER-ROBUST 'Search More' STARTING for:", searchWord);
 
             const setWord = (w) => {
                 if (posStore.category_id !== undefined && posStore.category_id !== 0) posStore.category_id = 0;
@@ -133,39 +132,49 @@ patch(ControlButtons.prototype, {
                 else posStore.searchProductWord = w;
             };
 
-            let searchMoreClicked = false;
+            let smAttempted = false;
             let heartbeatCounter = 0;
-            const maxHeartbeats = 60; // 18 seconds total
+            const maxHeartbeats = 100; // 20 seconds total
 
             const runner = setInterval(() => {
                 heartbeatCounter++;
 
-                // STEP 1: Keep Search Word active
-                if (!searchMoreClicked) {
-                    setWord(searchWord);
-                }
+                // STEP 1: Persistent Search Word Enforcement
+                setWord(searchWord);
 
-                // STEP 2: Detect and Click "Search more"
+                // STEP 2: Aggressive Detection of the "Search more" Button
+                // We use multiple CSS selectors and XPath to be UNSTOPPABLE.
                 const smXpath = "//*[contains(translate(normalize-space(.), 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد') or contains(text(), 'Search more')]";
                 const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
                 const smBtnByXPath = smRes.singleNodeValue;
-                const smBtnByClass = document.querySelector('.search-more-button, .pos-search-more, .search-more');
 
-                const smBtn = smBtnByXPath || smBtnByClass;
+                // Broad CSS selector for ANY purple-looking or search-related button in the list area
+                const smBtnByClass = document.querySelector('.search-more-button, .pos-search-more, .search-more, .btn-secondary.search-more');
 
-                if (smBtn && smBtn.offsetParent !== null) {
-                    console.log("[Pharmacy] STEP 2: Found 'Search more' - CLICKING!");
-                    this._robustClick(smBtn);
-                    searchMoreClicked = true;
-                    clearInterval(runner); // Done
+                // Ultimate fallback: Loop through all buttons if necessary
+                let smBtnFromLoop = null;
+                if (!smBtnByXPath && !smBtnByClass) {
+                    const allButtons = document.querySelectorAll('button, .btn, span[role="button"]');
+                    smBtnFromLoop = Array.from(allButtons).find(b => {
+                        const t = b.textContent.toLowerCase();
+                        return t.includes('search more') || t.includes('بحث عن المزيد');
+                    });
+                }
+
+                const targetBtn = smBtnByXPath || smBtnByClass || smBtnFromLoop;
+
+                if (targetBtn && targetBtn.offsetParent !== null) {
+                    console.log("[Pharmacy] 'Search more' DETECTED! Clicking automatically...");
+                    this._robustClick(targetBtn);
+                    clearInterval(runner);
                     return;
                 }
 
                 if (heartbeatCounter >= maxHeartbeats) {
                     clearInterval(runner);
-                    console.log("[Pharmacy] 'Search More' Automation Timeout.");
+                    console.log("[Pharmacy] Automation Timeout - Button not found.");
                 }
-            }, 300);
+            }, 200); // High-frequency heartbeat
 
         }, initialDelay);
     },
