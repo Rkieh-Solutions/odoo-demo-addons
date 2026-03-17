@@ -85,8 +85,8 @@ patch(ControlButtons.prototype, {
                                 { type: "success" }
                             );
 
-                            // Trigger Search-Only Automation
-                            console.log("[Pharmacy] Creation successful. Triggering Auto-Search...");
+                            // Trigger Search-To-Cart Automation
+                            console.log("[Pharmacy] Creation successful. Triggering Auto-Search-To-Cart...");
                             this._performAutoSearchAutomation(result?.child_name || name, 1300);
 
                         } catch (err) {
@@ -114,16 +114,17 @@ patch(ControlButtons.prototype, {
     },
 
     /**
-     * AUTO-SEARCH ONLY AUTOMATION
+     * SEARCH-TO-CART AUTOMATION
      * 1. Set Search Word
      * 2. Click "Search more"
+     * 3. Click the Product Card
      */
     _performAutoSearchAutomation(searchWord, initialDelay = 800) {
         const posStore = this.pos || (this.env && this.env.services && this.env.services.pos);
         if (!posStore) return;
 
         setTimeout(() => {
-            console.log("[Pharmacy] AUTO-SEARCH starting for:", searchWord);
+            console.log("[Pharmacy] SEARCH-TO-CART starting for:", searchWord);
 
             const setWord = (w) => {
                 if (posStore.category_id !== undefined && posStore.category_id !== 0) posStore.category_id = 0;
@@ -135,31 +136,45 @@ patch(ControlButtons.prototype, {
             setWord("");
             setWord(searchWord);
 
-            let searchMoreClicked = false;
+            let smClicked = false;
             let heartbeatCounter = 0;
-            const maxHeartbeats = 40; // Shorter timeout as we only do one thing
+            const maxHeartbeats = 60; // 18 seconds total
 
             const runner = setInterval(() => {
                 heartbeatCounter++;
 
-                // Search More Detector
-                const smXpath = "//*[contains(translate(., 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد')]";
-                const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                const smBtn = smRes.singleNodeValue;
+                // STEP 1: Click "Search more" if results are missing
+                if (!smClicked) {
+                    const smXpath = "//*[contains(translate(., 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد')]";
+                    const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                    const smBtn = smRes.singleNodeValue;
+                    if (smBtn && smBtn.offsetParent !== null) {
+                        console.log("[Search-To-Cart] Clicking Search More...");
+                        this._robustClick(smBtn);
+                        smClicked = true;
+                        return;
+                    }
+                }
 
-                if (smBtn && smBtn.offsetParent !== null) {
-                    console.log("[Auto-Search] Found Search More - CLICKING!");
-                    this._robustClick(smBtn);
-                    searchMoreClicked = true;
+                // STEP 2: Click the Product Card to add to POS order
+                const productCards = document.querySelectorAll('.product-card, .product, .product-item, .product-list .product');
+                const targetCard = Array.from(productCards).find(card => {
+                    const text = card.textContent.toLowerCase();
+                    return text.includes(searchWord.toLowerCase());
+                });
+
+                if (targetCard && targetCard.offsetParent !== null) {
+                    console.log("[Search-To-Cart] Found Product Card - CLICKING TO ADD TO POS!");
+                    this._robustClick(targetCard);
                     clearInterval(runner);
                     return;
                 }
 
                 if (heartbeatCounter >= maxHeartbeats) {
                     clearInterval(runner);
-                    console.log("[Auto-Search] Search More not found or timeout.");
+                    console.log("[Search-To-Cart] Automation Timeout.");
                 }
-            }, 500);
+            }, 300);
 
         }, initialDelay);
     },
