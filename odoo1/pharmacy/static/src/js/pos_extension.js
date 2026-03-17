@@ -136,7 +136,7 @@ patch(ControlButtons.prototype, {
                                     // 3. ULTRA-AGGRESSIVE AUTOMATION
                                     setTimeout(() => {
                                         try {
-                                            console.log("[Pharmacy] Starting Ultra-Aggressive Automation...");
+                                            console.log("[Pharmacy] Starting Ultra-Aggressive Automation Flow...");
 
                                             // A. Reset category and trigger search word
                                             if (posStore.category_id !== undefined) posStore.category_id = 0;
@@ -154,37 +154,48 @@ patch(ControlButtons.prototype, {
                                             }
 
                                             // B. The Automation Cycle (Search More -> Reload -> Full Sync)
-                                            let reloadClicked = false;
                                             let fullSyncClicked = false;
 
                                             const triggerAggressiveAutomation = () => {
                                                 console.log("[Pharmacy] Automation Cycle Heartbeat...");
 
-                                                // Phase 1: Search More Button (If searching for new product)
-                                                // Using broad text matching to handle all languages/versions
-                                                const searchMoreBtn = Array.from(document.querySelectorAll('button, .search-more-button, .btn, .o_button')).find(el => {
-                                                    const text = el.textContent.trim().toLowerCase();
-                                                    return text === 'search more' || text === 'بحث عن المزيد' || text.includes('search more');
+                                                // PHASE 1: Search More Button (Language & Element Aware)
+                                                // We look for ANY clickable element containing "Search more"
+                                                const searchMoreBtn = Array.from(document.querySelectorAll('.search-more-button, button, div, span, a')).find(el => {
+                                                    const t = el.textContent.trim().toLowerCase();
+                                                    const isMatch = t === 'search more' || t === 'بحث عن المزيد' || t.includes('search more');
+                                                    if (!isMatch) return false;
+
+                                                    // Robust visibility check
+                                                    const style = window.getComputedStyle(el);
+                                                    return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
                                                 });
 
-                                                if (searchMoreBtn && searchMoreBtn.offsetParent !== null) {
-                                                    console.log("[Pharmacy] Phase 1: Clicking Search More...");
-                                                    // Trigger all possible click events for maximum compatibility
-                                                    ['mousedown', 'mouseup', 'click'].forEach(evt => {
-                                                        searchMoreBtn.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
+                                                if (searchMoreBtn) {
+                                                    console.log("[Pharmacy] Phase 1: Clicking Search More!");
+                                                    searchMoreBtn.click();
+                                                    // Multi-event click for framework compatibility
+                                                    ['mousedown', 'mouseup', 'click', 'pointerdown', 'pointerup'].forEach(evt => {
+                                                        const eventType = evt.includes('pointer') ? PointerEvent : MouseEvent;
+                                                        try {
+                                                            searchMoreBtn.dispatchEvent(new eventType(evt, { bubbles: true, cancelable: true, view: window }));
+                                                        } catch (e) {
+                                                            searchMoreBtn.dispatchEvent(new Event(evt, { bubbles: true, cancelable: true }));
+                                                        }
                                                     });
                                                 }
 
-                                                // Phase 2: "Full" Synchronization Button (Confirmation Dialog)
-                                                const modal = document.querySelector('.modal-dialog, .o_dialog_container');
+                                                // PHASE 2: "Full" Synchronization Button (Confirmation Dialog)
+                                                const modal = document.querySelector('.modal-dialog, .o_dialog_container, .o_dialog');
                                                 if (modal) {
-                                                    const fullBtn = Array.from(modal.querySelectorAll('button, span, div')).find(el => {
+                                                    const fullBtn = Array.from(modal.querySelectorAll('button, span, div, a')).find(el => {
                                                         const text = el.textContent.trim().toLowerCase();
                                                         return text === 'full' || text === 'كامل' || text.includes('full');
                                                     });
 
                                                     if (fullBtn && fullBtn.offsetParent !== null) {
                                                         console.log("[Pharmacy] Phase 2: Clicking 'Full' sync button!");
+                                                        fullBtn.click();
                                                         ['mousedown', 'mouseup', 'click'].forEach(evt => {
                                                             fullBtn.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
                                                         });
@@ -193,7 +204,7 @@ patch(ControlButtons.prototype, {
                                                     }
                                                 }
 
-                                                // Phase 3: "Reload Data" Menu Item
+                                                // PHASE 3: "Reload Data" Menu Item
                                                 if (!fullSyncClicked) {
                                                     const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu');
                                                     const allSelectors = '.o-dropdown-item, .dropdown-item, .pos-burger-menu-items span, span, div, a';
@@ -204,28 +215,30 @@ patch(ControlButtons.prototype, {
 
                                                     if (reloadBtn && reloadBtn.offsetParent !== null) {
                                                         console.log("[Pharmacy] Phase 3: Clicking 'Reload Data' menu item...");
+                                                        reloadBtn.click();
                                                         ['mousedown', 'mouseup', 'click'].forEach(evt => {
                                                             reloadBtn.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
                                                         });
-                                                        reloadClicked = true;
                                                         return false;
                                                     }
 
-                                                    // Phase 4: Open Burger Menu
+                                                    // PHASE 4: Open Burger Menu
                                                     if (!menuOpen) {
                                                         const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu, .navbar-button');
-                                                        if (burgerBtn && burgerBtn.offsetParent !== null) {
+                                                        if (burgerBtn && (burgerBtn.offsetParent !== null || window.getComputedStyle(burgerBtn).display !== 'none')) {
                                                             console.log("[Pharmacy] Phase 4: Opening Burger Menu...");
                                                             burgerBtn.click();
+                                                            const icon = burgerBtn.querySelector('i');
+                                                            if (icon) icon.click();
                                                         }
                                                     }
                                                 }
                                                 return false;
                                             };
 
-                                            // Start the loop (Aggressive: 600ms heartbeat for 18 seconds)
+                                            // Start the loop (Aggressive: 600ms heartbeat for 20 seconds)
                                             let attempts = 0;
-                                            const maxAttempts = 30;
+                                            const maxAttempts = 35;
                                             const autoInterval = setInterval(() => {
                                                 attempts++;
                                                 if (triggerAggressiveAutomation() || attempts >= maxAttempts) {
