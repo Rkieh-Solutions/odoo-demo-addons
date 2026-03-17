@@ -161,11 +161,15 @@ patch(ControlButtons.prototype, {
                 setWord(searchWord);
 
                 // Step 2: Aggressive multi-vector button detection
+                // V1: XPath (Reliable for text across languages)
                 const smXpath = "//*[contains(translate(normalize-space(.), 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد')]";
                 const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                // V2: Standard Odoo CSS classes
+                const smBtnXPath = smRes.singleNodeValue;
+
+                // V2: Standard Odoo CSS classes (Fixed SyntaxError)
                 const smBtnCSS = document.querySelector('.search-more-button, .search-more, .pos-search-more, .btn-secondary.search-more');
 
+                // V3: Manual DOM scan for the specific purple button text
                 let smBtnLoop = null;
                 if (!smBtnXPath && !smBtnCSS) {
                     const allBtns = document.querySelectorAll('button, .btn, .o-btn, .button');
