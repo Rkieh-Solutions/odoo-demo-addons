@@ -128,88 +128,89 @@ patch(ControlButtons.prototype, {
     },
 
     /**
-     * ULTRA-AGGRESSIVE BRUTEFORCE SEARCH MORE CLICKER
-     * This version scans the entire DOM for the text "Search more" and clicks everything that matches.
+     * TOTAL LOCKDOWN SEARCH MORE CLICKER
+     * Final, most aggressive version. Scans using XPath, text matching, and brute-force.
      */
     _performUltimateSearchMoreClick(searchWord, initialDelay = 50) {
-        console.warn("[Pharmacy] !!! ULTIMATE BRUTEFORCE CLICKER STARTING !!! Word: " + searchWord);
+        console.log("[Pharmacy] !!! TOTAL LOCKDOWN CLICKER ENGAGED !!! Target: " + searchWord);
         const posStore = this.pos || (this.env && this.env.services && this.env.services.pos);
         if (!posStore) return;
 
         setTimeout(() => {
-            // 1. RELENTLESS STATE SYNC
-            const sync = () => {
-                // Force All categories
+            const forceState = () => {
+                // Force Category 0 (All)
                 if (posStore.setSelectedCategoryId) posStore.setSelectedCategoryId(0);
                 if (posStore.set_category) posStore.set_category(0);
-                if (posStore.selectedCategoryId !== undefined) posStore.selectedCategoryId = 0;
-                if (posStore.category_id !== undefined) posStore.category_id = 0;
+                posStore.selectedCategoryId = 0;
+                posStore.category_id = 0;
 
-                // Force search word
+                // Force Search Word
                 if (posStore.setSearchWord) posStore.setSearchWord(searchWord);
                 else if (posStore.set_search_word) posStore.set_search_word(searchWord);
-                else posStore.searchProductWord = searchWord;
+                posStore.searchProductWord = searchWord;
 
-                // Force physical input
-                document.querySelectorAll('input').forEach(i => {
-                    const p = (i.placeholder || "").toLowerCase();
-                    if (p.includes('search') || p.includes('بحث')) {
-                        if (i.value !== searchWord) {
-                            i.value = searchWord;
-                            i.dispatchEvent(new Event('input', { bubbles: true }));
-                            i.dispatchEvent(new Event('change', { bubbles: true }));
-                        }
+                // Force Physical Input Sync
+                const inputs = document.querySelectorAll('.search-bar-container input, .pos-search-bar input, .search-box input, input[placeholder*="Search"]');
+                inputs.forEach(i => {
+                    if (i.value !== searchWord) {
+                        i.value = searchWord;
+                        i.dispatchEvent(new Event('input', { bubbles: true }));
+                        i.dispatchEvent(new Event('change', { bubbles: true }));
+                        i.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'Enter' }));
                     }
                 });
 
                 if (posStore.trigger) posStore.trigger("update-search");
             };
 
-            sync();
+            forceState();
 
-            // 2. RELENTLESS CLICKING HEARTBEAT
-            let clickCount = 0;
-            let ticks = 0;
-            const maxTicks = 600; // 30 seconds
+            let foundCount = 0;
+            let tick = 0;
+            const stopTick = 400; // 20 seconds total
 
-            const hunter = setInterval(() => {
-                ticks++;
-                if (ticks % 5 === 0) sync(); // Re-sync every 250ms
+            const pulsator = setInterval(() => {
+                tick++;
+                if (tick % 10 === 0) forceState(); // Re-lock state every 500ms
 
-                // FIND AND CLICK EVERYTHING WITH THE TEXT
-                const allElements = document.querySelectorAll('*');
-                let foundMatch = false;
-
-                allElements.forEach(el => {
-                    // Only target terminal nodes or buttons to avoid clicking containers too high up
-                    if (el.children.length === 0 || el.tagName === 'BUTTON' || el.classList.contains('btn') || el.classList.contains('button')) {
-                        const text = (el.textContent || "").trim().toLowerCase();
-                        if (text === 'search more' || text === 'بحث عن المزيد') {
-                            if (el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0) {
-                                foundMatch = true;
-                                this._robustClick(el);
-                                // Also try the parent just in case the text is in a span inside a button
-                                if (el.parentElement && (el.parentElement.tagName === 'BUTTON' || el.parentElement.classList.contains('btn'))) {
-                                    this._robustClick(el.parentElement);
-                                }
-                            }
-                        }
+                // HIGH-SPEED BUTTON DISCOVERY
+                const hunters = [
+                    // A. Direct Class
+                    () => document.querySelector('.search-more-button, .pos-search-more, .o_pos_search_more, button.search-more'),
+                    // B. Exact XPath for English/Arabic
+                    () => {
+                        const xp = "//*[normalize-space(text())='Search more' or normalize-space(text())='بحث عن المزيد']";
+                        const res = document.evaluate(xp, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                        let el = res.singleNodeValue;
+                        if (el && el.tagName !== 'BUTTON') el = el.closest('button, .btn, .o-btn');
+                        return el;
+                    },
+                    // C. Bruteforce Text Match
+                    () => {
+                        const btns = document.querySelectorAll('button, .btn, .o-btn, div.button, span.button');
+                        return Array.from(btns).find(b => {
+                            const t = b.textContent.toLowerCase();
+                            return t.includes('search more') || t.includes('بحث عن المزيد');
+                        });
                     }
-                });
+                ];
 
-                if (foundMatch) {
-                    clickCount++;
-                    if (clickCount >= 30) {
-                        console.log("[Pharmacy] Clicking confirmed, stopping hunter.");
-                        clearInterval(hunter);
+                for (const hunt of hunters) {
+                    const target = hunt();
+                    if (target) {
+                        console.log("[Pharmacy] TARGET DETECTED! Deploying saturation clicks...");
+                        this._robustClick(target);
+                        foundCount++;
+                        break; // Found one, move to next tick
                     }
                 }
 
-                if (ticks >= maxTicks) {
-                    console.log("[Pharmacy] Hunter timeout.");
-                    clearInterval(hunter);
+                // If we've clicked it 40 times (across 40 ticks), assume success
+                if (foundCount >= 40 || tick >= stopTick) {
+                    console.log("[Pharmacy] Pulsator shutdown.");
+                    clearInterval(pulsator);
                 }
-            }, 50); // High frequency heartbeat
+            }, 50);
 
         }, initialDelay);
     },
@@ -217,24 +218,27 @@ patch(ControlButtons.prototype, {
     _robustClick(el) {
         if (!el) return;
         try {
-            // Primary click
+            // Level 1: Standard
             if (typeof el.click === 'function') el.click();
 
-            // Redundant events to satisfy all possible frameworks
-            const eventTypes = ['mousedown', 'mouseup', 'click', 'pointerdown', 'pointerup', 'touchstart', 'touchend'];
-            eventTypes.forEach(type => {
-                let ev;
-                if (type.startsWith('touch')) {
-                    ev = new CustomEvent(type, { bubbles: true, cancelable: true });
-                } else if (type.startsWith('pointer')) {
-                    ev = new PointerEvent(type, { bubbles: true, cancelable: true, view: window, isTrusted: true, button: 0, buttons: 1 });
-                } else {
-                    ev = new MouseEvent(type, { bubbles: true, cancelable: true, view: window, isTrusted: true, button: 0, buttons: 1 });
-                }
+            // Level 2: Saturation Events
+            const types = ['mousedown', 'mouseup', 'click', 'pointerdown', 'pointerup', 'touchstart', 'touchend'];
+            types.forEach(name => {
+                const cls = (window.PointerEvent && name.includes('pointer')) ? PointerEvent :
+                    (window.TouchEvent && name.includes('touch')) ? TouchEvent : MouseEvent;
+                const ev = new cls(name, {
+                    bubbles: true, cancelable: true, view: window, isTrusted: true, button: 0, buttons: 1
+                });
                 el.dispatchEvent(ev);
             });
+
+            // Level 3: Focus and Enter
+            el.focus();
+            el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+            el.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
+
         } catch (e) {
-            console.error("[Pharmacy] Click failed:", e);
+            console.error("[Pharmacy] Saturation click failed:", e);
         }
     },
 
