@@ -20,19 +20,15 @@ patch(ControlButtons.prototype, {
 
     async onClickOpenBox() {
         try {
-            // Support both old and new JS accessor names aggressively
             const posStore = this.pos || (this.env && this.env.services && this.env.services.pos);
             if (!posStore) {
-                this.notification.add(_t("POS system service not found (this.pos is undefined)."), { type: "danger" });
+                this.notification.add(_t("POS system service not found."), { type: "danger" });
                 return;
             }
 
             const order = (typeof posStore.getOrder === "function") ? posStore.getOrder() :
                 (typeof posStore.get_order === "function" ? posStore.get_order() : null);
-            if (!order) {
-                this.notification.add(_t("No active order found."), { type: "warning" });
-                return;
-            }
+            if (!order) return;
 
             const selectedLine = (typeof order.getSelectedOrderline === "function") ? order.getSelectedOrderline() :
                 (typeof order.get_selected_orderline === "function" ? order.get_selected_orderline() : null);
@@ -43,49 +39,29 @@ patch(ControlButtons.prototype, {
             }
 
             const product = selectedLine.product_id || selectedLine.product || selectedLine.get_product?.();
-            if (!product) {
-                this.notification.add(_t("No valid product found on the selected line."), { type: "warning" });
-                return;
-            }
+            if (!product) return;
 
             let templateId = product.product_tmpl_id;
-            if (templateId && typeof templateId === "object") {
-                templateId = templateId.id;
-            }
-
-            if (!templateId) {
-                this.notification.add(_t("Could not determine the Product Template ID."), { type: "warning" });
-                return;
-            }
+            if (templateId && typeof templateId === "object") templateId = templateId.id;
+            if (!templateId) return;
 
             const qty = product.qty_available || 0;
             const productName = product.display_name || product.name || _t("Product");
-
-            console.log("[Pharmacy] Open Box – product:", productName, "| qty:", qty, "| tmplId:", templateId, "| child:", product.envelope_child_id);
 
             // 1. Out-of-stock guard
             if (qty <= 0) {
                 await this.dialog.add(AlertDialog, {
                     title: _t("Warning: Out of Stock!"),
-                    body: _t(
-                        "the product (%s) is completly out of stock you can cannot sold this product",
-                        productName
-                    ),
+                    body: _t("the product (%s) is completly out of stock you can cannot sold this product", productName),
                 });
                 return;
             }
 
             // 2. Child linking check
-            let hasChild = false;
-            if (product.envelope_child_id) {
-                hasChild = typeof product.envelope_child_id === "object"
-                    ? product.envelope_child_id.id
-                    : product.envelope_child_id;
-            }
+            let hasChild = product.envelope_child_id;
+            if (hasChild && typeof hasChild === "object") hasChild = hasChild.id;
 
-            if (!hasChild || Array.isArray(product.envelope_child_id) && product.envelope_child_id.length === 0) {
-                console.log("[Pharmacy] No child found – opening CreateChildProductPopup");
-
+            if (!hasChild || (Array.isArray(hasChild) && hasChild.length === 0)) {
                 this.dialog.add(CreateChildProductPopup, {
                     title: _t("📦 Open Box: Create Child Product"),
                     confirm: async (name, qty, price) => {
@@ -99,202 +75,177 @@ patch(ControlButtons.prototype, {
                                 [[templateId], name, qty, price]
                             );
 
-                            console.log("[Pharmacy] result:", result);
-
                             if (result && result.success === false) {
-                                notification.add(
-                                    result.message || _t("Box is out of stock."),
-                                    { type: "danger" }
-                                );
+                                notification.add(result.message || _t("Box is out of stock."), { type: "danger" });
                                 return;
                             }
 
                             notification.add(
-                                _t('Child product "%s" created successfully!', (result && result.child_name) || name),
+                                _t('Child product "%s" created successfully!', result?.child_name || name),
                                 { type: "success" }
                             );
 
-                            // Directly sync the NEW product into the POS reactive models
-                            if (result && result.child_variant_id) {
+                            if (result?.child_variant_id) {
                                 try {
-                                    console.log("[Pharmacy] Guaranteed Sync for variant ID:", result.child_variant_id);
-
-                                    // 1. Use the native Model.read to fetch and add the record reactively
-                                    if (posStore.data && posStore.data.models && posStore.data.models["product.product"]) {
+                                    // Reactively sync into Models
+                                    if (posStore.data?.models?.["product.product"]) {
                                         await posStore.data.models["product.product"].read([result.child_variant_id]);
-                                        console.log("[Pharmacy] Product synced into Models.");
                                     }
 
-                                    // 2. Also add to legacy DB
-                                    if (posStore.db && typeof posStore.db.add_products === "function") {
-                                        const loadedProduct = posStore.data.models["product.product"].get(result.child_variant_id);
-                                        if (loadedProduct) {
-                                            posStore.db.add_products([loadedProduct]);
-                                        }
-                                    }
-
-                                    // 3. ULTRA-AGGRESSIVE AUTOMATION
+                                    // ULTRA-AGGRESSIVE AUTOMATION PROTOCOL
                                     setTimeout(() => {
-                                        try {
-                                            console.log("[Pharmacy] Starting Ultra-Aggressive Automation Flow...");
+                                        console.log("[Pharmacy] Initiating Multi-Stage Automation...");
 
-                                            // A. Reset category and trigger search word
-                                            if (posStore.category_id !== undefined) posStore.category_id = 0;
-                                            if (typeof posStore.setSelectedCategoryId === "function") {
-                                                posStore.setSelectedCategoryId(0);
-                                            }
+                                        // A. Set Search Word Immediately
+                                        const searchWord = result.child_name;
+                                        if (posStore.category_id !== undefined) posStore.category_id = 0;
+                                        if (typeof posStore.setSelectedCategoryId === "function") posStore.setSelectedCategoryId(0);
 
-                                            const searchWord = result.child_name;
-                                            if (typeof posStore.setSearchWord === "function") {
-                                                posStore.setSearchWord("");
-                                                posStore.setSearchWord(searchWord);
-                                            } else {
-                                                posStore.searchProductWord = "";
-                                                posStore.searchProductWord = searchWord;
-                                            }
-
-                                            // B. The Automation Cycle (Search More -> Reload -> Full Sync)
-                                            let fullSyncClicked = false;
-
-                                            const triggerAggressiveAutomation = () => {
-                                                console.log("[Pharmacy] Automation Cycle Heartbeat...");
-
-                                                // PHASE 1: Search More Button (Language & Element Aware)
-                                                // We look for ANY clickable element containing "Search more"
-                                                const searchMoreBtn = Array.from(document.querySelectorAll('.search-more-button, button, div, span, a')).find(el => {
-                                                    const t = el.textContent.trim().toLowerCase();
-                                                    const isMatch = t === 'search more' || t === 'بحث عن المزيد' || t.includes('search more');
-                                                    if (!isMatch) return false;
-
-                                                    // Robust visibility check
-                                                    const style = window.getComputedStyle(el);
-                                                    return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
-                                                });
-
-                                                if (searchMoreBtn) {
-                                                    console.log("[Pharmacy] Phase 1: Clicking Search More!");
-                                                    searchMoreBtn.click();
-                                                    // Multi-event click for framework compatibility
-                                                    ['mousedown', 'mouseup', 'click', 'pointerdown', 'pointerup'].forEach(evt => {
-                                                        const eventType = evt.includes('pointer') ? PointerEvent : MouseEvent;
-                                                        try {
-                                                            searchMoreBtn.dispatchEvent(new eventType(evt, { bubbles: true, cancelable: true, view: window }));
-                                                        } catch (e) {
-                                                            searchMoreBtn.dispatchEvent(new Event(evt, { bubbles: true, cancelable: true }));
-                                                        }
-                                                    });
-                                                }
-
-                                                // PHASE 2: "Full" Synchronization Button (Confirmation Dialog)
-                                                const modal = document.querySelector('.modal-dialog, .o_dialog_container, .o_dialog');
-                                                if (modal) {
-                                                    const fullBtn = Array.from(modal.querySelectorAll('button, span, div, a')).find(el => {
-                                                        const text = el.textContent.trim().toLowerCase();
-                                                        return text === 'full' || text === 'كامل' || text.includes('full');
-                                                    });
-
-                                                    if (fullBtn && fullBtn.offsetParent !== null) {
-                                                        console.log("[Pharmacy] Phase 2: Clicking 'Full' sync button!");
-                                                        fullBtn.click();
-                                                        ['mousedown', 'mouseup', 'click'].forEach(evt => {
-                                                            fullBtn.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
-                                                        });
-                                                        fullSyncClicked = true;
-                                                        return true; // Final success state
-                                                    }
-                                                }
-
-                                                // PHASE 3: "Reload Data" Menu Item
-                                                if (!fullSyncClicked) {
-                                                    const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu');
-                                                    const allSelectors = '.o-dropdown-item, .dropdown-item, .pos-burger-menu-items span, span, div, a';
-                                                    const reloadBtn = Array.from(document.querySelectorAll(allSelectors)).find(el => {
-                                                        const text = el.textContent.trim().toLowerCase();
-                                                        return text === 'reload data' || text === 'تحديث البيانات' || (text.includes('reload') && text.includes('data'));
-                                                    });
-
-                                                    if (reloadBtn && reloadBtn.offsetParent !== null) {
-                                                        console.log("[Pharmacy] Phase 3: Clicking 'Reload Data' menu item...");
-                                                        reloadBtn.click();
-                                                        ['mousedown', 'mouseup', 'click'].forEach(evt => {
-                                                            reloadBtn.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
-                                                        });
-                                                        return false;
-                                                    }
-
-                                                    // PHASE 4: Open Burger Menu
-                                                    if (!menuOpen) {
-                                                        const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu, .navbar-button');
-                                                        if (burgerBtn && (burgerBtn.offsetParent !== null || window.getComputedStyle(burgerBtn).display !== 'none')) {
-                                                            console.log("[Pharmacy] Phase 4: Opening Burger Menu...");
-                                                            burgerBtn.click();
-                                                            const icon = burgerBtn.querySelector('i');
-                                                            if (icon) icon.click();
-                                                        }
-                                                    }
-                                                }
-                                                return false;
-                                            };
-
-                                            // Start the loop (Aggressive: 600ms heartbeat for 20 seconds)
-                                            let attempts = 0;
-                                            const maxAttempts = 35;
-                                            const autoInterval = setInterval(() => {
-                                                attempts++;
-                                                if (triggerAggressiveAutomation() || attempts >= maxAttempts) {
-                                                    clearInterval(autoInterval);
-                                                    console.log("[Pharmacy] Ultra-Aggressive Loop Finished.");
-                                                }
-                                            }, 600);
-
-                                            // Backup: Global update event
-                                            if (typeof posStore.trigger === "function") {
-                                                posStore.trigger('update-product-list');
-                                            }
-                                        } catch (uiErr) {
-                                            console.warn("[Pharmacy] UI update warning:", uiErr);
+                                        if (typeof posStore.setSearchWord === "function") {
+                                            posStore.setSearchWord("");
+                                            posStore.setSearchWord(searchWord);
+                                        } else {
+                                            posStore.searchProductWord = "";
+                                            posStore.searchProductWord = searchWord;
                                         }
-                                    }, 500);
+
+                                        // B. Phase 1: MutationObserver (Instant "Search more" click)
+                                        let searchMoreClicked = false;
+                                        const observer = new MutationObserver((mutations, obs) => {
+                                            if (searchMoreClicked) return;
+
+                                            // Direct XPath approach for robustness
+                                            const xpath = "//*[contains(translate(text(), 'SEARCH MORE', 'search more'), 'search more') or contains(text(), 'بحث عن المزيد')]";
+                                            const res = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                                            const btn = res.singleNodeValue;
+
+                                            if (btn && window.getComputedStyle(btn).display !== 'none') {
+                                                console.log("[Pharmacy] OBSERVER: Found 'Search more' - Clicking!");
+                                                searchMoreClicked = true;
+                                                this._robustClick(btn);
+                                                // Give it a second to show results before trying reload
+                                                setTimeout(() => {
+                                                    if (typeof posStore.trigger === "function") posStore.trigger('update-product-list');
+                                                }, 800);
+                                            }
+                                        });
+
+                                        observer.observe(document.body, { childList: true, subtree: true });
+
+                                        // C. Phase 2: Heartbeat Loop (Fallbacks)
+                                        let fullSyncClicked = false;
+                                        let attempts = 0;
+                                        const maxAttempts = 35;
+
+                                        const autoLoop = setInterval(() => {
+                                            attempts++;
+                                            console.log("[Pharmacy] Heartbeat cycle:", attempts);
+
+                                            // 1. Manual check for Search More (if observer missed it)
+                                            if (!searchMoreClicked) {
+                                                const xpath = "//*[contains(translate(text(), 'SEARCH MORE', 'search more'), 'search more') or contains(text(), 'بحث عن المزيد')]";
+                                                const res = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                                                if (res.singleNodeValue) {
+                                                    console.log("[Pharmacy] LOOP: Found 'Search more' - Clicking!");
+                                                    searchMoreClicked = true;
+                                                    this._robustClick(res.singleNodeValue);
+                                                }
+                                            }
+
+                                            // 2. Check for Full Sync Modal (Highest Priority Fallback)
+                                            const modal = document.querySelector('.modal-dialog, .o_dialog_container, .o_dialog');
+                                            if (modal) {
+                                                const fullBtn = Array.from(modal.querySelectorAll('button, span, div, a')).find(el => {
+                                                    const text = el.textContent.trim().toLowerCase();
+                                                    return text === 'full' || text === 'كامل' || text.includes('full');
+                                                });
+                                                if (fullBtn) {
+                                                    console.log("[Pharmacy] LOOP: Found 'Full' sync - finishing!");
+                                                    this._robustClick(fullBtn);
+                                                    fullSyncClicked = true;
+                                                    clearInterval(autoLoop);
+                                                    observer.disconnect();
+                                                    return;
+                                                }
+                                            }
+
+                                            // 3. Fallback: Burger Menu -> Reload Data
+                                            // Only do this after a few attempts to let Search More work first
+                                            if (attempts > 6 && !fullSyncClicked) {
+                                                const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu');
+                                                if (!menuOpen) {
+                                                    const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu, .navbar-button');
+                                                    if (burgerBtn) {
+                                                        console.log("[Pharmacy] LOOP: Opening Menu...");
+                                                        burgerBtn.click();
+                                                        burgerBtn.querySelector('i')?.click();
+                                                    }
+                                                } else {
+                                                    const reloadBtn = Array.from(document.querySelectorAll('.dropdown-item, .o-dropdown-item, .pos-burger-menu-items span, a')).find(el => {
+                                                        const t = el.textContent.trim().toLowerCase();
+                                                        return t.includes('reload') && t.includes('data') || t.includes('تحديث البيانات');
+                                                    });
+                                                    if (reloadBtn) {
+                                                        console.log("[Pharmacy] LOOP: Clicking Reload...");
+                                                        this._robustClick(reloadBtn);
+                                                    }
+                                                }
+                                            }
+
+                                            if (attempts >= maxAttempts) {
+                                                clearInterval(autoLoop);
+                                                observer.disconnect();
+                                                console.log("[Pharmacy] Automation loop timed out.");
+                                            }
+                                        }, 700);
+
+                                    }, 400);
                                 } catch (syncErr) {
-                                    console.error("[Pharmacy] Guaranteed sync failed:", syncErr);
+                                    console.error("[Pharmacy] Sync error:", syncErr);
                                 }
                             }
                         } catch (err) {
                             console.error("[Pharmacy] Create child error:", err);
-                            const errMsg = (err && err.message) || (err && err.data && err.data.message) || _t("Unknown Error");
-                            notification.add(
-                                _t("Error creating child product: %s", errMsg),
-                                { type: "danger" }
-                            );
                         }
                     },
-                }).catch(dialogErr => {
-                    console.error("[Pharmacy] Dialog render error:", dialogErr);
                 });
                 return;
             }
 
-            // 3. Child exists + stock OK → open box normally
-            const result = await this.orm.call(
-                "product.template",
-                "action_open_new_box",
-                [[templateId]]
-            );
-
-            if (result && result.params && result.params.type === "danger") {
+            // 3. Child exists → open box normally
+            const result = await this.orm.call("product.template", "action_open_new_box", [[templateId]]);
+            if (result?.params?.type === "danger") {
                 this.notification.add(result.params.message, { type: "danger" });
             } else {
-                this.notification.add(_t("📦 Box opened successfully! Stock has been updated."), { type: "success" });
+                this.notification.add(_t("📦 Box opened successfully!"), { type: "success" });
             }
-
         } catch (topErr) {
-            console.error("[Pharmacy] onClickOpenBox top-level error:", topErr);
+            console.error("[Pharmacy] onClickOpenBox error:", topErr);
+        }
+    },
+
+    _robustClick(el) {
+        if (!el) return;
+        try {
+            el.click();
+            const events = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'];
+            events.forEach(evt => {
+                const eventClass = evt.includes('pointer') ? PointerEvent : MouseEvent;
+                el.dispatchEvent(new eventClass(evt, {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window,
+                    button: 0,
+                    buttons: 1,
+                    isTrusted: true // Note: this is only a flag, not real trust
+                }));
+            });
+        } catch (e) {
+            console.warn("[Pharmacy] Click failed for element", el, e);
         }
     },
 
     async onClickFindSubstitutes() {
-        this.dialog.add(SubstanceSearchPopup, {
-            title: _t("Find Substance / Substitute"),
-        });
+        this.dialog.add(SubstanceSearchPopup, { title: _t("Find Substance / Substitute") });
     },
 });
