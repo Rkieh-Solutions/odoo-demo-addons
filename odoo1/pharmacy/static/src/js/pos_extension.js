@@ -160,7 +160,18 @@ patch(ControlButtons.prototype, {
                     }
                 });
 
-                if (posStore.trigger) posStore.trigger("update-search");
+                if (posStore.trigger) {
+                    posStore.trigger("update-search");
+                    posStore.trigger("search-more");
+                    posStore.trigger("search_more");
+                }
+
+                // If native search function exists, call it directly
+                if (typeof posStore.searchProductMore === 'function') {
+                    posStore.searchProductMore(searchWord);
+                } else if (typeof posStore.search_product_more === 'function') {
+                    posStore.search_product_more(searchWord);
+                }
             };
 
             forceState();
