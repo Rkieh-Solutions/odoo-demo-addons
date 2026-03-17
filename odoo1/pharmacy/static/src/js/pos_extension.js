@@ -163,9 +163,8 @@ patch(ControlButtons.prototype, {
                 // Step 2: Aggressive multi-vector button detection
                 const smXpath = "//*[contains(translate(normalize-space(.), 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد')]";
                 const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                const smBtnXPath = smRes.singleNodeValue;
-
-                const smBtnCSS = document.querySelector('.search-more-button, .search-more, .pos-search-more, .btn-secondary.search-more, button:has(span:contains("Search more"))');
+                // V2: Standard Odoo CSS classes
+                const smBtnCSS = document.querySelector('.search-more-button, .search-more, .pos-search-more, .btn-secondary.search-more');
 
                 let smBtnLoop = null;
                 if (!smBtnXPath && !smBtnCSS) {
