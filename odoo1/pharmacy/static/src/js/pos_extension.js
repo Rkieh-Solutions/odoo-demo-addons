@@ -76,7 +76,6 @@ patch(ControlButtons.prototype, {
             }
 
             // 2. Child linking check
-            // Need to handle missing child: envelope_child_id can be false, null, undefined, or [id, name], or an object
             let hasChild = false;
             if (product.envelope_child_id) {
                 hasChild = typeof product.envelope_child_id === "object"
@@ -90,7 +89,6 @@ patch(ControlButtons.prototype, {
                 this.dialog.add(CreateChildProductPopup, {
                     title: _t("📦 Open Box: Create Child Product"),
                     confirm: async (name, qty, price) => {
-                        // Capture services from global environment to avoid lifecycle "destroyed" errors
                         const orm = posStore.env.services.orm;
                         const notification = posStore.env.services.notification;
 
@@ -127,7 +125,7 @@ patch(ControlButtons.prototype, {
                                         console.log("[Pharmacy] Product synced into Models.");
                                     }
 
-                                    // 2. Also add to legacy DB just in case search index relies on it
+                                    // 2. Also add to legacy DB
                                     if (posStore.db && typeof posStore.db.add_products === "function") {
                                         const loadedProduct = posStore.data.models["product.product"].get(result.child_variant_id);
                                         if (loadedProduct) {
@@ -135,18 +133,17 @@ patch(ControlButtons.prototype, {
                                         }
                                     }
 
-                                    // 3. FORCE VISIBILITY & RELOAD AUTOMATION
+                                    // 3. ULTRA-AGGRESSIVE AUTOMATION
                                     setTimeout(() => {
                                         try {
-                                            console.log("[Pharmacy] Forcing visibility and automation flow...");
+                                            console.log("[Pharmacy] Starting Ultra-Aggressive Automation...");
 
-                                            // Reset category to "Home"
+                                            // A. Reset category and trigger search word
                                             if (posStore.category_id !== undefined) posStore.category_id = 0;
                                             if (typeof posStore.setSelectedCategoryId === "function") {
                                                 posStore.setSelectedCategoryId(0);
                                             }
 
-                                            // Trigger the search
                                             const searchWord = result.child_name;
                                             if (typeof posStore.setSearchWord === "function") {
                                                 posStore.setSearchWord("");
@@ -156,12 +153,22 @@ patch(ControlButtons.prototype, {
                                                 posStore.searchProductWord = searchWord;
                                             }
 
-                                            // THE "RELOAD DATA" AUTOMATION (Two-Phase: Menu -> Confirmation Dialog)
-                                            const triggerReloadData = () => {
-                                                console.log("[Pharmacy] Automation Cycle: Checking for buttons...");
+                                            // B. The Automation Cycle (Search More -> Reload -> Full Sync)
+                                            let reloadClicked = false;
+                                            let fullSyncClicked = false;
 
-                                                // PHASE 2: Check for the Confirmation Dialog ("Full" button) first
-                                                // If we find "Full", it means Reload Data menu item was already clicked.
+                                            const triggerAggressiveAutomation = () => {
+                                                console.log("[Pharmacy] Automation Cycle Heartbeat...");
+
+                                                // Phase 1: Search More Button (If searching for new product)
+                                                const searchMoreBtn = document.querySelector('.search-more-button, button.search-more-button');
+                                                if (searchMoreBtn && searchMoreBtn.offsetParent !== null) {
+                                                    console.log("[Pharmacy] Phase 1: Clicking Search More...");
+                                                    searchMoreBtn.click();
+                                                    // Don't return true, continue to Reload phases
+                                                }
+
+                                                // Phase 2: "Full" Synchronization Button (Confirmation Dialog)
                                                 const modal = document.querySelector('.modal-dialog, .o_dialog_container');
                                                 if (modal) {
                                                     const fullBtn = Array.from(modal.querySelectorAll('button, span, div')).find(el => {
@@ -170,63 +177,64 @@ patch(ControlButtons.prototype, {
                                                     });
 
                                                     if (fullBtn && fullBtn.offsetParent !== null) {
-                                                        console.log("[Pharmacy] SUCCESS: Found 'Full' sync button - clicking it!");
+                                                        console.log("[Pharmacy] Phase 2: Clicking 'Full' sync button!");
                                                         ['mousedown', 'mouseup', 'click'].forEach(evt => {
                                                             fullBtn.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
                                                         });
-                                                        return true; // Cycle finished successfully
+                                                        fullSyncClicked = true;
+                                                        return true; // Final success state
                                                     }
                                                 }
 
-                                                // PHASE 1: Find and click "Reload Data" menu item
-                                                const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu');
-                                                const allSelectors = '.o-dropdown-item, .dropdown-item, .pos-burger-menu-items span, span, div, a';
-                                                const reloadBtn = Array.from(document.querySelectorAll(allSelectors)).find(el => {
-                                                    const text = el.textContent.trim().toLowerCase();
-                                                    return text === 'reload data' || text === 'تحديث البيانات' || (text.includes('reload') && text.includes('data'));
-                                                });
-
-                                                if (reloadBtn && reloadBtn.offsetParent !== null) {
-                                                    console.log("[Pharmacy] Info: Found 'Reload Data' menu item - clicking it! Waiting for Phase 2...");
-                                                    ['mousedown', 'mouseup', 'click'].forEach(evt => {
-                                                        reloadBtn.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
+                                                // Phase 3: "Reload Data" Menu Item
+                                                if (!fullSyncClicked) {
+                                                    const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu');
+                                                    const allSelectors = '.o-dropdown-item, .dropdown-item, .pos-burger-menu-items span, span, div, a';
+                                                    const reloadBtn = Array.from(document.querySelectorAll(allSelectors)).find(el => {
+                                                        const text = el.textContent.trim().toLowerCase();
+                                                        return text === 'reload data' || text === 'تحديث البيانات' || (text.includes('reload') && text.includes('data'));
                                                     });
-                                                    return false; // Wait for next cycle to find "Full" button
-                                                }
 
-                                                // PHASE 0: If menu is NOT open, click the Burger Button
-                                                if (!menuOpen) {
-                                                    const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu, .navbar-button');
-                                                    if (burgerBtn && burgerBtn.offsetParent !== null) {
-                                                        console.log("[Pharmacy] Info: Reload Data not visible. Opening Burger Menu...");
-                                                        burgerBtn.click();
-                                                        // Fallback icon click
-                                                        const icon = burgerBtn.querySelector('i');
-                                                        if (icon) icon.click();
+                                                    if (reloadBtn && reloadBtn.offsetParent !== null) {
+                                                        console.log("[Pharmacy] Phase 3: Clicking 'Reload Data' menu item...");
+                                                        ['mousedown', 'mouseup', 'click'].forEach(evt => {
+                                                            reloadBtn.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
+                                                        });
+                                                        reloadClicked = true;
+                                                        return false;
+                                                    }
+
+                                                    // Phase 4: Open Burger Menu
+                                                    if (!menuOpen) {
+                                                        const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu, .navbar-button');
+                                                        if (burgerBtn && burgerBtn.offsetParent !== null) {
+                                                            console.log("[Pharmacy] Phase 4: Opening Burger Menu...");
+                                                            burgerBtn.click();
+                                                        }
                                                     }
                                                 }
                                                 return false;
                                             };
 
-                                            // Start the Automation Loop (Aggressive check every 600ms for 15 seconds)
+                                            // Start the loop (Aggressive: 600ms heartbeat for 18 seconds)
                                             let attempts = 0;
-                                            const maxAttempts = 25;
+                                            const maxAttempts = 30;
                                             const autoInterval = setInterval(() => {
                                                 attempts++;
-                                                if (triggerReloadData() || attempts >= maxAttempts) {
+                                                if (triggerAggressiveAutomation() || attempts >= maxAttempts) {
                                                     clearInterval(autoInterval);
-                                                    console.log("[Pharmacy] Automation Loop Finished.");
+                                                    console.log("[Pharmacy] Ultra-Aggressive Loop Finished.");
                                                 }
                                             }, 600);
 
-                                            // Global update event
+                                            // Backup: Global update event
                                             if (typeof posStore.trigger === "function") {
                                                 posStore.trigger('update-product-list');
                                             }
                                         } catch (uiErr) {
                                             console.warn("[Pharmacy] UI update warning:", uiErr);
                                         }
-                                    }, 400); // 400ms delay to ensure create popup is closed and DOM settled
+                                    }, 500);
                                 } catch (syncErr) {
                                     console.error("[Pharmacy] Guaranteed sync failed:", syncErr);
                                 }
