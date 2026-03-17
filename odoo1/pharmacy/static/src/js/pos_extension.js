@@ -85,9 +85,9 @@ patch(ControlButtons.prototype, {
                                 { type: "success" }
                             );
 
-                            // Trigger ULTIMATE RESTORED 5-Step Automation
-                            console.log("[Pharmacy] Creation successful. Restoring 5-Step Reload sequence...");
-                            this._ultimatePOSReloadAutomation(result?.child_name || name, 1300);
+                            // Trigger ULTIMATE 5-Step Automation (Reduced initial delay for faster response)
+                            console.log("[Pharmacy] Product created. Starting 5-Step Automation sequence...");
+                            this._ultimatePOSReloadAutomation(result?.child_name || name, 1000);
 
                         } catch (err) {
                             console.error("[Pharmacy] Create child error:", err);
@@ -106,7 +106,7 @@ patch(ControlButtons.prototype, {
 
                 // Trigger automation for existing box opening
                 const searchName = result?.child_name || product.display_name || product.name;
-                this._ultimatePOSReloadAutomation(searchName, 600);
+                this._ultimatePOSReloadAutomation(searchName, 500);
             }
         } catch (topErr) {
             console.error("[Pharmacy] onClickOpenBox error:", topErr);
@@ -114,9 +114,9 @@ patch(ControlButtons.prototype, {
     },
 
     /**
-     * ULTIMATE 5-STEP HANDS-OFF AUTOMATION (RESTORED)
+     * ULTIMATE 5-STEP HANDS-OFF AUTOMATION
      * 1. Search for Product
-     * 2. Click "Search more"
+     * 2. Click "Search more" (PURPLE BUTTON)
      * 3. Open Burger Menu
      * 4. Click "Reload Data"
      * 5. Click "Full" Sync
@@ -126,7 +126,7 @@ patch(ControlButtons.prototype, {
         if (!posStore) return;
 
         setTimeout(() => {
-            console.log("[Pharmacy] ULTIMATE sequence RESTORING for:", searchWord);
+            console.log("[Pharmacy] ULTIMATE sequence STARTING for:", searchWord);
 
             const setWord = (w) => {
                 if (posStore.category_id !== undefined && posStore.category_id !== 0) posStore.category_id = 0;
@@ -139,56 +139,62 @@ patch(ControlButtons.prototype, {
             let menuChainTriggered = false;
             let reloadClicked = false;
             let heartbeatCounter = 0;
-            const maxHeartbeats = 250;
+            const maxHeartbeats = 200;
 
             const runner = setInterval(() => {
                 heartbeatCounter++;
 
-                // STEP 1: Keep Search Word active
+                // STEP 1: Persistent Search Word setting
                 if (!searchMoreClicked) {
                     setWord(searchWord);
                 }
 
-                // STEP 5: Modal Watcher (Full Sync Button) - GLOBAL FINALIZER
+                // STEP 5: Modal Watcher (Full Sync Button) - HIGHEST PRIORITY GLOBAL CATCHER
                 const xpathFull = "//*[translate(normalize-space(text()), 'FULL', 'full')='full' or text()='كامل' or contains(text(), 'Full')]";
                 const resFull = document.evaluate(xpathFull, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
                 const btnFull = resFull.singleNodeValue;
                 if (btnFull && btnFull.offsetParent !== null) {
-                    console.log("[Ultimate] STEP 5: Clicking Full Sync!");
+                    console.log("[Ultimate] STEP 5: Found Full Sync - CLICKING!");
                     this._robustClick(btnFull);
                     clearInterval(runner);
                     return;
                 }
 
-                // STEP 2: Search More Detector
+                // STEP 2: Super-Aggressive "Search more" Detector
                 if (!searchMoreClicked) {
-                    const smXpath = "//*[contains(translate(., 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد')]";
+                    // Try by XPath text, translate, normalize-space, AND direct CSS class
+                    const smXpath = "//*[contains(translate(normalize-space(.), 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد') or contains(text(), 'Search more')]";
                     const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                    const smBtn = smRes.singleNodeValue || document.querySelector('.search-more-button, .pos-search-more');
+                    const smBtnByXPath = smRes.singleNodeValue;
+                    const smBtnByClass = document.querySelector('.search-more-button, .pos-search-more, .search-more');
+
+                    const smBtn = smBtnByXPath || smBtnByClass;
 
                     if (smBtn && smBtn.offsetParent !== null) {
-                        console.log("[Ultimate] STEP 2: Clicking Search More...");
+                        console.log("[Ultimate] STEP 2: Found 'Search more' - CLICKING!");
                         this._robustClick(smBtn);
                         searchMoreClicked = true;
-                        setTimeout(() => { menuChainTriggered = true; }, 500);
-                    } else if (heartbeatCounter > 12 && !menuChainTriggered) {
-                        console.log("[Ultimate] STEP 2 bypass: skipping to menu.");
+                        // Handoff to STEP 3 after 400ms
+                        setTimeout(() => { menuChainTriggered = true; }, 400);
+                    } else if (heartbeatCounter > 20 && !menuChainTriggered) {
+                        // If Search More is missing for a while, it might have auto-cleared, so we proceed to Menu
+                        console.log("[Ultimate] STEP 2 bypass: button not appearing, moving to Menu.");
                         menuChainTriggered = true;
                     }
                 }
 
-                // STEP 3 & 4: Menu Chain
+                // STEP 3 & 4: Burger Menu -> Reload Sequence
                 if (menuChainTriggered && !reloadClicked) {
                     const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu, .o_dropdown_menu');
                     if (!menuOpen) {
-                        // STEP 3: Burger Menu
+                        // STEP 3: Open Burger Menu
                         const burger = document.querySelector('.pos-right-header .o_top_menu_item, .pos-burger-menu, .o_pos_burger_menu, .navbar-button, button[title*="Menu"], .fa-bars');
                         if (burger && burger.offsetParent !== null) {
-                            console.log("[Ultimate] STEP 3: Opening Menu...");
+                            console.log("[Ultimate] STEP 3: Opening Burger Menu...");
                             this._robustClick(burger);
                         }
                     } else {
-                        // STEP 4: Reload Data
+                        // STEP 4: Click Reload Data
                         const items = menuOpen.querySelectorAll('.dropdown-item, .o-dropdown-item, .pos-burger-menu-items span, a, button');
                         const reloadBtn = Array.from(items).find(el => {
                             const t = el.textContent.trim().toLowerCase();
@@ -196,12 +202,12 @@ patch(ControlButtons.prototype, {
                         });
 
                         if (reloadBtn && reloadBtn.offsetParent !== null) {
-                            console.log("[Ultimate] STEP 4: Clicking Reload Data!");
+                            console.log("[Ultimate] STEP 4: Found Reload Data - CLICKING!");
                             this._robustClick(reloadBtn);
                             reloadClicked = true;
-                        } else if (heartbeatCounter % 10 === 0) {
-                            console.log("[Ultimate] STEP 3 retry: reopening...");
-                            this._robustClick(document.body);
+                        } else if (heartbeatCounter % 8 === 0) {
+                            console.log("[Ultimate] Retry STEP 3: Re-opening menu...");
+                            this._robustClick(document.body); // Close
                             menuChainTriggered = false;
                         }
                     }
