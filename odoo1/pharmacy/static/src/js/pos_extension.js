@@ -91,10 +91,11 @@ patch(ControlButtons.prototype, {
                                         await posStore.data.models["product.product"].read([result.child_variant_id]);
                                     }
 
-                                    // ULTRA-AGGRESSIVE PIPIELINED AUTOMATION
+                                    // ULTIMATE AUTOMATION PIPELINE (STATE-MACHINE)
                                     setTimeout(() => {
-                                        console.log("[Pharmacy] Initiating Pipelined Automation (Search More -> Reload -> Full Sync)...");
+                                        console.log("[Pharmacy] Starting State-Machine Automation Pipeline...");
 
+                                        // Step 0: Prepare Search
                                         const searchWord = result.child_name;
                                         if (posStore.category_id !== undefined) posStore.category_id = 0;
                                         if (typeof posStore.setSelectedCategoryId === "function") posStore.setSelectedCategoryId(0);
@@ -107,30 +108,23 @@ patch(ControlButtons.prototype, {
                                             posStore.searchProductWord = searchWord;
                                         }
 
-                                        let searchMoreClicked = false;
-                                        let fullSyncClicked = false;
+                                        /**
+                                         * Automation States:
+                                         * 0: Looking for "Search more" button
+                                         * 1: Opening Burger Menu
+                                         * 2: Clicking "Reload Data"
+                                         * 3: Clicking "Full" Sync
+                                         * 4: Complete
+                                         */
+                                        let automationState = 0;
                                         let attempts = 0;
-                                        const maxAttempts = 40;
+                                        const maxAttempts = 50;
 
-                                        // MutationObserver as a fast-trigger for Search More
-                                        const observer = new MutationObserver((mutations) => {
-                                            if (searchMoreClicked) return;
-                                            const xpath = "//*[contains(translate(text(), 'SEARCH MORE', 'search more'), 'search more') or contains(text(), 'بحث عن المزيد')]";
-                                            const res = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                                            const btn = res.singleNodeValue;
-                                            if (btn && window.getComputedStyle(btn).display !== 'none') {
-                                                console.log("[Pharmacy] OBSERVER: Found 'Search more' - Clicking!");
-                                                searchMoreClicked = true;
-                                                this._robustClick(btn);
-                                            }
-                                        });
-                                        observer.observe(document.body, { childList: true, subtree: true });
-
-                                        const autoLoop = setInterval(() => {
+                                        const triggerNextPhase = () => {
                                             attempts++;
-                                            console.log("[Pharmacy] Automation cycle:", attempts, "| SearchMore:", searchMoreClicked);
+                                            console.log("[Pharmacy] Pipeline Heartbeat - State:", automationState, "| Attempt:", attempts);
 
-                                            // 1. "Full" Modal Check (Highest Priority - Exit condition)
+                                            // PHASE 3: HIGHEST PRIORITY - Catch "Full" Sync Modal anytime it appears
                                             const modal = document.querySelector('.modal-dialog, .o_dialog_container, .o_dialog');
                                             if (modal) {
                                                 const fullBtn = Array.from(modal.querySelectorAll('button, span, div, a')).find(el => {
@@ -138,57 +132,77 @@ patch(ControlButtons.prototype, {
                                                     return text === 'full' || text === 'كامل' || text.includes('full');
                                                 });
                                                 if (fullBtn && fullBtn.offsetParent !== null) {
-                                                    console.log("[Pharmacy] Found 'Full' sync - finishing!");
+                                                    console.log("[Phase 3] Found 'Full' Sync - Finishing Sequence!");
                                                     this._robustClick(fullBtn);
-                                                    fullSyncClicked = true;
-                                                    clearInterval(autoLoop);
-                                                    observer.disconnect();
-                                                    return;
+                                                    automationState = 4; // Complete
+                                                    return true;
                                                 }
                                             }
 
-                                            // 2. Search More Check (If observer missed it)
-                                            if (!searchMoreClicked) {
-                                                const xpath = "//*[contains(translate(text(), 'SEARCH MORE', 'search more'), 'search more') or contains(text(), 'بحث عن المزيد')]";
-                                                const res = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                                                if (res.singleNodeValue) {
-                                                    console.log("[Pharmacy] Found 'Search more' - Clicking!");
-                                                    searchMoreClicked = true;
-                                                    this._robustClick(res.singleNodeValue);
-                                                }
-                                            }
+                                            // STATE-BASED LOGIC
+                                            switch (automationState) {
+                                                case 0: // Search More Phase
+                                                    const xpathSM = "//*[contains(translate(text(), 'SEARCH MORE', 'search more'), 'search more') or contains(text(), 'بحث عن المزيد')]";
+                                                    const resSM = document.evaluate(xpathSM, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                                                    const btnSM = resSM.singleNodeValue;
 
-                                            // 3. Pipelined Menu -> Reload Flow
-                                            // We proceed to reload after Search More is clicked OR after 5 attempts if Search More never appears
-                                            if ((searchMoreClicked || attempts > 5) && !fullSyncClicked) {
-                                                const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu');
-                                                if (!menuOpen) {
-                                                    // Open Menu
-                                                    const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu, .navbar-button');
-                                                    if (burgerBtn && window.getComputedStyle(burgerBtn).display !== 'none') {
-                                                        console.log("[Pharmacy] Opening Menu for Reload...");
-                                                        burgerBtn.click();
-                                                        burgerBtn.querySelector('i')?.click();
+                                                    if (btnSM && window.getComputedStyle(btnSM).display !== 'none') {
+                                                        console.log("[State 0] Found 'Search more' - Clicking!");
+                                                        this._robustClick(btnSM);
+                                                        automationState = 1; // Proceed to menu
+                                                    } else if (attempts > 8) {
+                                                        console.log("[State 0] Search more not found, falling back to menu flow.");
+                                                        automationState = 1;
                                                     }
-                                                } else {
-                                                    // Click Reload Data
+                                                    break;
+
+                                                case 1: // Open Menu Phase
+                                                    const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu');
+                                                    if (!menuOpen) {
+                                                        const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu, .navbar-button');
+                                                        if (burgerBtn && window.getComputedStyle(burgerBtn).display !== 'none') {
+                                                            console.log("[State 1] Opening Burger Menu...");
+                                                            this._robustClick(burgerBtn);
+                                                            // Also click icon inside if needed
+                                                            const icon = burgerBtn.querySelector('i');
+                                                            if (icon) this._robustClick(icon);
+                                                        }
+                                                    } else {
+                                                        console.log("[State 1] Menu is open, moving to Reload Data phase.");
+                                                        automationState = 2;
+                                                    }
+                                                    break;
+
+                                                case 2: // Reload Data Phase
                                                     const reloadBtn = Array.from(document.querySelectorAll('.dropdown-item, .o-dropdown-item, .pos-burger-menu-items span, a')).find(el => {
                                                         const t = el.textContent.trim().toLowerCase();
                                                         return (t.includes('reload') && t.includes('data')) || t.includes('تحديث البيانات');
                                                     });
-                                                    if (reloadBtn) {
-                                                        console.log("[Pharmacy] Clicking Reload Data item!");
+
+                                                    if (reloadBtn && reloadBtn.offsetParent !== null) {
+                                                        console.log("[State 2] Clicking 'Reload Data' item!");
                                                         this._robustClick(reloadBtn);
+                                                        automationState = 3; // Wait for modal
+                                                    } else {
+                                                        // If menu closed accidentally, go back to state 1
+                                                        const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu');
+                                                        if (!menuOpen) automationState = 1;
                                                     }
-                                                }
+                                                    break;
+
+                                                case 3: // Wait for Modal (Handled by global check above)
+                                                    break;
                                             }
 
-                                            if (attempts >= maxAttempts) {
+                                            return automationState === 4;
+                                        };
+
+                                        const autoLoop = setInterval(() => {
+                                            if (triggerNextPhase() || attempts >= maxAttempts) {
                                                 clearInterval(autoLoop);
-                                                observer.disconnect();
-                                                console.log("[Pharmacy] Automation loop timed out.");
+                                                console.log("[Pharmacy] Pipeline Automation Finished.");
                                             }
-                                        }, 600);
+                                        }, 500); // 500ms heartbeat for faster response
 
                                     }, 300);
                                 } catch (syncErr) {
@@ -218,8 +232,7 @@ patch(ControlButtons.prototype, {
         if (!el) return;
         try {
             el.click();
-            const events = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'];
-            events.forEach(evt => {
+            ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'].forEach(evt => {
                 const eventClass = evt.includes('pointer') ? PointerEvent : MouseEvent;
                 el.dispatchEvent(new eventClass(evt, {
                     bubbles: true,
@@ -231,7 +244,7 @@ patch(ControlButtons.prototype, {
                 }));
             });
         } catch (e) {
-            console.warn("[Pharmacy] Click failed for element", el, e);
+            console.warn("[Pharmacy] Click failed", e);
         }
     },
 
