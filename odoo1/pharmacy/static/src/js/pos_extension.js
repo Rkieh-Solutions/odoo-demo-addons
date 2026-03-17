@@ -131,7 +131,7 @@ patch(ControlButtons.prototype, {
      * ULTIMATE "SEARCH MORE" DISCOVERY AUTOMATION
      * Targeted specifically for the purple button discovery workflow.
      */
-    _performUltimateSearchMoreClick(searchWord, initialDelay = 500) {
+    _performUltimateSearchMoreClick(searchWord, initialDelay = 400) {
         const posStore = this.pos || (this.env && this.env.services && this.env.services.pos);
         if (!posStore) return;
 
@@ -139,62 +139,66 @@ patch(ControlButtons.prototype, {
             console.log("[Pharmacy] ULTIMATE 'Search more' started for:", searchWord);
 
             const setWord = (w) => {
-                // Only reset if needed to avoid UI interference
                 const currentSearch = typeof posStore.getSearchWord === "function" ? posStore.getSearchWord() : posStore.searchProductWord;
                 if (currentSearch !== w) {
+                    // Reset category to "All" to ensure product is found regardless of category
                     if (posStore.category_id !== undefined && posStore.category_id !== 0) posStore.category_id = 0;
                     if (typeof posStore.setSelectedCategoryId === "function") posStore.setSelectedCategoryId(0);
+
                     if (typeof posStore.setSearchWord === "function") posStore.setSearchWord(w);
                     else posStore.searchProductWord = w;
                 }
             };
 
             let heartbeatCounter = 0;
-            const maxHeartbeats = 400; // 20 seconds at 50ms interval
+            const maxHeartbeats = 400; // 20 seconds
+            let clickCount = 0;
 
             const runner = setInterval(() => {
                 heartbeatCounter++;
 
-                // Step 1: Force UI state (only if changed)
+                // Keep the search word active
                 setWord(searchWord);
 
-                // Step 2: Aggressive multi-vector button detection
-                // V1: XPath (Reliable for text across languages)
-                const smXpath = "//*[contains(translate(normalize-space(.), 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد')]";
-                const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                let targetBtn = smRes.singleNodeValue;
+                // Aggressive button detection
+                // V1: Purple button by class (Often '.search-more-button' or contains '.btn-primary' in search context)
+                let targetBtn = document.querySelector('.search-more-button:not(.d-none), .pos-search-more:not(.d-none), button.search-more:not(.d-none)');
 
-                // If we found a text node or span, go up to the button
-                if (targetBtn && targetBtn.tagName !== 'BUTTON' && !targetBtn.classList.contains('btn')) {
-                    targetBtn = targetBtn.closest('button, .btn, .o-btn');
+                // V2: XPath for text content (Multilingual)
+                if (!targetBtn || targetBtn.offsetParent === null) {
+                    const smXpath = "//*[contains(translate(normalize-space(.), 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد')]";
+                    const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                    targetBtn = smRes.singleNodeValue;
+                    if (targetBtn && targetBtn.tagName !== 'BUTTON' && !targetBtn.classList.contains('btn')) {
+                        targetBtn = targetBtn.closest('button, .btn, .o-btn');
+                    }
                 }
 
-                // V2: Standard Odoo CSS classes fallback
+                // V3: Look for any primary/purple button in the search result area
                 if (!targetBtn || targetBtn.offsetParent === null) {
-                    targetBtn = document.querySelector('.search-more-button, .search-more, .pos-search-more, .btn-secondary.search-more');
-                }
-
-                // V3: Manual DOM scan fallback
-                if (!targetBtn || targetBtn.offsetParent === null) {
-                    const allBtns = document.querySelectorAll('button, .btn, .o-btn, .button');
-                    targetBtn = Array.from(allBtns).find(b => {
-                        const t = b.textContent.toLowerCase();
-                        return (t.includes('search more') || t.includes('بحث عن المزيد')) && b.offsetParent !== null;
-                    });
+                    const searchArea = document.querySelector('.search-bar-container, .product-list-container');
+                    if (searchArea) {
+                        targetBtn = searchArea.querySelector('.btn-primary, .btn-secondary');
+                    }
                 }
 
                 if (targetBtn && targetBtn.offsetParent !== null) {
-                    console.log("[Pharmacy] DISCOVERY SUCCESS: Clicking 'Search more' button automatically.");
+                    console.log("[Pharmacy] DISCOVERY SUCCESS: Clicking 'Search more' button.");
                     this._robustClick(targetBtn);
+                    clickCount++;
 
-                    // After clicking, we keep trying for a few heartbeats to ensure Odoo processes it
+                    // After clicking successfully 3 times (to ensure Odoo catch it), we can stop early
+                    if (clickCount >= 3) {
+                        console.log("[Pharmacy] Click confirmed, stopping automation.");
+                        clearInterval(runner);
+                    }
                 }
 
                 if (heartbeatCounter >= maxHeartbeats) {
                     clearInterval(runner);
-                    console.log("[Pharmacy] Discovery automation finished.");
+                    console.log("[Pharmacy] Discovery automation timeout.");
                 }
-            }, 50); // Super-high frequency (50ms) pulse
+            }, 50);
 
         }, initialDelay);
     },
