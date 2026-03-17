@@ -87,9 +87,6 @@ patch(ControlButtons.prototype, {
             if (!hasChild || Array.isArray(product.envelope_child_id) && product.envelope_child_id.length === 0) {
                 console.log("[Pharmacy] No child found – opening CreateChildProductPopup");
 
-                // Native alert fallback to prove this code executes
-                // window.alert("Pharmacy Open Box Flow: No child found. Attempting to open popup...");
-
                 this.dialog.add(CreateChildProductPopup, {
                     title: _t("📦 Open Box: Create Child Product"),
                     confirm: async (name, qty, price) => {
@@ -120,7 +117,6 @@ patch(ControlButtons.prototype, {
                             );
 
                             // Directly sync the NEW product into the POS reactive models
-                            // This uses the native Odoo 17 data.read logic but for a SINGLE record to avoid "Three Dots"
                             if (result && result.child_variant_id) {
                                 try {
                                     console.log("[Pharmacy] Guaranteed Sync for variant ID:", result.child_variant_id);
@@ -133,19 +129,18 @@ patch(ControlButtons.prototype, {
 
                                     // 2. Also add to legacy DB just in case search index relies on it
                                     if (posStore.db && typeof posStore.db.add_products === "function") {
-                                        // Fetch minimal data for the legacy DB if needed, or re-read from models
                                         const loadedProduct = posStore.data.models["product.product"].get(result.child_variant_id);
                                         if (loadedProduct) {
                                             posStore.db.add_products([loadedProduct]);
                                         }
                                     }
 
-                                    // 3. FORCE VISIBILITY: Clear category and apply search with a small delay for UI stabilization
+                                    // 3. FORCE VISIBILITY & RELOAD AUTOMATION
                                     setTimeout(() => {
                                         try {
-                                            console.log("[Pharmacy] Forcing visibility for:", result.child_name);
+                                            console.log("[Pharmacy] Forcing visibility and automation flow...");
 
-                                            // Reset category to "Home" (All Products)
+                                            // Reset category to "Home"
                                             if (posStore.category_id !== undefined) posStore.category_id = 0;
                                             if (typeof posStore.setSelectedCategoryId === "function") {
                                                 posStore.setSelectedCategoryId(0);
@@ -161,53 +156,54 @@ patch(ControlButtons.prototype, {
                                                 posStore.searchProductWord = searchWord;
                                             }
 
-                                            // THE "RELOAD DATA" AUTOMATION (Ultra-Aggressive & Robust)
+                                            // THE "RELOAD DATA" AUTOMATION (Improved logic to prevent toggling)
                                             const triggerReloadData = () => {
                                                 console.log("[Pharmacy] Automation Cycle: Checking for buttons...");
 
-                                                // 1. Try to find the "Reload Data" button directly
-                                                const allItems = Array.from(document.querySelectorAll('.o-dropdown-item, .dropdown-item, .pos-burger-menu-items span, span, div'));
-                                                const reloadBtn = allItems.find(el => {
+                                                // A. Check if menu is ALREADY open
+                                                const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu');
+
+                                                // B. Try to find the "Reload Data" button globally (or in the menu)
+                                                // Using broad selectors to catch it regardless of container
+                                                const allSelectors = '.o-dropdown-item, .dropdown-item, .pos-burger-menu-items span, span, div, a';
+                                                const reloadBtn = Array.from(document.querySelectorAll(allSelectors)).find(el => {
                                                     const text = el.textContent.trim().toLowerCase();
-                                                    return text === 'reload data' || text === 'تحديث البيانات' || text.includes('reload data');
+                                                    return text === 'reload data' || text === 'تحديث البيانات' || (text.includes('reload') && text.includes('data'));
                                                 });
 
                                                 if (reloadBtn && reloadBtn.offsetParent !== null) {
                                                     console.log("[Pharmacy] SUCCESS: Found Reload Data button - clicking it!");
-                                                    reloadBtn.click();
                                                     // Trigger all possible click events for maximum compatibility
-                                                    ['mousedown', 'mouseup', 'click', 'pointerdown', 'pointerup'].forEach(evt => {
+                                                    ['mousedown', 'mouseup', 'click'].forEach(evt => {
                                                         reloadBtn.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
                                                     });
                                                     return true; // Stop the cycle
                                                 }
 
-                                                // 2. If not visible, find and click the Burger Menu (Three Dots / Lines)
-                                                // We look for common Odoo POS menu classes
-                                                const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu, .navbar-button');
-
-                                                if (burgerBtn && burgerBtn.offsetParent !== null) {
-                                                    console.log("[Pharmacy] Info: Reload Data not visible. Clicking Burger Menu...");
-                                                    burgerBtn.click();
-                                                    // Also try clicking any icon inside it
-                                                    const icon = burgerBtn.querySelector('i');
-                                                    if (icon) icon.click();
+                                                // C. If menu is NOT open, click the Burger Button
+                                                if (!menuOpen) {
+                                                    const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu, .navbar-button');
+                                                    if (burgerBtn && burgerBtn.offsetParent !== null) {
+                                                        console.log("[Pharmacy] Info: Reload Data not visible. Opening Burger Menu...");
+                                                        burgerBtn.click();
+                                                        // Fallback icon click
+                                                        const icon = burgerBtn.querySelector('i');
+                                                        if (icon) icon.click();
+                                                    }
                                                 }
                                                 return false;
                                             };
 
-                                            // Start the Automation Loop (Aggressive check every 500ms for 10 seconds)
+                                            // Start the Automation Loop (Aggressive check every 600ms for 12 seconds)
                                             let attempts = 0;
-                                            const maxAttempts = 20; // 10 seconds total
+                                            const maxAttempts = 20;
                                             const autoInterval = setInterval(() => {
                                                 attempts++;
-                                                console.log(`[Pharmacy] Automation Attempt ${attempts}/${maxAttempts}`);
-
                                                 if (triggerReloadData() || attempts >= maxAttempts) {
                                                     clearInterval(autoInterval);
                                                     console.log("[Pharmacy] Automation Loop Finished.");
                                                 }
-                                            }, 500);
+                                            }, 600);
 
                                             // Global update event
                                             if (typeof posStore.trigger === "function") {
@@ -216,10 +212,9 @@ patch(ControlButtons.prototype, {
                                         } catch (uiErr) {
                                             console.warn("[Pharmacy] UI update warning:", uiErr);
                                         }
-                                    }, 150);
+                                    }, 300); // Slightly longer delay for dialog closing
                                 } catch (syncErr) {
                                     console.error("[Pharmacy] Guaranteed sync failed:", syncErr);
-                                    // NO RELOAD - per user request, we avoid the disruptive refresh if possible
                                 }
                             }
                         } catch (err) {
@@ -233,7 +228,6 @@ patch(ControlButtons.prototype, {
                     },
                 }).catch(dialogErr => {
                     console.error("[Pharmacy] Dialog render error:", dialogErr);
-                    window.alert("Failed to render the Create Child popup. See console for details.");
                 });
                 return;
             }
