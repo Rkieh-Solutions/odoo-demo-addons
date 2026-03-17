@@ -91,7 +91,7 @@ patch(ControlButtons.prototype, {
                                         await posStore.data.models["product.product"].read([result.child_variant_id]);
                                     }
 
-                                    // ULTIMATE AUTOMATION PIPELINE (STATE-MACHINE)
+                                    // ULTIMATE AUTOMATION PIPELINE (STATE-MACHINE V2)
                                     setTimeout(() => {
                                         console.log("[Pharmacy] Starting State-Machine Automation Pipeline...");
 
@@ -118,25 +118,23 @@ patch(ControlButtons.prototype, {
                                          */
                                         let automationState = 0;
                                         let attempts = 0;
-                                        const maxAttempts = 50;
+                                        const maxAttempts = 60; // 30 seconds total
 
                                         const triggerNextPhase = () => {
                                             attempts++;
                                             console.log("[Pharmacy] Pipeline Heartbeat - State:", automationState, "| Attempt:", attempts);
 
-                                            // PHASE 3: HIGHEST PRIORITY - Catch "Full" Sync Modal anytime it appears
-                                            const modal = document.querySelector('.modal-dialog, .o_dialog_container, .o_dialog');
-                                            if (modal) {
-                                                const fullBtn = Array.from(modal.querySelectorAll('button, span, div, a')).find(el => {
-                                                    const text = el.textContent.trim().toLowerCase();
-                                                    return text === 'full' || text === 'كامل' || text.includes('full');
-                                                });
-                                                if (fullBtn && fullBtn.offsetParent !== null) {
-                                                    console.log("[Phase 3] Found 'Full' Sync - Finishing Sequence!");
-                                                    this._robustClick(fullBtn);
-                                                    automationState = 4; // Complete
-                                                    return true;
-                                                }
+                                            // CRITICAL OVERRIDE: Catch "Full" Sync Modal anytime it appears (using broad XPath)
+                                            // Looks for button with text "Full" or "Reload All" or Arabic equivalents
+                                            const xpathFull = "//*[contains(translate(text(), 'FULL', 'full'), 'full') or contains(text(), 'كامل')]";
+                                            const resFull = document.evaluate(xpathFull, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                                            const btnFull = resFull.singleNodeValue;
+
+                                            if (btnFull && btnFull.offsetParent !== null) {
+                                                console.log("[Pipeline Override] Found 'Full' Sync Button - Finishing Sequence!");
+                                                this._robustClick(btnFull);
+                                                automationState = 4; // Complete
+                                                return true;
                                             }
 
                                             // STATE-BASED LOGIC
@@ -150,8 +148,8 @@ patch(ControlButtons.prototype, {
                                                         console.log("[State 0] Found 'Search more' - Clicking!");
                                                         this._robustClick(btnSM);
                                                         automationState = 1; // Proceed to menu
-                                                    } else if (attempts > 8) {
-                                                        console.log("[State 0] Search more not found, falling back to menu flow.");
+                                                    } else if (attempts > 10) {
+                                                        console.log("[State 0] Search more not found after 10 attempts, falling back to menu flow.");
                                                         automationState = 1;
                                                     }
                                                     break;
@@ -163,7 +161,6 @@ patch(ControlButtons.prototype, {
                                                         if (burgerBtn && window.getComputedStyle(burgerBtn).display !== 'none') {
                                                             console.log("[State 1] Opening Burger Menu...");
                                                             this._robustClick(burgerBtn);
-                                                            // Also click icon inside if needed
                                                             const icon = burgerBtn.querySelector('i');
                                                             if (icon) this._robustClick(icon);
                                                         }
@@ -184,13 +181,12 @@ patch(ControlButtons.prototype, {
                                                         this._robustClick(reloadBtn);
                                                         automationState = 3; // Wait for modal
                                                     } else {
-                                                        // If menu closed accidentally, go back to state 1
                                                         const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu');
                                                         if (!menuOpen) automationState = 1;
                                                     }
                                                     break;
 
-                                                case 3: // Wait for Modal (Handled by global check above)
+                                                case 3: // Wait for Modal (Handled by global override above)
                                                     break;
                                             }
 
@@ -202,9 +198,9 @@ patch(ControlButtons.prototype, {
                                                 clearInterval(autoLoop);
                                                 console.log("[Pharmacy] Pipeline Automation Finished.");
                                             }
-                                        }, 500); // 500ms heartbeat for faster response
+                                        }, 500);
 
-                                    }, 300);
+                                    }, 400);
                                 } catch (syncErr) {
                                     console.error("[Pharmacy] Sync error:", syncErr);
                                 }
