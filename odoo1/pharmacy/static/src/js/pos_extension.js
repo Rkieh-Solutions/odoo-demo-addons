@@ -85,9 +85,9 @@ patch(ControlButtons.prototype, {
                                 { type: "success" }
                             );
 
-                            // Trigger HYBRID "Search-To-Reload" Discovery Chain
-                            console.log("[Pharmacy] Product created. Starting Hybrid Discovery Chain...");
-                            this._hybridCreationDiscoveryAutomation(result?.child_name || name, 1000);
+                            // Trigger ULTIMATE "Search More" Only Automation
+                            console.log("[Pharmacy] Product created. Starting Dedicated Search-More Clicking...");
+                            this._autoSearchMoreAutomation(result?.child_name || name, 800);
 
                         } catch (err) {
                             console.error("[Pharmacy] Create child error:", err);
@@ -106,7 +106,7 @@ patch(ControlButtons.prototype, {
 
                 // Trigger automation for existing box opening
                 const searchName = result?.child_name || product.display_name || product.name;
-                this._hybridCreationDiscoveryAutomation(searchName, 500);
+                this._autoSearchMoreAutomation(searchName, 400);
             }
         } catch (topErr) {
             console.error("[Pharmacy] onClickOpenBox error:", topErr);
@@ -114,97 +114,66 @@ patch(ControlButtons.prototype, {
     },
 
     /**
-     * HYBRID CREATION DISCOVERY AUTOMATION
-     * Combines high-speed "Search more" clicking WITH a full data reload to ensure
-     * brand-new products are perfectly visible and ready for sale.
+     * ULTIMATE "SEARCH MORE" CLICKER
+     * 1. Auto-Search: Immediately set the search term.
+     * 2. Auto-"Search more": Click the purple button to pull the server record.
+     * DELETED: All Reload/Full Sync logic has been completely removed as requested.
      */
-    _hybridCreationDiscoveryAutomation(searchWord, initialDelay = 800) {
+    _autoSearchMoreAutomation(searchWord, initialDelay = 800) {
         const posStore = this.pos || (this.env && this.env.services && this.env.services.pos);
         if (!posStore) return;
 
         setTimeout(() => {
-            console.log("[Pharmacy] HYBRID sequence STARTING for:", searchWord);
+            console.log("[Pharmacy] DEDICATED Search-More starting for:", searchWord);
 
             const setWord = (w) => {
                 if (posStore.category_id !== undefined && posStore.category_id !== 0) posStore.category_id = 0;
                 if (typeof posStore.setSelectedCategoryId === "function") posStore.setSelectedCategoryId(0);
-                if (typeof posStore.setSearchWord === "function") posStore.setSearchWord(w);
-                else posStore.searchProductWord = w;
+                if (typeof posStore.setSearchWord === "function") {
+                    posStore.setSearchWord(w);
+                } else {
+                    posStore.searchProductWord = w;
+                }
             };
 
-            let searchMoreClicked = false;
-            let reloadStarted = false;
-            let reloadFullClicked = false;
             let heartbeatCounter = 0;
-            const maxHeartbeats = 300; // 90 seconds total (long for deep sync)
+            let success = false;
+            const maxHeartbeats = 80; // 24 seconds max
 
             const runner = setInterval(() => {
                 heartbeatCounter++;
 
-                // STEP 1: Persistent Search Word setting
-                if (!reloadStarted) {
-                    setWord(searchWord);
+                // STEP 1: FORCE Search Word repeatedly (to ensure it sticks)
+                setWord(searchWord);
+
+                // STEP 2: Aggressive Detection of the "Search more" PURPLE button
+                const smXpath = "//*[contains(translate(normalize-space(.), 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد') or contains(text(), 'Search more')]";
+                const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                const smBtnByXPath = smRes.singleNodeValue;
+
+                // Specific search for buttons with "Search more" text
+                let smBtnByLoop = null;
+                if (!smBtnByXPath) {
+                    const allButtons = document.querySelectorAll('button, .btn, .search-more-button, .pos-search-more');
+                    smBtnByLoop = Array.from(allButtons).find(el => {
+                        const t = el.textContent.toLowerCase();
+                        return t.includes('search more') || t.includes('بحث عن المزيد');
+                    });
                 }
 
-                // SUB-CHAIN A: Automatic "Search more" Click (FAST)
-                if (!searchMoreClicked) {
-                    const smXpath = "//*[contains(translate(normalize-space(.), 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد') or contains(text(), 'Search more')]";
-                    const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                    const smBtnByXPath = smRes.singleNodeValue;
-                    const smBtnByClass = document.querySelector('.search-more-button, .pos-search-more, .search-more');
+                const targetBtn = smBtnByXPath || smBtnByLoop;
 
-                    const smBtn = smBtnByXPath || smBtnByClass;
-
-                    if (smBtn && smBtn.offsetParent !== null) {
-                        console.log("[Hybrid] Found 'Search more' - CLICKING!");
-                        this._robustClick(smBtn);
-                        searchMoreClicked = true;
-                        // Don't clear runner yet, we still want the RELOAD for safety
-                    }
-                }
-
-                // SUB-CHAIN B: Full Reload Sync (THOROUGH)
-                // Watch for "Full" Sync Button (highest priority global catcher)
-                const xpathFull = "//*[translate(normalize-space(text()), 'FULL', 'full')='full' or text()='كامل' or contains(text(), 'Full')]";
-                const resFull = document.evaluate(xpathFull, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                const btnFull = resFull.singleNodeValue;
-                if (btnFull && btnFull.offsetParent !== null) {
-                    console.log("[Hybrid] Found Full Sync - CLICKING FINAL STEP!");
-                    this._robustClick(btnFull);
-                    clearInterval(runner); // WE ARE DONE
+                if (targetBtn && targetBtn.offsetParent !== null) {
+                    console.log("[Pharmacy] ULTIMATE SUCCESS: 'Search more' found. CLICKING!");
+                    this._robustClick(targetBtn);
+                    success = true;
+                    clearInterval(runner);
                     return;
-                }
-
-                // Logic to trigger the Burger -> Reload chain
-                // Trigger reload if search more was clicked OR after 5 seconds of waiting
-                if ((searchMoreClicked || heartbeatCounter > 15) && !reloadStarted) {
-                    const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu, .o_dropdown_menu');
-                    if (!menuOpen) {
-                        const burger = document.querySelector('.pos-right-header .o_top_menu_item, .pos-burger-menu, .o_pos_burger_menu, .navbar-button, button[title*="Menu"], .fa-bars');
-                        if (burger && burger.offsetParent !== null) {
-                            console.log("[Hybrid] Opening Menu for Reload...");
-                            this._robustClick(burger);
-                        }
-                    } else {
-                        const items = menuOpen.querySelectorAll('.dropdown-item, .o-dropdown-item, .pos-burger-menu-items span, a, button');
-                        const reloadBtn = Array.from(items).find(el => {
-                            const t = el.textContent.trim().toLowerCase();
-                            return (t.includes('reload') && t.includes('data')) || t.includes('تحديث البيانات');
-                        });
-
-                        if (reloadBtn && reloadBtn.offsetParent !== null) {
-                            console.log("[Hybrid] Found Reload Data - CLICKING!");
-                            this._robustClick(reloadBtn);
-                            reloadStarted = true;
-                        } else if (heartbeatCounter % 10 === 0) {
-                            this._robustClick(document.body); // Reset menu
-                        }
-                    }
                 }
 
                 if (heartbeatCounter >= maxHeartbeats) {
                     clearInterval(runner);
-                    console.log("[Hybrid] Automation Timeout.");
+                    console.log("[Pharmacy] Search-More Automation Timeout.");
                 }
             }, 300);
 
