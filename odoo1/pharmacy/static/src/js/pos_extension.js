@@ -161,11 +161,18 @@ patch(ControlButtons.prototype, {
                                                 console.log("[Pharmacy] Automation Cycle Heartbeat...");
 
                                                 // Phase 1: Search More Button (If searching for new product)
-                                                const searchMoreBtn = document.querySelector('.search-more-button, button.search-more-button');
+                                                // Using broad text matching to handle all languages/versions
+                                                const searchMoreBtn = Array.from(document.querySelectorAll('button, .search-more-button, .btn, .o_button')).find(el => {
+                                                    const text = el.textContent.trim().toLowerCase();
+                                                    return text === 'search more' || text === 'بحث عن المزيد' || text.includes('search more');
+                                                });
+
                                                 if (searchMoreBtn && searchMoreBtn.offsetParent !== null) {
                                                     console.log("[Pharmacy] Phase 1: Clicking Search More...");
-                                                    searchMoreBtn.click();
-                                                    // Don't return true, continue to Reload phases
+                                                    // Trigger all possible click events for maximum compatibility
+                                                    ['mousedown', 'mouseup', 'click'].forEach(evt => {
+                                                        searchMoreBtn.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
+                                                    });
                                                 }
 
                                                 // Phase 2: "Full" Synchronization Button (Confirmation Dialog)
