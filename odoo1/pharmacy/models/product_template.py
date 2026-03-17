@@ -281,8 +281,20 @@ class ProductTemplate(models.Model):
             
             # Determine the correct "Tracked/Storable" type for this Odoo version
             categ_id = self.categ_id.id if getattr(self, 'categ_id', False) else False
+            
+            # SAFE SELECTION INSPECTION (Avoids function is not iterable crash)
             type_field = self._fields.get('type')
-            valid_types = [s[0] for s in type_field.selection] if type_field and hasattr(type_field, 'selection') else []
+            valid_types = []
+            if type_field:
+                selection = type_field.selection
+                if callable(selection):
+                    try:
+                        selection = selection(self.env[self._name])
+                    except:
+                        selection = []
+                if isinstance(selection, list):
+                    valid_types = [s[0] for s in selection]
+
             if 'storable' in valid_types:
                 product_type = 'storable'
             elif 'product' in valid_types:
@@ -299,15 +311,16 @@ class ProductTemplate(models.Model):
                 'list_price': list_price,
                 'standard_price': standard_price,
                 'parent_box_id': self.id,
-                'available_in_pos': True,
                 'tracking': 'none', # "By Quantity" (no lots) as default
             }
 
-            # Copy POS category if it exists
-            if hasattr(self, 'pos_categ_id') and self.pos_categ_id:
-                child_vals['pos_categ_id'] = self.pos_categ_id.id
-            elif 'pos_categ_id' in self.env['product.template']._fields:
-                # Fallback check if it's on the parent
+            # Copy or Check fields only if they exist on the model
+            fields_obj = self.env['product.template']._fields
+            
+            if 'available_in_pos' in fields_obj:
+                child_vals['available_in_pos'] = True
+
+            if 'pos_categ_id' in fields_obj:
                 parent_pos_categ = getattr(self, 'pos_categ_id', False)
                 if parent_pos_categ:
                     child_vals['pos_categ_id'] = parent_pos_categ.id
