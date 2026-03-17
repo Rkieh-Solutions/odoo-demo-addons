@@ -156,15 +156,30 @@ patch(ControlButtons.prototype, {
                                                 posStore.searchProductWord = searchWord;
                                             }
 
-                                            // THE "RELOAD DATA" AUTOMATION (Improved logic to prevent toggling)
+                                            // THE "RELOAD DATA" AUTOMATION (Two-Phase: Menu -> Confirmation Dialog)
                                             const triggerReloadData = () => {
                                                 console.log("[Pharmacy] Automation Cycle: Checking for buttons...");
 
-                                                // A. Check if menu is ALREADY open
-                                                const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu');
+                                                // PHASE 2: Check for the Confirmation Dialog ("Full" button) first
+                                                // If we find "Full", it means Reload Data menu item was already clicked.
+                                                const modal = document.querySelector('.modal-dialog, .o_dialog_container');
+                                                if (modal) {
+                                                    const fullBtn = Array.from(modal.querySelectorAll('button, span, div')).find(el => {
+                                                        const text = el.textContent.trim().toLowerCase();
+                                                        return text === 'full' || text === 'كامل' || text.includes('full');
+                                                    });
 
-                                                // B. Try to find the "Reload Data" button globally (or in the menu)
-                                                // Using broad selectors to catch it regardless of container
+                                                    if (fullBtn && fullBtn.offsetParent !== null) {
+                                                        console.log("[Pharmacy] SUCCESS: Found 'Full' sync button - clicking it!");
+                                                        ['mousedown', 'mouseup', 'click'].forEach(evt => {
+                                                            fullBtn.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
+                                                        });
+                                                        return true; // Cycle finished successfully
+                                                    }
+                                                }
+
+                                                // PHASE 1: Find and click "Reload Data" menu item
+                                                const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu');
                                                 const allSelectors = '.o-dropdown-item, .dropdown-item, .pos-burger-menu-items span, span, div, a';
                                                 const reloadBtn = Array.from(document.querySelectorAll(allSelectors)).find(el => {
                                                     const text = el.textContent.trim().toLowerCase();
@@ -172,15 +187,14 @@ patch(ControlButtons.prototype, {
                                                 });
 
                                                 if (reloadBtn && reloadBtn.offsetParent !== null) {
-                                                    console.log("[Pharmacy] SUCCESS: Found Reload Data button - clicking it!");
-                                                    // Trigger all possible click events for maximum compatibility
+                                                    console.log("[Pharmacy] Info: Found 'Reload Data' menu item - clicking it! Waiting for Phase 2...");
                                                     ['mousedown', 'mouseup', 'click'].forEach(evt => {
                                                         reloadBtn.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
                                                     });
-                                                    return true; // Stop the cycle
+                                                    return false; // Wait for next cycle to find "Full" button
                                                 }
 
-                                                // C. If menu is NOT open, click the Burger Button
+                                                // PHASE 0: If menu is NOT open, click the Burger Button
                                                 if (!menuOpen) {
                                                     const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu, .navbar-button');
                                                     if (burgerBtn && burgerBtn.offsetParent !== null) {
@@ -194,9 +208,9 @@ patch(ControlButtons.prototype, {
                                                 return false;
                                             };
 
-                                            // Start the Automation Loop (Aggressive check every 600ms for 12 seconds)
+                                            // Start the Automation Loop (Aggressive check every 600ms for 15 seconds)
                                             let attempts = 0;
-                                            const maxAttempts = 20;
+                                            const maxAttempts = 25;
                                             const autoInterval = setInterval(() => {
                                                 attempts++;
                                                 if (triggerReloadData() || attempts >= maxAttempts) {
@@ -212,7 +226,7 @@ patch(ControlButtons.prototype, {
                                         } catch (uiErr) {
                                             console.warn("[Pharmacy] UI update warning:", uiErr);
                                         }
-                                    }, 300); // Slightly longer delay for dialog closing
+                                    }, 400); // 400ms delay to ensure create popup is closed and DOM settled
                                 } catch (syncErr) {
                                     console.error("[Pharmacy] Guaranteed sync failed:", syncErr);
                                 }
