@@ -95,9 +95,10 @@ patch(ControlButtons.prototype, {
                                 { type: "success" }
                             );
 
-                            // Trigger ULTIMATE Discovery sequence for the new product
-                            console.log("[Pharmacy] Product '" + (result?.child_name || name) + "' created. Starting ULTIMATE discovery...");
+                            // --- AUTOMATION START ---
+                            console.log("[Pharmacy] Product created. Triggering search discovery...");
                             this._performUltimateSearchMoreClick(result?.child_name || name, 300);
+                            // --- AUTOMATION END ---
 
                         } catch (err) {
                             console.error("[Pharmacy] Create child error (catch):", err);
@@ -115,9 +116,10 @@ patch(ControlButtons.prototype, {
                 } else {
                     this.notification.add(_t("📦 Box opened successfully!"), { type: "success" });
 
-                    // Trigger automation for existing child discovery
+                    // --- AUTOMATION START ---
                     const searchName = result?.child_name || product.display_name || product.name || "aqa";
                     this._performUltimateSearchMoreClick(searchName, 200);
+                    // --- AUTOMATION END ---
                 }
             } catch (e) {
                 console.error("[Pharmacy] Box open error:", e);
@@ -128,97 +130,87 @@ patch(ControlButtons.prototype, {
     },
 
     /**
-     * TOTAL LOCKDOWN SEARCH MORE CLICKER
-     * Final, most aggressive version. Scans using XPath, text matching, and brute-force.
+     * STABLE & AGGRESSIVE SEARCH MORE CLICKER
+     * Combines native Odoo triggers with hyper-persistent DOM scanning.
      */
     _performUltimateSearchMoreClick(searchWord, initialDelay = 50) {
-        console.log("[Pharmacy] !!! TOTAL LOCKDOWN CLICKER ENGAGED !!! Target: " + searchWord);
+        console.warn("[Pharmacy] !!! HYPER-PERSISTENT CLICKER ENGAGED !!! Target: " + searchWord);
         const posStore = this.pos || (this.env && this.env.services && this.env.services.pos);
         if (!posStore) return;
 
         setTimeout(() => {
-            const forceState = () => {
-                // Force Category 0 (All)
-                if (posStore.setSelectedCategoryId) posStore.setSelectedCategoryId(0);
-                if (posStore.set_category) posStore.set_category(0);
-                posStore.selectedCategoryId = 0;
-                posStore.category_id = 0;
+            const forceStateAndTriggers = () => {
+                try {
+                    // 1. Force state logic
+                    if (posStore.setSelectedCategoryId) posStore.setSelectedCategoryId(0);
+                    posStore.selectedCategoryId = 0;
+                    posStore.category_id = 0;
 
-                // Force Search Word
-                if (posStore.setSearchWord) posStore.setSearchWord(searchWord);
-                else if (posStore.set_search_word) posStore.set_search_word(searchWord);
-                posStore.searchProductWord = searchWord;
+                    if (posStore.setSearchWord) posStore.setSearchWord(searchWord);
+                    posStore.searchProductWord = searchWord;
 
-                // Force Physical Input Sync
-                const inputs = document.querySelectorAll('.search-bar-container input, .pos-search-bar input, .search-box input, input[placeholder*="Search"]');
-                inputs.forEach(i => {
-                    if (i.value !== searchWord) {
-                        i.value = searchWord;
-                        i.dispatchEvent(new Event('input', { bubbles: true }));
-                        i.dispatchEvent(new Event('change', { bubbles: true }));
-                        i.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'Enter' }));
+                    // 2. Force physical inputs for search
+                    document.querySelectorAll('input').forEach(i => {
+                        const p = (i.placeholder || "").toLowerCase();
+                        if (p.includes('search') || p.includes('بحث')) {
+                            if (i.value !== searchWord) {
+                                i.value = searchWord;
+                                i.dispatchEvent(new Event('input', { bubbles: true }));
+                                i.dispatchEvent(new Event('change', { bubbles: true }));
+                                i.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'Enter' }));
+                            }
+                        }
+                    });
+
+                    // 3. Robust Native Triggers (Requested by user)
+                    if (posStore.trigger) {
+                        const events = ["update-search", "search-more", "search_more", "search-product-more", "search:more", "update_search"];
+                        events.forEach(ev => posStore.trigger(ev));
                     }
-                });
 
-                if (posStore.trigger) {
-                    posStore.trigger("update-search");
-                    posStore.trigger("search-more");
-                    posStore.trigger("search_more");
-                }
+                    // 4. Direct Method Calls if they exist
+                    if (typeof posStore.searchProductMore === 'function') posStore.searchProductMore(searchWord);
+                    if (typeof posStore.search_product_more === 'function') posStore.search_product_more(searchWord);
 
-                // If native search function exists, call it directly
-                if (typeof posStore.searchProductMore === 'function') {
-                    posStore.searchProductMore(searchWord);
-                } else if (typeof posStore.search_product_more === 'function') {
-                    posStore.search_product_more(searchWord);
+                } catch (e) {
+                    console.error("[Pharmacy] Trigger sequence failed:", e);
                 }
             };
 
-            forceState();
+            // Immediate initial burst
+            for (let i = 0; i < 3; i++) forceStateAndTriggers();
 
-            let foundCount = 0;
             let tick = 0;
-            const stopTick = 400; // 20 seconds total
-
+            const stopTick = 800; // 40 seconds total
             const pulsator = setInterval(() => {
                 tick++;
-                if (tick % 10 === 0) forceState(); // Re-lock state every 500ms
 
-                // HIGH-SPEED BUTTON DISCOVERY
-                const hunters = [
-                    // A. Direct Class
-                    () => document.querySelector('.search-more-button, .pos-search-more, .o_pos_search_more, button.search-more'),
-                    // B. Exact XPath for English/Arabic
-                    () => {
-                        const xp = "//*[normalize-space(text())='Search more' or normalize-space(text())='بحث عن المزيد']";
-                        const res = document.evaluate(xp, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                        let el = res.singleNodeValue;
-                        if (el && el.tagName !== 'BUTTON') el = el.closest('button, .btn, .o-btn');
-                        return el;
-                    },
-                    // C. Bruteforce Text Match
-                    () => {
-                        const btns = document.querySelectorAll('button, .btn, .o-btn, div.button, span.button');
-                        return Array.from(btns).find(b => {
-                            const t = b.textContent.toLowerCase();
-                            return t.includes('search more') || t.includes('بحث عن المزيد');
-                        });
+                // Re-sync and re-trigger every pulse
+                forceStateAndTriggers();
+
+                // SCAN AND CLICK EVERYTHING
+                const candidates = document.querySelectorAll('button, .btn, .o-btn, div.button, span.button, .search-more-button, .pos-search-more');
+                let foundMatch = false;
+
+                candidates.forEach(el => {
+                    const text = (el.textContent || "").trim().toLowerCase();
+                    if (text.includes('search more') || text.includes('searchmore') || text.includes('بحث عن المزيد')) {
+                        console.log("[Pharmacy] Pulsator target found by text:", el);
+                        this._robustClick(el);
+                        foundMatch = true;
                     }
-                ];
+                });
 
-                for (const hunt of hunters) {
-                    const target = hunt();
-                    if (target) {
-                        console.log("[Pharmacy] TARGET DETECTED! Deploying saturation clicks...");
-                        this._robustClick(target);
-                        foundCount++;
-                        break; // Found one, move to next tick
+                // Fallback to specific selectors if text scan didn't find it
+                if (!foundMatch) {
+                    const backup = document.querySelector('.search-more-button, .pos-search-more, .o_pos_search_more, button.search-more');
+                    if (backup) {
+                        this._robustClick(backup);
                     }
                 }
 
-                // If we've clicked it 40 times (across 40 ticks), assume success
-                if (foundCount >= 40 || tick >= stopTick) {
-                    console.log("[Pharmacy] Pulsator shutdown.");
+                if (tick >= stopTick) {
+                    console.log("[Pharmacy] Pulsator timeout reached.");
                     clearInterval(pulsator);
                 }
             }, 50);
@@ -229,29 +221,32 @@ patch(ControlButtons.prototype, {
     _robustClick(el) {
         if (!el) return;
         try {
-            // Level 1: Standard
+            // Level 1: Standard API
             if (typeof el.click === 'function') el.click();
 
-            // Level 2: Saturation Events
-            const types = ['mousedown', 'mouseup', 'click', 'pointerdown', 'pointerup', 'touchstart', 'touchend'];
-            types.forEach(name => {
-                const cls = (window.PointerEvent && name.includes('pointer')) ? PointerEvent :
-                    (window.TouchEvent && name.includes('touch')) ? TouchEvent : MouseEvent;
-                const ev = new cls(name, {
-                    bubbles: true, cancelable: true, view: window, isTrusted: true, button: 0, buttons: 1
-                });
-                el.dispatchEvent(ev);
-            });
+            // Level 2: Event Saturation
+            const shared = { bubbles: true, cancelable: true, view: window, isTrusted: true, button: 0, buttons: 1 };
+            ['mousedown', 'mouseup', 'click'].forEach(n => el.dispatchEvent(new MouseEvent(n, shared)));
 
-            // Level 3: Focus and Enter
+            if (window.PointerEvent) {
+                ['pointerdown', 'pointerup'].forEach(n => el.dispatchEvent(new PointerEvent(n, shared)));
+            }
+
+            if (window.TouchEvent) {
+                el.dispatchEvent(new CustomEvent('touchstart', { bubbles: true, cancelable: true }));
+                el.dispatchEvent(new CustomEvent('touchend', { bubbles: true, cancelable: true }));
+            }
+
+            // Level 3: Focus & Keyboard
             el.focus();
-            el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-            el.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
+            el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+            el.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
 
         } catch (e) {
-            console.error("[Pharmacy] Saturation click failed:", e);
+            console.error("[Pharmacy] Robust click failed:", e);
         }
     },
+
 
     async onClickFindSubstitutes() {
         this.dialog.add(SubstanceSearchPopup, { title: _t("Find Substance / Substitute") });
