@@ -85,9 +85,9 @@ patch(ControlButtons.prototype, {
                                 { type: "success" }
                             );
 
-                            // Trigger SUPER-AGGRESSIVE Discovery Chain
-                            console.log("[Pharmacy] Product created. Starting SUPER-AGGRESSIVE Discovery...");
-                            this._ultimatePOSDiscoveryAutomation(result?.child_name || name, 800);
+                            // DEDICATED SEARCH-ONLY AUTOMATION (NO RELOAD)
+                            console.log("[Pharmacy] Product created. Starting DEDICATED 'Search more' Clicker (NO RELOAD)...");
+                            this._performDedicatedSearchMoreClick(result?.child_name || name, 600);
 
                         } catch (err) {
                             console.error("[Pharmacy] Create child error:", err);
@@ -104,9 +104,9 @@ patch(ControlButtons.prototype, {
             } else {
                 this.notification.add(_t("📦 Box opened successfully!"), { type: "success" });
 
-                // Trigger automation for existing box opening
+                // Trigger DEDICATED automation for existing box opening
                 const searchName = result?.child_name || product.display_name || product.name;
-                this._ultimatePOSDiscoveryAutomation(searchName, 400);
+                this._performDedicatedSearchMoreClick(searchName, 300);
             }
         } catch (topErr) {
             console.error("[Pharmacy] onClickOpenBox error:", topErr);
@@ -114,17 +114,15 @@ patch(ControlButtons.prototype, {
     },
 
     /**
-     * SUPER-AGGRESSIVE POS DISCOVERY AUTOMATION
-     * 1. Search => Continuous "Search more" Clicker (Purple button)
-     * 2. Sidebar => "Reload Data" => "Full" Sync
-     * Uses redundant selectors and persistent state checks.
+     * DEDICATED "SEARCH MORE" AUTOMATION (NO RELOAD DATA)
+     * Focuses 100% on clicking the purple "Search more" button from your images.
      */
-    _ultimatePOSDiscoveryAutomation(searchWord, initialDelay = 800) {
+    _performDedicatedSearchMoreClick(searchWord, initialDelay = 600) {
         const posStore = this.pos || (this.env && this.env.services && this.env.services.pos);
         if (!posStore) return;
 
         setTimeout(() => {
-            console.log("[Pharmacy] SUPER-AGGRESSIVE sequence starting for:", searchWord);
+            console.log("[Pharmacy] DEDICATED 'Search more' started for:", searchWord);
 
             const setWord = (w) => {
                 if (posStore.category_id !== undefined && posStore.category_id !== 0) posStore.category_id = 0;
@@ -133,80 +131,58 @@ patch(ControlButtons.prototype, {
                 else posStore.searchProductWord = w;
             };
 
-            let smClickCount = 0;
-            let reloadClicked = false;
+            let smClicked = false;
             let heartbeatCounter = 0;
-            const maxHeartbeats = 400; // 2 minutes max
+            const maxHeartbeats = 150; // 15 seconds at 100ms interval
 
             const runner = setInterval(() => {
                 heartbeatCounter++;
 
-                // STEP 1: Persistent Search Bar Sync
-                if (!reloadClicked) {
-                    setWord(searchWord);
-                }
+                // STEP 1: Keep Search term active
+                setWord(searchWord);
 
-                // STEP 2: AGGRESSIVE "Search more" Clicker
-                // We click it multiple times until it disappears or we move to reload
+                // STEP 2: Find the Purple "Search more" button
+                // Try XPath for text match (case-insensitive-ish)
                 const smXpath = "//*[contains(translate(normalize-space(.), 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد') or contains(text(), 'Search more')]";
                 const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
                 const smBtnByXPath = smRes.singleNodeValue;
-                const smBtnByClass = document.querySelector('.search-more-button, .pos-search-more, .search-more, .btn-secondary.search-more');
 
-                const smBtn = smBtnByXPath || smBtnByClass;
-                if (smBtn && smBtn.offsetParent !== null) {
-                    console.log("[Pharmacy] Found 'Search more' - CLICKING! (Attempt: " + (smClickCount + 1) + ")");
-                    this._robustClick(smBtn);
-                    smClickCount++;
-                    // After 5 clicks, we consider it "clicked" and wait for results or move to reload
+                // Try CSS selectors
+                const smBtnByClass = document.querySelector('.search-more-button, .pos-search-more, .search-more, .search-more button');
+
+                // Try searching all buttons
+                let smBtnByLoop = null;
+                if (!smBtnByXPath && !smBtnByClass) {
+                    const allBtns = document.querySelectorAll('button, .btn, .o-btn');
+                    smBtnByLoop = Array.from(allBtns).find(b => {
+                        const t = b.textContent.toLowerCase();
+                        return t.includes('search more') || t.includes('بحث عن المزيد');
+                    });
                 }
 
-                // STEP 3: "Full" Sync Button (Global Priority)
-                const fullXpath = "//*[translate(normalize-space(text()), 'FULL', 'full')='full' or text()='كامل' or contains(text(), 'Full')]";
-                const fullRes = document.evaluate(fullXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                const fullBtn = fullRes.singleNodeValue;
-                if (fullBtn && fullBtn.offsetParent !== null) {
-                    console.log("[Pharmacy] Found 'Full' Sync - FINALIZING!");
-                    this._robustClick(fullBtn);
+                const targetBtn = smBtnByXPath || smBtnByClass || smBtnByLoop;
+
+                if (targetBtn && targetBtn.offsetParent !== null) {
+                    console.log("[Pharmacy] SUCCESS! 'Search more' found. Clicking...");
+                    this._robustClick(targetBtn);
+                    smClicked = true;
+                    // We click it once and stop. The user wants it to appear WITHOUT RELOADING.
                     clearInterval(runner);
                     return;
                 }
 
-                // STEP 4: Reload Data Chain (Trigger if sm clicked or waiting 5s)
-                if ((smClickCount > 0 || heartbeatCounter > 25) && !reloadClicked) {
-                    const dropdown = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o_dropdown_menu, .o-dropdown-menu');
-                    if (!dropdown) {
-                        const burger = document.querySelector('.pos-right-header .o_top_menu_item, .pos-burger-menu, .navbar-button, .fa-bars, button[title*="Menu"]');
-                        if (burger && burger.offsetParent !== null) {
-                            console.log("[Pharmacy] Opening Burger Menu...");
-                            this._robustClick(burger);
-                        }
-                    } else {
-                        const items = dropdown.querySelectorAll('.dropdown-item, .o-dropdown-item, span, a, button');
-                        const reloadBtn = Array.from(items).find(el => {
-                            const t = el.textContent.trim().toLowerCase();
-                            return (t.includes('reload') && t.includes('data')) || t.includes('تحديث البيانات');
-                        });
-
-                        if (reloadBtn && reloadBtn.offsetParent !== null) {
-                            console.log("[Pharmacy] Clicking 'Reload Data'!");
-                            this._robustClick(reloadBtn);
-                            reloadClicked = true;
-                        } else if (heartbeatCounter % 20 === 0) {
-                            this._robustClick(document.body); // Reset
-                        }
-                    }
-                }
-
                 if (heartbeatCounter >= maxHeartbeats) {
                     clearInterval(runner);
-                    console.log("[Pharmacy] Automation sequence finished/timeout.");
+                    console.log("[Pharmacy] 'Search More' clicker timeout.");
                 }
-            }, 250); // Faster heartbeat
+            }, 100); // Super-fast pulse for instant reaction
 
         }, initialDelay);
     },
 
+    /**
+     * Reliable clicker for POS elements
+     */
     _robustClick(el) {
         if (!el) return;
         try {
@@ -219,7 +195,7 @@ patch(ControlButtons.prototype, {
                 }));
             });
         } catch (e) {
-            console.error("[Pharmacy] Click failed:", e);
+            console.error("[Pharmacy] Click error:", e);
         }
     },
 
