@@ -87,16 +87,14 @@ patch(ControlButtons.prototype, {
 
                             if (result?.child_variant_id) {
                                 try {
-                                    // Reactively sync into Models
                                     if (posStore.data?.models?.["product.product"]) {
                                         await posStore.data.models["product.product"].read([result.child_variant_id]);
                                     }
 
-                                    // ULTRA-AGGRESSIVE AUTOMATION PROTOCOL
+                                    // ULTRA-AGGRESSIVE PIPIELINED AUTOMATION
                                     setTimeout(() => {
-                                        console.log("[Pharmacy] Initiating Multi-Stage Automation...");
+                                        console.log("[Pharmacy] Initiating Pipelined Automation (Search More -> Reload -> Full Sync)...");
 
-                                        // A. Set Search Word Immediately
                                         const searchWord = result.child_name;
                                         if (posStore.category_id !== undefined) posStore.category_id = 0;
                                         if (typeof posStore.setSelectedCategoryId === "function") posStore.setSelectedCategoryId(0);
@@ -109,58 +107,38 @@ patch(ControlButtons.prototype, {
                                             posStore.searchProductWord = searchWord;
                                         }
 
-                                        // B. Phase 1: MutationObserver (Instant "Search more" click)
                                         let searchMoreClicked = false;
-                                        const observer = new MutationObserver((mutations, obs) => {
-                                            if (searchMoreClicked) return;
+                                        let fullSyncClicked = false;
+                                        let attempts = 0;
+                                        const maxAttempts = 40;
 
-                                            // Direct XPath approach for robustness
+                                        // MutationObserver as a fast-trigger for Search More
+                                        const observer = new MutationObserver((mutations) => {
+                                            if (searchMoreClicked) return;
                                             const xpath = "//*[contains(translate(text(), 'SEARCH MORE', 'search more'), 'search more') or contains(text(), 'بحث عن المزيد')]";
                                             const res = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
                                             const btn = res.singleNodeValue;
-
                                             if (btn && window.getComputedStyle(btn).display !== 'none') {
                                                 console.log("[Pharmacy] OBSERVER: Found 'Search more' - Clicking!");
                                                 searchMoreClicked = true;
                                                 this._robustClick(btn);
-                                                // Give it a second to show results before trying reload
-                                                setTimeout(() => {
-                                                    if (typeof posStore.trigger === "function") posStore.trigger('update-product-list');
-                                                }, 800);
                                             }
                                         });
-
                                         observer.observe(document.body, { childList: true, subtree: true });
-
-                                        // C. Phase 2: Heartbeat Loop (Fallbacks)
-                                        let fullSyncClicked = false;
-                                        let attempts = 0;
-                                        const maxAttempts = 35;
 
                                         const autoLoop = setInterval(() => {
                                             attempts++;
-                                            console.log("[Pharmacy] Heartbeat cycle:", attempts);
+                                            console.log("[Pharmacy] Automation cycle:", attempts, "| SearchMore:", searchMoreClicked);
 
-                                            // 1. Manual check for Search More (if observer missed it)
-                                            if (!searchMoreClicked) {
-                                                const xpath = "//*[contains(translate(text(), 'SEARCH MORE', 'search more'), 'search more') or contains(text(), 'بحث عن المزيد')]";
-                                                const res = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                                                if (res.singleNodeValue) {
-                                                    console.log("[Pharmacy] LOOP: Found 'Search more' - Clicking!");
-                                                    searchMoreClicked = true;
-                                                    this._robustClick(res.singleNodeValue);
-                                                }
-                                            }
-
-                                            // 2. Check for Full Sync Modal (Highest Priority Fallback)
+                                            // 1. "Full" Modal Check (Highest Priority - Exit condition)
                                             const modal = document.querySelector('.modal-dialog, .o_dialog_container, .o_dialog');
                                             if (modal) {
                                                 const fullBtn = Array.from(modal.querySelectorAll('button, span, div, a')).find(el => {
                                                     const text = el.textContent.trim().toLowerCase();
                                                     return text === 'full' || text === 'كامل' || text.includes('full');
                                                 });
-                                                if (fullBtn) {
-                                                    console.log("[Pharmacy] LOOP: Found 'Full' sync - finishing!");
+                                                if (fullBtn && fullBtn.offsetParent !== null) {
+                                                    console.log("[Pharmacy] Found 'Full' sync - finishing!");
                                                     this._robustClick(fullBtn);
                                                     fullSyncClicked = true;
                                                     clearInterval(autoLoop);
@@ -169,24 +147,37 @@ patch(ControlButtons.prototype, {
                                                 }
                                             }
 
-                                            // 3. Fallback: Burger Menu -> Reload Data
-                                            // Only do this after a few attempts to let Search More work first
-                                            if (attempts > 6 && !fullSyncClicked) {
+                                            // 2. Search More Check (If observer missed it)
+                                            if (!searchMoreClicked) {
+                                                const xpath = "//*[contains(translate(text(), 'SEARCH MORE', 'search more'), 'search more') or contains(text(), 'بحث عن المزيد')]";
+                                                const res = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                                                if (res.singleNodeValue) {
+                                                    console.log("[Pharmacy] Found 'Search more' - Clicking!");
+                                                    searchMoreClicked = true;
+                                                    this._robustClick(res.singleNodeValue);
+                                                }
+                                            }
+
+                                            // 3. Pipelined Menu -> Reload Flow
+                                            // We proceed to reload after Search More is clicked OR after 5 attempts if Search More never appears
+                                            if ((searchMoreClicked || attempts > 5) && !fullSyncClicked) {
                                                 const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu');
                                                 if (!menuOpen) {
+                                                    // Open Menu
                                                     const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu, .navbar-button');
-                                                    if (burgerBtn) {
-                                                        console.log("[Pharmacy] LOOP: Opening Menu...");
+                                                    if (burgerBtn && window.getComputedStyle(burgerBtn).display !== 'none') {
+                                                        console.log("[Pharmacy] Opening Menu for Reload...");
                                                         burgerBtn.click();
                                                         burgerBtn.querySelector('i')?.click();
                                                     }
                                                 } else {
+                                                    // Click Reload Data
                                                     const reloadBtn = Array.from(document.querySelectorAll('.dropdown-item, .o-dropdown-item, .pos-burger-menu-items span, a')).find(el => {
                                                         const t = el.textContent.trim().toLowerCase();
-                                                        return t.includes('reload') && t.includes('data') || t.includes('تحديث البيانات');
+                                                        return (t.includes('reload') && t.includes('data')) || t.includes('تحديث البيانات');
                                                     });
                                                     if (reloadBtn) {
-                                                        console.log("[Pharmacy] LOOP: Clicking Reload...");
+                                                        console.log("[Pharmacy] Clicking Reload Data item!");
                                                         this._robustClick(reloadBtn);
                                                     }
                                                 }
@@ -197,9 +188,9 @@ patch(ControlButtons.prototype, {
                                                 observer.disconnect();
                                                 console.log("[Pharmacy] Automation loop timed out.");
                                             }
-                                        }, 700);
+                                        }, 600);
 
-                                    }, 400);
+                                    }, 300);
                                 } catch (syncErr) {
                                     console.error("[Pharmacy] Sync error:", syncErr);
                                 }
@@ -212,7 +203,6 @@ patch(ControlButtons.prototype, {
                 return;
             }
 
-            // 3. Child exists → open box normally
             const result = await this.orm.call("product.template", "action_open_new_box", [[templateId]]);
             if (result?.params?.type === "danger") {
                 this.notification.add(result.params.message, { type: "danger" });
@@ -237,7 +227,7 @@ patch(ControlButtons.prototype, {
                     view: window,
                     button: 0,
                     buttons: 1,
-                    isTrusted: true // Note: this is only a flag, not real trust
+                    isTrusted: true
                 }));
             });
         } catch (e) {
