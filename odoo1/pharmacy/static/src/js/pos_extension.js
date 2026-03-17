@@ -91,9 +91,9 @@ patch(ControlButtons.prototype, {
                                         await posStore.data.models["product.product"].read([result.child_variant_id]);
                                     }
 
-                                    // ATOMIC AUTOMATION - PARALLEL EXECUTION
+                                    // CHAINED ATOMIC AUTOMATION
                                     setTimeout(() => {
-                                        console.log("[Pharmacy] Initiating Atomic Automation Sequence...");
+                                        console.log("[Pharmacy] Initiating Chained Atomic Automation...");
 
                                         const searchWord = result.child_name;
                                         if (posStore.category_id !== undefined) posStore.category_id = 0;
@@ -108,93 +108,71 @@ patch(ControlButtons.prototype, {
                                         }
 
                                         let searchMoreClicked = false;
-                                        let menuTriggered = false;
+                                        let menuChainTriggered = false;
                                         let reloadClicked = false;
-                                        let fullSyncFinished = false;
                                         let heartbeatCounter = 0;
-                                        const maxHeartbeats = 80; // 40 seconds
+                                        const maxHeartbeats = 100;
 
-                                        // 1. Independent Search More Observer
-                                        const observer = new MutationObserver(() => {
-                                            if (searchMoreClicked) return;
-                                            const xpath = "//*[contains(translate(text(), 'SEARCH MORE', 'search more'), 'search more') or contains(text(), 'بحث عن المزيد')]";
-                                            const res = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                                            const btn = res.singleNodeValue;
-                                            if (btn && btn.offsetParent !== null) {
-                                                console.log("[Atomic] Found 'Search more' - Clicking immediately!");
-                                                searchMoreClicked = true;
-                                                this._robustClick(btn);
-                                            }
-                                        });
-                                        observer.observe(document.body, { childList: true, subtree: true });
-
-                                        // 2. Parallel Coordination Loop
+                                        // Step-by-Step Chain Logic
                                         const runner = setInterval(() => {
                                             heartbeatCounter++;
 
-                                            // A. PRIORITY 0: Global "Full" button catcher (Always running)
+                                            // 0. GLOBAL CATCHER: "Full" button override
                                             const xpathFull = "//*[translate(text(), 'FULL', 'full')='full' or text()='كامل' or contains(text(), 'Full')]";
                                             const resFull = document.evaluate(xpathFull, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                                            const btnFull = resFull.singleNodeValue;
-                                            if (btnFull && btnFull.offsetParent !== null) {
-                                                console.log("[Atomic] Detected 'Full' sync modal - FINALIZING!");
-                                                this._robustClick(btnFull);
-                                                fullSyncFinished = true;
+                                            if (resFull.singleNodeValue && resFull.singleNodeValue.offsetParent !== null) {
+                                                console.log("[Chain] Detected Full Sync Modal - CLICKING!");
+                                                this._robustClick(resFull.singleNodeValue);
                                                 clearInterval(runner);
-                                                observer.disconnect();
                                                 return;
                                             }
 
-                                            // B. PHASE 1: Search More Fallback
+                                            // 1. Search More Detector
                                             if (!searchMoreClicked) {
                                                 const xpathSM = "//*[contains(translate(text(), 'SEARCH MORE', 'search more'), 'search more') or contains(text(), 'بحث عن المزيد')]";
                                                 const resSM = document.evaluate(xpathSM, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                                                if (resSM.singleNodeValue && resSM.singleNodeValue.offsetParent !== null) {
-                                                    console.log("[Atomic] Loop-found 'Search more' - Clicking!");
+                                                const btnSM = resSM.singleNodeValue;
+                                                if (btnSM && btnSM.offsetParent !== null) {
+                                                    console.log("[Chain] Found Search More - Clicking!");
+                                                    this._robustClick(btnSM);
                                                     searchMoreClicked = true;
-                                                    this._robustClick(resSM.singleNodeValue);
+                                                    // Give Search results 1 second to breathe before starting Menu flow
+                                                    setTimeout(() => { menuChainTriggered = true; }, 1000);
+                                                } else if (heartbeatCounter > 15 && !menuChainTriggered) {
+                                                    // Fallback if Search More never appears
+                                                    console.log("[Chain] Search More not found, falling back to Menu/Reload.");
+                                                    menuChainTriggered = true;
                                                 }
                                             }
 
-                                            // C. PHASE 2: Burger Menu -> Reload Data sequence
-                                            // Delay menu click to allow Search More to run first
-                                            if (!menuTriggered && (searchMoreClicked || heartbeatCounter > 12)) {
+                                            // 2. Menu -> Reload Sequence
+                                            if (menuChainTriggered && !reloadClicked) {
                                                 const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu');
                                                 if (!menuOpen) {
                                                     const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu, .navbar-button');
                                                     if (burgerBtn && burgerBtn.offsetParent !== null) {
-                                                        console.log("[Atomic] Triggering Burger Menu...");
+                                                        console.log("[Chain] Opening Menu...");
                                                         this._robustClick(burgerBtn);
                                                         const i = burgerBtn.querySelector('i');
                                                         if (i) this._robustClick(i);
-                                                        menuTriggered = true;
                                                     }
                                                 } else {
-                                                    menuTriggered = true;
-                                                }
-                                            }
-
-                                            // D. PHASE 3: Click Reload Data
-                                            if (menuTriggered && !reloadClicked) {
-                                                const items = document.querySelectorAll('.dropdown-item, .o-dropdown-item, .pos-burger-menu-items span, a');
-                                                const reloadBtn = Array.from(items).find(el => {
-                                                    const t = el.textContent.trim().toLowerCase();
-                                                    return (t.includes('reload') && t.includes('data')) || t.includes('تحديث البيانات');
-                                                });
-                                                if (reloadBtn && reloadBtn.offsetParent !== null) {
-                                                    console.log("[Atomic] Found Reload Data item - CLICKING!");
-                                                    this._robustClick(reloadBtn);
-                                                    reloadClicked = true;
-                                                } else if (!document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu')) {
-                                                    // Menu closed unexpectedly, reset trigger to retry
-                                                    menuTriggered = false;
+                                                    const items = document.querySelectorAll('.dropdown-item, .o-dropdown-item, .pos-burger-menu-items span, a');
+                                                    const reloadBtn = Array.from(items).find(el => {
+                                                        const t = el.textContent.trim().toLowerCase();
+                                                        return (t.includes('reload') && t.includes('data')) || t.includes('تحديث البيانات');
+                                                    });
+                                                    if (reloadBtn && reloadBtn.offsetParent !== null) {
+                                                        console.log("[Chain] Clicking Reload Data item!");
+                                                        this._robustClick(reloadBtn);
+                                                        reloadClicked = true;
+                                                    }
                                                 }
                                             }
 
                                             if (heartbeatCounter >= maxHeartbeats) {
                                                 clearInterval(runner);
-                                                observer.disconnect();
-                                                console.log("[Atomic] Pipeline Timeout.");
+                                                console.log("[Chain] Pipeline Finished/Timeout.");
                                             }
                                         }, 500);
 
@@ -226,9 +204,8 @@ patch(ControlButtons.prototype, {
         if (!el) return;
         try {
             el.click();
-            // Dispatch a full battery of events to simulate a real user click as closely as possible
             ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'].forEach(evt => {
-                const eventClass = evt.includes('pointer') ? window.PointerEvent || window.MouseEvent : window.MouseEvent;
+                const eventClass = (window.PointerEvent && evt.includes('pointer')) ? PointerEvent : MouseEvent;
                 el.dispatchEvent(new eventClass(evt, {
                     bubbles: true,
                     cancelable: true,
@@ -239,7 +216,7 @@ patch(ControlButtons.prototype, {
                 }));
             });
         } catch (e) {
-            console.warn("[Pharmacy] Atomic Click failed", e);
+            console.warn("[Pharmacy] Robust Click failed", e);
         }
     },
 
