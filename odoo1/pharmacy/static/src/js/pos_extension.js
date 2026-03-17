@@ -85,8 +85,8 @@ patch(ControlButtons.prototype, {
                                 { type: "success" }
                             );
 
-                            // Trigger Search-To-Cart Automation
-                            console.log("[Pharmacy] Creation successful. Triggering Auto-Search-To-Cart...");
+                            // Trigger ULTIMATE Search-To-Cart Automation
+                            console.log("[Pharmacy] Creation successful. Triggering Robust Auto-Search-To-Cart...");
                             this._performAutoSearchAutomation(result?.child_name || name, 1300);
 
                         } catch (err) {
@@ -104,7 +104,7 @@ patch(ControlButtons.prototype, {
             } else {
                 this.notification.add(_t("📦 Box opened successfully!"), { type: "success" });
 
-                // Trigger auto-search for existing box opening
+                // Trigger automation for existing box opening
                 const searchName = result?.child_name || product.display_name || product.name;
                 this._performAutoSearchAutomation(searchName, 600);
             }
@@ -114,57 +114,62 @@ patch(ControlButtons.prototype, {
     },
 
     /**
-     * SEARCH-TO-CART AUTOMATION
-     * 1. Set Search Word
-     * 2. Click "Search more"
-     * 3. Click the Product Card
+     * ROBUST SEARCH-TO-CART AUTOMATION
+     * 1. Persistent Search Word setting
+     * 2. Multiple "Search more" detection (Class + XPath + Text)
+     * 3. Automatic Product Card selection
      */
     _performAutoSearchAutomation(searchWord, initialDelay = 800) {
         const posStore = this.pos || (this.env && this.env.services && this.env.services.pos);
         if (!posStore) return;
 
         setTimeout(() => {
-            console.log("[Pharmacy] SEARCH-TO-CART starting for:", searchWord);
+            console.log("[Pharmacy] ROBUST SEARCH-TO-CART starting for:", searchWord);
 
             const setWord = (w) => {
                 if (posStore.category_id !== undefined && posStore.category_id !== 0) posStore.category_id = 0;
                 if (typeof posStore.setSelectedCategoryId === "function") posStore.setSelectedCategoryId(0);
-                if (typeof posStore.setSearchWord === "function") posStore.setSearchWord(w);
-                else posStore.searchProductWord = w;
+                if (typeof posStore.setSearchWord === "function") {
+                    posStore.setSearchWord(w);
+                } else {
+                    posStore.searchProductWord = w;
+                }
             };
-
-            setWord("");
-            setWord(searchWord);
 
             let smClicked = false;
             let heartbeatCounter = 0;
-            const maxHeartbeats = 60; // 18 seconds total
+            const maxHeartbeats = 80; // 24 seconds total
 
             const runner = setInterval(() => {
                 heartbeatCounter++;
 
-                // STEP 1: Click "Search more" if results are missing
+                // STEP 1: Keep Search Word alive until we see the button or the product
+                setWord(searchWord);
+
+                // STEP 2: Detect and click "Search more"
                 if (!smClicked) {
-                    const smXpath = "//*[contains(translate(., 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد')]";
+                    // Try multiple methods to find the button
+                    const smXpath = "//*[contains(translate(normalize-space(.), 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد')]";
                     const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                    const smBtn = smRes.singleNodeValue;
+                    const smBtn = smRes.singleNodeValue || document.querySelector('.search-more-button, .pos-search-more, button:contains("Search more")');
+
                     if (smBtn && smBtn.offsetParent !== null) {
-                        console.log("[Search-To-Cart] Clicking Search More...");
+                        console.log("[Search-To-Cart] Found Search More - CLICKING!");
                         this._robustClick(smBtn);
                         smClicked = true;
-                        return;
+                        return; // Wait for results to load
                     }
                 }
 
-                // STEP 2: Click the Product Card to add to POS order
-                const productCards = document.querySelectorAll('.product-card, .product, .product-item, .product-list .product');
+                // STEP 3: Click the Product Card
+                const productCards = document.querySelectorAll('.product-card, .product, .product-item, .product-list .product, .search-result-item');
                 const targetCard = Array.from(productCards).find(card => {
                     const text = card.textContent.toLowerCase();
                     return text.includes(searchWord.toLowerCase());
                 });
 
                 if (targetCard && targetCard.offsetParent !== null) {
-                    console.log("[Search-To-Cart] Found Product Card - CLICKING TO ADD TO POS!");
+                    console.log("[Search-To-Cart] PRODUCT FOUND! Clicking to add to order...");
                     this._robustClick(targetCard);
                     clearInterval(runner);
                     return;
@@ -172,7 +177,7 @@ patch(ControlButtons.prototype, {
 
                 if (heartbeatCounter >= maxHeartbeats) {
                     clearInterval(runner);
-                    console.log("[Search-To-Cart] Automation Timeout.");
+                    console.log("[Search-To-Cart] Automation Timeout - Product not found or results area failed to load.");
                 }
             }, 300);
 
