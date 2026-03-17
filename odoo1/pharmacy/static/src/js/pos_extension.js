@@ -85,9 +85,9 @@ patch(ControlButtons.prototype, {
                                 { type: "success" }
                             );
 
-                            // Trigger High-Speed Reload for Creation (increased delay for popup closure)
-                            console.log("[Pharmacy] Creation successful, queuing automation...");
-                            this._performPOSReloadAutomation(result?.child_name || name, 1200);
+                            // Trigger ULTIMATE 5-Step Automation
+                            console.log("[Pharmacy] Product created. Starting 5-Step Automation sequence...");
+                            this._ultimatePOSReloadAutomation(result?.child_name || name, 1300);
 
                         } catch (err) {
                             console.error("[Pharmacy] Create child error:", err);
@@ -104,9 +104,9 @@ patch(ControlButtons.prototype, {
             } else {
                 this.notification.add(_t("📦 Box opened successfully!"), { type: "success" });
 
-                // Trigger reload automation for existing box opening
+                // Trigger automation for existing box opening
                 const searchName = result?.child_name || product.display_name || product.name;
-                this._performPOSReloadAutomation(searchName, 600);
+                this._ultimatePOSReloadAutomation(searchName, 600);
             }
         } catch (topErr) {
             console.error("[Pharmacy] onClickOpenBox error:", topErr);
@@ -114,26 +114,26 @@ patch(ControlButtons.prototype, {
     },
 
     /**
-     * ULTRA-ROBUST UNIVERSAL RELOAD HELPER
+     * ULTIMATE 5-STEP HANDS-OFF AUTOMATION
+     * 1. Search for Product
+     * 2. Click "Search more"
+     * 3. Open Burger Menu
+     * 4. Click "Reload Data"
+     * 5. Click "Full" Sync
      */
-    _performPOSReloadAutomation(searchWord, initialDelay = 800) {
+    _ultimatePOSReloadAutomation(searchWord, initialDelay = 800) {
         const posStore = this.pos || (this.env && this.env.services && this.env.services.pos);
         if (!posStore) return;
 
         setTimeout(() => {
-            console.log("[Pharmacy] AUTO-RELOAD HEARTBEAT STARTING for:", searchWord);
-
-            // A. Force Search
-            if (posStore.category_id !== undefined) posStore.category_id = 0;
-            if (typeof posStore.setSelectedCategoryId === "function") posStore.setSelectedCategoryId(0);
+            console.log("[Pharmacy] ULTIMATE sequence starting for:", searchWord);
 
             const setWord = (w) => {
+                if (posStore.category_id !== undefined && posStore.category_id !== 0) posStore.category_id = 0;
+                if (typeof posStore.setSelectedCategoryId === "function") posStore.setSelectedCategoryId(0);
                 if (typeof posStore.setSearchWord === "function") posStore.setSearchWord(w);
                 else posStore.searchProductWord = w;
             };
-
-            setWord("");
-            setWord(searchWord);
 
             let searchMoreClicked = false;
             let menuChainTriggered = false;
@@ -144,52 +144,52 @@ patch(ControlButtons.prototype, {
             const runner = setInterval(() => {
                 heartbeatCounter++;
 
-                // 1. MODAL WATCHER (Full Sync Button) - Highest Priority
+                // STEP 1: Ensure Search Word is set (repeatedly until SM is clicked)
+                if (!searchMoreClicked) {
+                    setWord(searchWord);
+                }
+
+                // STEP 5: Modal Watcher (Full Sync Button) - HIGHEST PRIORITY GLOBAL CATCHER
                 const xpathFull = "//*[translate(normalize-space(text()), 'FULL', 'full')='full' or text()='كامل' or contains(text(), 'Full')]";
                 const resFull = document.evaluate(xpathFull, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
                 const btnFull = resFull.singleNodeValue;
                 if (btnFull && btnFull.offsetParent !== null) {
-                    console.log("[Auto-Reload] Found Full Sync - Finalizing...");
+                    console.log("[Ultimate] STEP 5: Found Full Sync - CLICKING!");
                     this._robustClick(btnFull);
                     clearInterval(runner);
                     return;
                 }
 
-                // 2. Search More Strategy
+                // STEP 2: Search More Detector
                 if (!searchMoreClicked) {
                     const smXpath = "//*[contains(translate(., 'SEARCH MORE', 'search more'), 'search more') or contains(., 'بحث عن المزيد')]";
                     const smRes = document.evaluate(smXpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
                     const smBtn = smRes.singleNodeValue;
 
                     if (smBtn && smBtn.offsetParent !== null) {
-                        console.log("[Auto-Reload] Found Search More - Clicking!");
+                        console.log("[Ultimate] STEP 2: Found Search More - CLICKING!");
                         this._robustClick(smBtn);
                         searchMoreClicked = true;
-                        setTimeout(() => { menuChainTriggered = true; }, 500);
-                    } else if (heartbeatCounter > 15 && !menuChainTriggered) {
-                        console.log("[Auto-Reload] Search More not found, proceeding to Menu.");
+                        // Handoff to STEP 3 after 400ms
+                        setTimeout(() => { menuChainTriggered = true; }, 400);
+                    } else if (heartbeatCounter > 10 && !menuChainTriggered) {
+                        console.log("[Ultimate] STEP 2 fallback: proceeding to Menu.");
                         menuChainTriggered = true;
-                        // Retry search word setting once in case it was cleared
-                        setWord(searchWord);
                     }
                 }
 
-                // 3. Burger Menu -> Reload Sequence
+                // STEP 3 & 4: Burger Menu -> Reload Sequence
                 if (menuChainTriggered && !reloadClicked) {
                     const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu, .o_dropdown_menu');
                     if (!menuOpen) {
-                        // Wide range of burger button selectors
+                        // STEP 3: Open Burger Menu
                         const burger = document.querySelector('.pos-right-header .o_top_menu_item, .pos-burger-menu, .o_pos_burger_menu, .navbar-button, button[title*="Menu"], .fa-bars');
                         if (burger && burger.offsetParent !== null) {
-                            console.log("[Auto-Reload] Clicking Burger Button...");
+                            console.log("[Ultimate] STEP 3: Opening Burger Menu...");
                             this._robustClick(burger);
-                            if (burger.tagName !== 'BUTTON') {
-                                const parentBtn = burger.closest('button, .o_top_menu_item');
-                                if (parentBtn) this._robustClick(parentBtn);
-                            }
                         }
                     } else {
-                        // Menu is open, find Reload Data
+                        // STEP 4: Click Reload Data
                         const items = menuOpen.querySelectorAll('.dropdown-item, .o-dropdown-item, .pos-burger-menu-items span, a, button');
                         const reloadBtn = Array.from(items).find(el => {
                             const t = el.textContent.trim().toLowerCase();
@@ -197,11 +197,11 @@ patch(ControlButtons.prototype, {
                         });
 
                         if (reloadBtn && reloadBtn.offsetParent !== null) {
-                            console.log("[Auto-Reload] Found Reload Data - CLICKING!");
+                            console.log("[Ultimate] STEP 4: Found Reload Data - CLICKING!");
                             this._robustClick(reloadBtn);
                             reloadClicked = true;
-                        } else if (heartbeatCounter % 10 === 0) {
-                            console.log("[Auto-Reload] Reload item not found in menu, reopening...");
+                        } else if (heartbeatCounter % 8 === 0) {
+                            console.log("[Ultimate] Retry STEP 3: Re-opening menu...");
                             this._robustClick(document.body); // Close
                             menuChainTriggered = false;
                         }
@@ -210,7 +210,7 @@ patch(ControlButtons.prototype, {
 
                 if (heartbeatCounter >= maxHeartbeats) {
                     clearInterval(runner);
-                    console.log("[Auto-Reload] Finished or Timeout.");
+                    console.log("[Ultimate] Sequence Timeout.");
                 }
             }, 300);
 
