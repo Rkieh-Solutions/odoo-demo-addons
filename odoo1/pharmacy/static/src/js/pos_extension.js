@@ -91,11 +91,10 @@ patch(ControlButtons.prototype, {
                                         await posStore.data.models["product.product"].read([result.child_variant_id]);
                                     }
 
-                                    // ULTIMATE AUTOMATION PIPELINE (STATE-MACHINE V2)
+                                    // ATOMIC AUTOMATION - PARALLEL EXECUTION
                                     setTimeout(() => {
-                                        console.log("[Pharmacy] Starting State-Machine Automation Pipeline...");
+                                        console.log("[Pharmacy] Initiating Atomic Automation Sequence...");
 
-                                        // Step 0: Prepare Search
                                         const searchWord = result.child_name;
                                         if (posStore.category_id !== undefined) posStore.category_id = 0;
                                         if (typeof posStore.setSelectedCategoryId === "function") posStore.setSelectedCategoryId(0);
@@ -108,95 +107,94 @@ patch(ControlButtons.prototype, {
                                             posStore.searchProductWord = searchWord;
                                         }
 
-                                        /**
-                                         * Automation States:
-                                         * 0: Looking for "Search more" button
-                                         * 1: Opening Burger Menu
-                                         * 2: Clicking "Reload Data"
-                                         * 3: Clicking "Full" Sync
-                                         * 4: Complete
-                                         */
-                                        let automationState = 0;
-                                        let attempts = 0;
-                                        const maxAttempts = 60; // 30 seconds total
+                                        let searchMoreClicked = false;
+                                        let menuTriggered = false;
+                                        let reloadClicked = false;
+                                        let fullSyncFinished = false;
+                                        let heartbeatCounter = 0;
+                                        const maxHeartbeats = 80; // 40 seconds
 
-                                        const triggerNextPhase = () => {
-                                            attempts++;
-                                            console.log("[Pharmacy] Pipeline Heartbeat - State:", automationState, "| Attempt:", attempts);
+                                        // 1. Independent Search More Observer
+                                        const observer = new MutationObserver(() => {
+                                            if (searchMoreClicked) return;
+                                            const xpath = "//*[contains(translate(text(), 'SEARCH MORE', 'search more'), 'search more') or contains(text(), 'بحث عن المزيد')]";
+                                            const res = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                                            const btn = res.singleNodeValue;
+                                            if (btn && btn.offsetParent !== null) {
+                                                console.log("[Atomic] Found 'Search more' - Clicking immediately!");
+                                                searchMoreClicked = true;
+                                                this._robustClick(btn);
+                                            }
+                                        });
+                                        observer.observe(document.body, { childList: true, subtree: true });
 
-                                            // CRITICAL OVERRIDE: Catch "Full" Sync Modal anytime it appears (using broad XPath)
-                                            // Looks for button with text "Full" or "Reload All" or Arabic equivalents
-                                            const xpathFull = "//*[contains(translate(text(), 'FULL', 'full'), 'full') or contains(text(), 'كامل')]";
+                                        // 2. Parallel Coordination Loop
+                                        const runner = setInterval(() => {
+                                            heartbeatCounter++;
+
+                                            // A. PRIORITY 0: Global "Full" button catcher (Always running)
+                                            const xpathFull = "//*[translate(text(), 'FULL', 'full')='full' or text()='كامل' or contains(text(), 'Full')]";
                                             const resFull = document.evaluate(xpathFull, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
                                             const btnFull = resFull.singleNodeValue;
-
                                             if (btnFull && btnFull.offsetParent !== null) {
-                                                console.log("[Pipeline Override] Found 'Full' Sync Button - Finishing Sequence!");
+                                                console.log("[Atomic] Detected 'Full' sync modal - FINALIZING!");
                                                 this._robustClick(btnFull);
-                                                automationState = 4; // Complete
-                                                return true;
+                                                fullSyncFinished = true;
+                                                clearInterval(runner);
+                                                observer.disconnect();
+                                                return;
                                             }
 
-                                            // STATE-BASED LOGIC
-                                            switch (automationState) {
-                                                case 0: // Search More Phase
-                                                    const xpathSM = "//*[contains(translate(text(), 'SEARCH MORE', 'search more'), 'search more') or contains(text(), 'بحث عن المزيد')]";
-                                                    const resSM = document.evaluate(xpathSM, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                                                    const btnSM = resSM.singleNodeValue;
-
-                                                    if (btnSM && window.getComputedStyle(btnSM).display !== 'none') {
-                                                        console.log("[State 0] Found 'Search more' - Clicking!");
-                                                        this._robustClick(btnSM);
-                                                        automationState = 1; // Proceed to menu
-                                                    } else if (attempts > 10) {
-                                                        console.log("[State 0] Search more not found after 10 attempts, falling back to menu flow.");
-                                                        automationState = 1;
-                                                    }
-                                                    break;
-
-                                                case 1: // Open Menu Phase
-                                                    const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu');
-                                                    if (!menuOpen) {
-                                                        const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu, .navbar-button');
-                                                        if (burgerBtn && window.getComputedStyle(burgerBtn).display !== 'none') {
-                                                            console.log("[State 1] Opening Burger Menu...");
-                                                            this._robustClick(burgerBtn);
-                                                            const icon = burgerBtn.querySelector('i');
-                                                            if (icon) this._robustClick(icon);
-                                                        }
-                                                    } else {
-                                                        console.log("[State 1] Menu is open, moving to Reload Data phase.");
-                                                        automationState = 2;
-                                                    }
-                                                    break;
-
-                                                case 2: // Reload Data Phase
-                                                    const reloadBtn = Array.from(document.querySelectorAll('.dropdown-item, .o-dropdown-item, .pos-burger-menu-items span, a')).find(el => {
-                                                        const t = el.textContent.trim().toLowerCase();
-                                                        return (t.includes('reload') && t.includes('data')) || t.includes('تحديث البيانات');
-                                                    });
-
-                                                    if (reloadBtn && reloadBtn.offsetParent !== null) {
-                                                        console.log("[State 2] Clicking 'Reload Data' item!");
-                                                        this._robustClick(reloadBtn);
-                                                        automationState = 3; // Wait for modal
-                                                    } else {
-                                                        const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu');
-                                                        if (!menuOpen) automationState = 1;
-                                                    }
-                                                    break;
-
-                                                case 3: // Wait for Modal (Handled by global override above)
-                                                    break;
+                                            // B. PHASE 1: Search More Fallback
+                                            if (!searchMoreClicked) {
+                                                const xpathSM = "//*[contains(translate(text(), 'SEARCH MORE', 'search more'), 'search more') or contains(text(), 'بحث عن المزيد')]";
+                                                const resSM = document.evaluate(xpathSM, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                                                if (resSM.singleNodeValue && resSM.singleNodeValue.offsetParent !== null) {
+                                                    console.log("[Atomic] Loop-found 'Search more' - Clicking!");
+                                                    searchMoreClicked = true;
+                                                    this._robustClick(resSM.singleNodeValue);
+                                                }
                                             }
 
-                                            return automationState === 4;
-                                        };
+                                            // C. PHASE 2: Burger Menu -> Reload Data sequence
+                                            // Delay menu click to allow Search More to run first
+                                            if (!menuTriggered && (searchMoreClicked || heartbeatCounter > 12)) {
+                                                const menuOpen = document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu');
+                                                if (!menuOpen) {
+                                                    const burgerBtn = document.querySelector('.pos-right-header .o_top_menu_item, button.o_top_menu_item, .pos-burger-menu, .navbar-button');
+                                                    if (burgerBtn && burgerBtn.offsetParent !== null) {
+                                                        console.log("[Atomic] Triggering Burger Menu...");
+                                                        this._robustClick(burgerBtn);
+                                                        const i = burgerBtn.querySelector('i');
+                                                        if (i) this._robustClick(i);
+                                                        menuTriggered = true;
+                                                    }
+                                                } else {
+                                                    menuTriggered = true;
+                                                }
+                                            }
 
-                                        const autoLoop = setInterval(() => {
-                                            if (triggerNextPhase() || attempts >= maxAttempts) {
-                                                clearInterval(autoLoop);
-                                                console.log("[Pharmacy] Pipeline Automation Finished.");
+                                            // D. PHASE 3: Click Reload Data
+                                            if (menuTriggered && !reloadClicked) {
+                                                const items = document.querySelectorAll('.dropdown-item, .o-dropdown-item, .pos-burger-menu-items span, a');
+                                                const reloadBtn = Array.from(items).find(el => {
+                                                    const t = el.textContent.trim().toLowerCase();
+                                                    return (t.includes('reload') && t.includes('data')) || t.includes('تحديث البيانات');
+                                                });
+                                                if (reloadBtn && reloadBtn.offsetParent !== null) {
+                                                    console.log("[Atomic] Found Reload Data item - CLICKING!");
+                                                    this._robustClick(reloadBtn);
+                                                    reloadClicked = true;
+                                                } else if (!document.querySelector('.pos-burger-menu-items, .dropdown-menu, .o-dropdown-menu')) {
+                                                    // Menu closed unexpectedly, reset trigger to retry
+                                                    menuTriggered = false;
+                                                }
+                                            }
+
+                                            if (heartbeatCounter >= maxHeartbeats) {
+                                                clearInterval(runner);
+                                                observer.disconnect();
+                                                console.log("[Atomic] Pipeline Timeout.");
                                             }
                                         }, 500);
 
@@ -228,8 +226,9 @@ patch(ControlButtons.prototype, {
         if (!el) return;
         try {
             el.click();
+            // Dispatch a full battery of events to simulate a real user click as closely as possible
             ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'].forEach(evt => {
-                const eventClass = evt.includes('pointer') ? PointerEvent : MouseEvent;
+                const eventClass = evt.includes('pointer') ? window.PointerEvent || window.MouseEvent : window.MouseEvent;
                 el.dispatchEvent(new eventClass(evt, {
                     bubbles: true,
                     cancelable: true,
@@ -240,7 +239,7 @@ patch(ControlButtons.prototype, {
                 }));
             });
         } catch (e) {
-            console.warn("[Pharmacy] Click failed", e);
+            console.warn("[Pharmacy] Atomic Click failed", e);
         }
     },
 
