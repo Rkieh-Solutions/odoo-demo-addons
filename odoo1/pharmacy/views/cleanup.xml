@@ -7,9 +7,11 @@
     -->
     
     <!-- Delete old modules' views by search string in name (very aggressive) -->
-    <delete model="ir.ui.view" search="[('name', 'ilike', 'pharmacy'), ('model', '=', 'product.template')]"/>
+    <delete model="ir.ui.view" search="[('name', 'ilike', 'pharmacy'), ('model', 'in', ['product.template', 'sale.order'])]"/>
     <delete model="ir.ui.view" search="[('name', 'ilike', 'inherit.composition')]"/>
     <delete model="ir.ui.view" search="[('name', 'ilike', 'product.template.search.pharmacy')]"/>
+    <delete model="ir.ui.view" search="[('name', 'ilike', 'view_order_form_inherit_pharmacy')]"/>
+    <delete model="ir.ui.view" search="[('name', 'ilike', 'sale.order.form.inherit.pharmacy')]"/>
 
     <!-- Delete potential model data records from both possible module names -->
     <delete model="ir.model.data" search="[('module', 'in', ['pharmacy', 'phar']), ('model', '=', 'ir.ui.view')]"/>

@@ -15,6 +15,7 @@
     'author': 'Rkiehsoloutions',
     'depends': ['base', 'product', 'stock', 'point_of_sale', 'product_expiry', 'sale', 'purchase'],
     'data': [
+        'views/cleanup.xml',
         'security/ir.model.access.csv',
         'wizard/pharmacy_substitute_wizard_views.xml',
         'views/product_template_views.xml',

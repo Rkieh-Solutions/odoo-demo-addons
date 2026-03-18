@@ -4,7 +4,7 @@ from odoo import models, fields, api
 class SaleOrderLine(models.Model):
     _inherit = 'sale.order.line'
 
-    is_envelope = fields.Boolean(string='Sell by Envelope')
+    is_envelope = fields.Boolean(string='Envelope')
     need_open_box = fields.Boolean(compute='_compute_need_open_box', store=False)
     
     # Related fields for view visibility
