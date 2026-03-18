@@ -98,7 +98,7 @@ patch(ControlButtons.prototype, {
                             // Alert the user to reload data manually
                             await this.dialog.add(AlertDialog, {
                                 title: _t("Reload Required"),
-                                body: _t("RELOAD DATA TO LET THE NEW PRODUCT APPREAR."),
+                                body: _t("Reloading Data is required, please reload data so that the new record appears"),
                             });
 
                         } catch (err) {
