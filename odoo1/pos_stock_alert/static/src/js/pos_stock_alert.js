@@ -17,25 +17,27 @@ patch(PosStore.prototype, {
         }
 
         if (product) {
-            // Use the ORM service (same pattern as pharmacy module)
-            const orm = this.env.services.orm;
             let qty_available = 0;
             let threshold = 0;
 
             try {
-                const result = await orm.call(
-                    "product.product",
-                    "read",
-                    [[product.id], ["qty_available", "x_qty_to_warn"]]
-                );
-                if (result && result.length > 0) {
-                    qty_available = result[0].qty_available || 0;
-                    threshold = result[0].x_qty_to_warn || 0;
+                // Use raw fetch - this ALWAYS works in any browser
+                const response = await fetch("/pos_stock_alert/get_stock", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        jsonrpc: "2.0",
+                        method: "call",
+                        params: { product_id: product.id },
+                    }),
+                });
+                const data = await response.json();
+                if (data.result) {
+                    qty_available = data.result.qty_available || 0;
+                    threshold = data.result.x_qty_to_warn || 0;
                 }
             } catch (e) {
-                console.warn("[POS Stock Alert] ORM call failed:", e);
-                qty_available = product.qty_available || 0;
-                threshold = product.x_qty_to_warn || 0;
+                console.warn("[POS Stock Alert] fetch failed:", e);
             }
 
             if (!threshold) {
