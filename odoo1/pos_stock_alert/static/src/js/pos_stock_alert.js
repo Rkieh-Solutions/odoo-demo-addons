@@ -44,7 +44,7 @@ patch(PosStore.prototype, {
                 threshold = (this.config && this.config.x_global_stock_warn_threshold) || 0;
             }
 
-            console.log(`[POS Stock Alert] ${product.display_name}: qty=${qty_available}, threshold=${threshold}`);
+            console.log(`[POS Stock Alert] ${product.display_name} (JS id=${product.id}): qty=${qty_available}, threshold=${threshold}, debug=${data.result?.debug || 'no debug'}`);
 
             if (qty_available <= 0) {
                 await this.dialog.add(AlertDialog, {
