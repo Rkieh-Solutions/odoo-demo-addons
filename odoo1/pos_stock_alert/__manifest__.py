@@ -1,6 +1,6 @@
 {
     'name': 'POS Stock Alert',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'category': 'Industry',
     'sequence': 1,
     'summary': 'Advanced POS Stock Notifications & Low Stock Warnings',
@@ -15,6 +15,7 @@
     'depends': ['base', 'product', 'stock', 'point_of_sale', 'product_expiry', 'sale', 'purchase'],
     'data': [
         'views/product_template_views.xml',
+        'views/pos_config_views.xml',
         'views/res_config_settings_views.xml',
     ],
     'assets': {
