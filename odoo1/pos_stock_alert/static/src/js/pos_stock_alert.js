@@ -38,15 +38,16 @@ patch(PosStore.prototype, {
 
             if (qty_available <= 0) {
                 await this.dialog.add(AlertDialog, {
-                    title: _t("Warning: Out of Stock!"),
+                    title: _t("CRITICAL: Out of Stock!"),
                     body: _t("the product (%s) is completly out of stock you can cannot sold this product", final_product.display_name),
                 });
                 return; // Abort adding the line
             } else if (qty_available <= threshold) {
                 await this.dialog.add(AlertDialog, {
-                    title: _t("Low Stock Warning"),
-                    body: _t("Warning Still there is only %s quantity of %s", qty_available, final_product.display_name),
+                    title: _t("LOW STOCK ALERT (Allow Sell)"),
+                    body: _t("Warning Still there is only %s quantity of %s. You can still sell this product.", qty_available, final_product.display_name),
                 });
+                // NO return here - allows selling
             }
         }
 
