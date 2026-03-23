@@ -1,38 +1,40 @@
 /** @odoo-module **/
 
 import { patch } from "@web/core/utils/patch";
-import { PosStore } from "@point_of_sale/app/store/pos_store";
+import { PosStore } from "@point_of_sale/app/services/pos_store";
 import { _t } from "@web/core/l10n/translation";
-import { ErrorPopup } from "@point_of_sale/app/errors/popups/error_popup";
+import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 
 patch(PosStore.prototype, {
-    async addProductToCurrentOrder(product, options = {}) {
-        // Find the quantity available. Note: product.qty_available might depend on POS stock configuration
-        const qty_available = product.qty_available || 0;
-        const qty_to_warn = product.x_qty_to_warn || 0;
-
-        // Requirement: IF QUANTITY IS 0 IN POS NO PRODUCT CAN BE SEEL AND ALERT WILL APPEAR : CANOT SELL THIS PRODUCT ,QUANTITY IS LESS 0
-        if (qty_available <= 0) {
-            this.popup.add(ErrorPopup, {
-                title: _t("Warning: Out of Stock!"),
-                body: _t("the product (%s) is completly out of stock you can cannot sold this product", product.display_name),
-            });
-            return;
+    async addLineToOrder(vals, order, opts = {}, configure = true) {
+        let product = vals.product_id;
+        if (!product && vals.product_tmpl_id) {
+            if (typeof vals.product_tmpl_id == "number") {
+                product = this.data.models["product.template"].get(vals.product_tmpl_id);
+            } else {
+                product = vals.product_tmpl_id;
+            }
         }
 
-        // Requirement: IF I HAVE AN PRODUCT THAT HAVE 10 AND I PUT ON MY NEW FEILD 5 THATS MEAN WHEN QAUANTITY OF PRODUCT IS 5 WILL GIVE AN ALERT N POS
-        // Note: We check if the current quantity is less than or equal to the warning threshold.
-        if (qty_available <= qty_to_warn && qty_available > 0) {
-            this.env.services.notification.add(
-                _t("Low Stock Warning: %s (Available: %s)", product.display_name, qty_available),
-                {
-                    type: "danger",
-                    title: _t("Stock Alert"),
-                    sticky: false
-                }
-            );
+        if (product) {
+            const qty_available = product.qty_available || 0;
+            // Use product specific threshold first, then global threshold from pos.config
+            const threshold = product.x_qty_to_warn || this.config.x_global_stock_warn_threshold || 0;
+
+            if (qty_available <= 0) {
+                await this.dialog.add(AlertDialog, {
+                    title: _t("Warning: Out of Stock!"),
+                    body: _t("the product (%s) is completly out of stock you can cannot sold this product", product.display_name),
+                });
+                return; // Abort adding the line
+            } else if (qty_available <= threshold) {
+                await this.dialog.add(AlertDialog, {
+                    title: _t("Low Stock Warning"),
+                    body: _t("Warning Still there is only %s quantity of %s", qty_available, product.display_name),
+                });
+            }
         }
 
-        return super.addProductToCurrentOrder(...arguments);
+        return await super.addLineToOrder(...arguments);
     },
 });
