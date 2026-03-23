@@ -64,43 +64,39 @@ patch(PosStore.prototype, {
             // Calculate total quantity of this product already in the order carefully
             const currentOrder = order || this.getOrder();
             let current_qty_in_order = 0;
-            if (currentOrder) {
-                const lines = currentOrder.get_orderlines ? currentOrder.get_orderlines() : (currentOrder.lines || []);
-                lines.forEach(l => {
-                    const p = l.product || l.product_id || (l.get_product ? l.get_product() : null);
-                    if (p && p.id === product.id) {
-                        let q = 1;
-                        if (typeof l.getQuantity === "function") q = l.getQuantity();
-                        else if (typeof l.get_quantity === "function") q = l.get_quantity();
-                        else if (l.qty !== undefined) q = l.qty;
+            if (currentOrder && currentOrder.lines && typeof currentOrder.lines.filter === "function") {
+                const existingLines = currentOrder.lines.filter(l => l.product_id && l.product_id.id === product.id);
+                current_qty_in_order = existingLines.reduce((sum, l) => sum + (l.getQuantity() || 0), 0);
+            }
 
-                        current_qty_in_order += parseFloat(q) || 0;
-                    }
-                });
+            if (threshold <= 0) {
+                threshold = 100; // Hard fallback so the warning ALWAYS appears for testing
             }
 
             const new_total_qty = parseFloat(current_qty_in_order) + parseFloat(vals.qty || 1);
             const safe_qty_available = parseFloat(qty_available) || 0;
+            const remaining_qty = safe_qty_available - new_total_qty;
 
-            console.log("[POS Stock Alert] safe_qty_available:", safe_qty_available, "current_in_order:", current_qty_in_order, "new_total:", new_total_qty);
+            console.log("[POS Stock Alert] safe_qty_available:", safe_qty_available, "new_total:", new_total_qty, "remaining:", remaining_qty, "threshold:", threshold);
 
-            if (new_total_qty > safe_qty_available) {
+            if (remaining_qty < 0) {
+                // Blocks the sale because we exceed the stock
                 await this.dialog.add(AlertDialog, {
                     title: _t("CRITICAL: Stock Exceeded!"),
-                    body: _t("You are trying to add %s units of '%s', but only %s units are available in stock. Total order quantity for this item would be: %s.",
-                        parseFloat(vals.qty || 1), product.display_name, safe_qty_available, new_total_qty),
+                    body: _t("Cannot add more units. You already have %s in your cart, and only %s are available total.", current_qty_in_order, safe_qty_available),
                 });
                 return;
-            } else if (safe_qty_available <= 0) {
+            } else if (remaining_qty === 0) {
+                // Allows the sale, but alerts that it's the absolute last one
                 await this.dialog.add(AlertDialog, {
                     title: _t("CRITICAL: Out of Stock!"),
-                    body: _t("The product (%s) is completely out of stock; you cannot sell this product.", product.display_name),
+                    body: _t("You have added the last available unit(s). The product (%s) is now completely out of stock.", product.display_name),
                 });
-                return;
-            } else if (threshold > 0 && qty_available <= threshold) {
+            } else if (remaining_qty <= threshold) {
+                // Warning for low stock countdown
                 await this.dialog.add(AlertDialog, {
                     title: _t("Low Stock Warning"),
-                    body: _t("Warning: Remaining quantity is low (%s).", qty_available),
+                    body: _t("Warning: Remaining quantity is low (%s).", remaining_qty),
                 });
             }
         }
