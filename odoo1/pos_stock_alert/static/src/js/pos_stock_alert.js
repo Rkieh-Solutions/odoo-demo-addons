@@ -21,6 +21,8 @@ patch(PosStore.prototype, {
             let threshold = 0;
             let debugInfo = "no response";
 
+            console.log("[POS Stock Alert] Product: " + product.display_name + " (ID: " + product.id + ")");
+            console.log("[POS Stock Alert] Fetching stock from server...");
             try {
                 const response = await fetch("/pos_stock_alert/get_stock", {
                     method: "POST",
@@ -33,12 +35,13 @@ patch(PosStore.prototype, {
                 });
                 const data = await response.json();
                 if (data && data.result) {
-                    qty_available = data.result.qty_available || 0;
-                    threshold = data.result.x_qty_to_warn || 0;
+                    qty_available = parseFloat(data.result.qty_available) || 0;
+                    threshold = parseFloat(data.result.x_qty_to_warn) || 0;
                     debugInfo = data.result.debug || "no debug";
+                    console.log("[POS Stock Alert] Received: qty=" + qty_available + ", threshold=" + threshold + ", debug=" + debugInfo);
                 }
             } catch (e) {
-                console.warn("[POS Stock Alert] fetch error:", e);
+                console.warn("[POS Stock Alert] Fetch error:", e);
                 debugInfo = "fetch failed: " + e.message;
             }
 

@@ -8,27 +8,41 @@ _logger = logging.getLogger(__name__)
 class PosStockAlertController(http.Controller):
     @http.route('/pos_stock_alert/get_stock', type='json', auth='user')
     def get_stock(self, product_id):
-        PP = request.env['product.product']
-        PT = request.env['product.template']
+        PP = request.env['product.product'].sudo()
+        PT = request.env['product.template'].sudo()
 
-        # Auto-detect POS session location
+        # Try to find a POS session for context
         context = {}
         session = request.env['pos.session'].sudo().search([
             ('user_id', '=', request.uid),
             ('state', '=', 'opened')
         ], limit=1, order='id desc')
+        
+        if not session:
+            # Fallback: search for ANY open session in the same company
+            session = request.env['pos.session'].sudo().search([
+                ('state', '=', 'opened')
+            ], limit=1, order='id desc')
+
         if session:
             loc_id = session.config_id.picking_type_id.default_location_src_id.id
             if loc_id:
                 context['location'] = loc_id
 
-        # Try as product.product first
+        # Try as product.product
         product = PP.with_context(**context).browse(product_id)
-        if product.exists() and product._name == 'product.product':
+        if product.exists():
             qty = product.qty_available
+            # Fallback to global if location-specific is 0 but we see global stock
+            if qty <= 0:
+                global_qty = product.with_context(location=None).qty_available
+                if global_qty > 0:
+                    _logger.info("[POS Stock Alert] Falling back to global qty for %s: %s (loc was 0)", product.display_name, global_qty)
+                    qty = global_qty
+
             warn = product.x_qty_to_warn
-            debug = 'product.product id=%s name=%s qty=%s warn=%s loc=%s' % (
-                product.id, product.display_name, qty, warn, context.get('location'))
+            debug = 'product.product id=%s name=%s qty=%s (loc=%s) warn=%s' % (
+                product.id, product.display_name, qty, context.get('location'), warn)
             _logger.info("[POS Stock Alert] %s", debug)
             return {
                 'qty_available': qty,
@@ -36,13 +50,18 @@ class PosStockAlertController(http.Controller):
                 'debug': debug,
             }
 
-        # Maybe the POS sent a product.template ID
+        # Maybe template
         template = PT.with_context(**context).browse(product_id)
         if template.exists():
             qty = template.qty_available
+            if qty <= 0:
+                global_qty = template.with_context(location=None).qty_available
+                if global_qty > 0:
+                    qty = global_qty
+
             warn = template.x_qty_to_warn
-            debug = 'product.template id=%s name=%s qty=%s warn=%s loc=%s' % (
-                template.id, template.display_name, qty, warn, context.get('location'))
+            debug = 'product.template id=%s name=%s qty=%s (loc=%s) warn=%s' % (
+                template.id, template.display_name, qty, context.get('location'), warn)
             _logger.info("[POS Stock Alert] %s", debug)
             return {
                 'qty_available': qty,
