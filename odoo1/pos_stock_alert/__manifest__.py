@@ -1,7 +1,7 @@
 {
     'name': 'POS Stock Alert',
     'version': '20.0.1.0.0',
-    'category': 'Point of Sale',
+    'category': 'Industry',
     'summary': 'Alerts in POS when stock reaches a threshold',
     'depends': ['point_of_sale', 'stock'],
     'data': [
@@ -13,6 +13,6 @@
         ],
     },
     'installable': True,
-    'application': False,
+    'application': True,
     'license': 'LGPL-3',
 }

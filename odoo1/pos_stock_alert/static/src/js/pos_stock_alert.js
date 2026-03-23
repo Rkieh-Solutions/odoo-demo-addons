@@ -14,8 +14,8 @@ patch(PosStore.prototype, {
         // Requirement: IF QUANTITY IS 0 IN POS NO PRODUCT CAN BE SEEL AND ALERT WILL APPEAR : CANOT SELL THIS PRODUCT ,QUANTITY IS LESS 0
         if (qty_available <= 0) {
             this.popup.add(ErrorPopup, {
-                title: _t("Cannot sell this product"),
-                body: _t("Quantity is less 0"),
+                title: _t("Warning: Out of Stock!"),
+                body: _t("the product (%s) is completly out of stock you can cannot sold this product", product.display_name),
             });
             return;
         }
@@ -25,10 +25,10 @@ patch(PosStore.prototype, {
         if (qty_available <= qty_to_warn) {
             this.env.services.notification.add(
                 _t("Low Stock Warning: %s (Available: %s)", product.display_name, qty_available),
-                { 
+                {
                     type: "danger",
                     title: _t("Stock Alert"),
-                    sticky: false 
+                    sticky: false
                 }
             );
         }
