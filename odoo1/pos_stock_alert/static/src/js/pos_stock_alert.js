@@ -4,6 +4,8 @@ import { patch } from "@web/core/utils/patch";
 import { PosStore } from "@point_of_sale/app/services/pos_store";
 import { _t } from "@web/core/l10n/translation";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
+import { ProductProduct } from "@point_of_sale/app/models/product_product";
+import { ProductTemplate } from "@point_of_sale/app/models/product_template";
 
 patch(PosStore.prototype, {
     async addLineToOrder(vals, order, opts = {}, configure = true) {
@@ -22,7 +24,6 @@ patch(PosStore.prototype, {
             let debugInfo = "no response";
 
             console.log("[POS Stock Alert] Product: " + product.display_name + " (ID: " + product.id + ")");
-            console.log("[POS Stock Alert] Fetching stock from server...");
             try {
                 const response = await fetch("/pos_stock_alert/get_stock", {
                     method: "POST",
@@ -48,13 +49,14 @@ patch(PosStore.prototype, {
                     console.log("[POS Stock Alert] Received: qty=" + qty_available + ", threshold=" + threshold + ", debug=" + debugInfo);
                 } else {
                     console.warn("[POS Stock Alert] Server returned failure or no data:", data);
-                    return await super.addLineToOrder(...arguments); // Proceed without alert
+                    return await super.addLineToOrder(...arguments);
                 }
             } catch (e) {
                 console.warn("[POS Stock Alert] Fetch error:", e);
-                return await super.addLineToOrder(...arguments); // Proceed without alert
+                return await super.addLineToOrder(...arguments);
             }
 
+            // Use global threshold if product threshold is 0
             if (!threshold) {
                 threshold = (this.config && this.config.x_global_stock_warn_threshold) || 0;
             }
@@ -68,7 +70,7 @@ patch(PosStore.prototype, {
             } else if (threshold > 0 && qty_available <= threshold) {
                 await this.dialog.add(AlertDialog, {
                     title: _t("Low Stock Warning"),
-                    body: _t("warning  Quantity is low %s", qty_available),
+                    body: _t("warning Quantity is low %s", qty_available),
                 });
             }
         }

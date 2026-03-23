@@ -4,8 +4,8 @@ class ProductProduct(models.Model):
     _inherit = 'product.product'
 
     @api.model
-    def _load_pos_data_fields(self, config_id):
-        fields = super()._load_pos_data_fields(config_id)
+    def _load_pos_data_fields(self, config):
+        fields = super()._load_pos_data_fields(config)
         # Ensure our custom fields and qty_available are loaded
         extra = ['qty_available', 'x_qty_to_warn']
         for f in extra:
@@ -14,8 +14,8 @@ class ProductProduct(models.Model):
         return fields
 
     @api.model
-    def _load_pos_data_read(self, records, config_id):
-        res = super()._load_pos_data_read(records, config_id)
+    def _load_pos_data_read(self, records, config):
+        res = super()._load_pos_data_read(records, config)
         # Explicitly ensure qty_available is in the results as a float
         product_map = {p.id: p.qty_available for p in records}
         for r in res:
