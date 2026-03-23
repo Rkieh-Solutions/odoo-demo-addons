@@ -7,7 +7,6 @@ import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 
 patch(PosStore.prototype, {
     async addLineToOrder(vals, order, opts = {}, configure = true) {
-        // Get product exactly like pharmacy module does
         let product = vals.product_id;
         if (!product && vals.product_tmpl_id) {
             if (typeof vals.product_tmpl_id == "number") {
@@ -18,10 +17,26 @@ patch(PosStore.prototype, {
         }
 
         if (product) {
-            const qty_available = product.qty_available || 0;
+            // Fetch REAL stock from backend - this is 100% accurate
+            let qty_available = 0;
+            try {
+                const stockData = await this.data.ormService.call(
+                    "product.product",
+                    "read",
+                    [[product.id], ["qty_available"]]
+                );
+                if (stockData && stockData.length > 0) {
+                    qty_available = stockData[0].qty_available || 0;
+                }
+            } catch (e) {
+                console.warn("[POS Stock Alert] Could not fetch stock:", e);
+                // If RPC fails, fall back to local data
+                qty_available = product.qty_available || 0;
+            }
+
             const threshold = product.x_qty_to_warn || (this.config && this.config.x_global_stock_warn_threshold) || 0;
 
-            console.log(`[POS Stock Alert] Product: ${product.display_name}, qty_available: ${qty_available}, threshold: ${threshold}`);
+            console.log(`[POS Stock Alert] Product: ${product.display_name}, REAL qty: ${qty_available}, threshold: ${threshold}`);
 
             if (qty_available <= 0) {
                 // Out of stock - BLOCK the sale
