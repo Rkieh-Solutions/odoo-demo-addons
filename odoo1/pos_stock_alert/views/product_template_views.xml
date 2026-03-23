@@ -36,10 +36,9 @@
         <field name="model">product.template</field>
         <field name="arch" type="xml">
             <search string="POS Stock Alerts">
-                <field name="name" string="Product" filter_domain="['|', ('name', 'ilike', self), ('default_code', 'ilike', self)]"/>
-                <field name="categ_id" filter_domain="[('categ_id', 'child_of', self)]"/>
-                <separator/>
-                <filter string="Low Stock" name="low_stock" domain="[('qty_available', '&lt;=', 0)]"/>
+                <field name="name"/>
+                <field name="default_code"/>
+                <field name="categ_id"/>
                 <group expand="0" string="Group By">
                     <filter string="Category" name="groupby_category" domain="[]" context="{'group_by': 'categ_id'}"/>
                 </group>
