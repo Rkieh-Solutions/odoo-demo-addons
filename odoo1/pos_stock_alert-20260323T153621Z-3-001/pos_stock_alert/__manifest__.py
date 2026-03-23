@@ -1,6 +1,6 @@
 {
     'name': 'POS Stock Alert',
-    'version': '20.0.1.0.0',
+    'version': '19.0.1.0.0',
     'category': 'Industry',
     'sequence': 5,
     'summary': 'Advanced POS Stock Notifications & Low Stock Warnings',
