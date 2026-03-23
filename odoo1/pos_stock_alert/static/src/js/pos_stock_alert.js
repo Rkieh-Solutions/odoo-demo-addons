@@ -22,7 +22,13 @@ patch(PosStore.prototype, {
 
         // Requirement: IF I HAVE AN PRODUCT THAT HAVE 10 AND I PUT ON MY NEW FEILD 5 THATS MEAN WHEN QAUANTITY OF PRODUCT IS 5 WILL GIVE AN ALERT N POS
         // Note: We check if the current quantity is less than or equal to the warning threshold.
-        if (qty_available <= qty_to_warn) {
+        // If product specific threshold is 0, we use the global threshold from pos.config
+        let threshold = qty_to_warn;
+        if (threshold === 0 && this.config.x_global_stock_warn_threshold) {
+            threshold = this.config.x_global_stock_warn_threshold;
+        }
+
+        if (qty_available <= threshold && qty_available > 0) {
             this.env.services.notification.add(
                 _t("Low Stock Warning: %s (Available: %s)", product.display_name, qty_available),
                 {

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_config_view_form_inherit_stock_alert" model="ir.ui.view">
+        <field name="name">pos.config.form.inherit.stock.alert</field>
+        <field name="model">pos.config</field>
+        <inherit_id ref="point_of_sale.pos_config_view_form"/>
+        <arch type="xml">
+            <xpath expr="//block[@id='pos_interface_section']" position="after">
+                <block title="Stock Alerts" id="stock_alert_section">
+                    <setting help="Set a global threshold for low stock warnings in POS.">
+                        <field name="x_global_stock_warn_threshold"/>
+                    </setting>
+                </block>
+            </xpath>
+        </arch>
+    </record>
+</odoo>

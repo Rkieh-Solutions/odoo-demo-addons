@@ -5,8 +5,12 @@
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_form_view"/>
         <field name="arch" type="xml">
-            <xpath expr="//page[@name='inventory']//group[@name='operations']" position="inside">
-                 <field name="x_qty_to_warn"/>
+            <xpath expr="//notebook" position="inside">
+                <page string="Stock Alerts" name="stock_alerts">
+                    <group>
+                        <field name="x_qty_to_warn" string="POS Warning Threshold"/>
+                    </group>
+                </page>
             </xpath>
         </field>
     </record>
