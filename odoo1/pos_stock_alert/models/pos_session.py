@@ -27,7 +27,9 @@ class PosConfig(models.Model):
     @api.model
     def _load_pos_data_fields(self, config_id):
         params = super()._load_pos_data_fields(config_id)
-        params.append('x_global_stock_warn_threshold')
+        if 'x_global_stock_warn_threshold' not in params:
+            params.append('x_global_stock_warn_threshold')
+        _logger.info("[POS Stock Alert] PosConfig fields: %s", params)
         return params
 
 class PosSession(models.Model):
