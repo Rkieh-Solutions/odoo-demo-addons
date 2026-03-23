@@ -1,4 +1,4 @@
-from odoo import fields, models
+from odoo import api, fields, models
 
 class ProductTemplate(models.Model):
     _inherit = 'product.template'
@@ -6,7 +6,7 @@ class ProductTemplate(models.Model):
     x_qty_to_warn = fields.Float(string='POS Warning Threshold', default=0.0)
 
     @api.model
-    def _load_pos_data_fields(self, config):
-        params = super()._load_pos_data_fields(config)
+    def _load_pos_data_fields(self, config_id):
+        params = super()._load_pos_data_fields(config_id)
         params.append('x_qty_to_warn')
         return params

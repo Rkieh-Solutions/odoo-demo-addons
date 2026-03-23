@@ -25,8 +25,8 @@ class PosConfig(models.Model):
             config.x_global_stock_warn_threshold = float(param)
 
     @api.model
-    def _load_pos_data_fields(self, config):
-        params = super()._load_pos_data_fields(config)
+    def _load_pos_data_fields(self, config_id):
+        params = super()._load_pos_data_fields(config_id)
         params.append('x_global_stock_warn_threshold')
         return params
 
