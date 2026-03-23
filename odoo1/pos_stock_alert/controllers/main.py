@@ -11,13 +11,24 @@ class PosStockAlertController(http.Controller):
         PP = request.env['product.product']
         PT = request.env['product.template']
 
+        # Auto-detect POS session location
+        context = {}
+        session = request.env['pos.session'].sudo().search([
+            ('user_id', '=', request.uid),
+            ('state', '=', 'opened')
+        ], limit=1, order='id desc')
+        if session:
+            loc_id = session.config_id.picking_type_id.default_location_src_id.id
+            if loc_id:
+                context['location'] = loc_id
+
         # Try as product.product first
-        product = PP.browse(product_id)
-        if product.exists():
+        product = PP.with_context(**context).browse(product_id)
+        if product.exists() and product._name == 'product.product':
             qty = product.qty_available
             warn = product.x_qty_to_warn
-            debug = 'product.product id=%s name=%s qty=%s warn=%s' % (
-                product.id, product.display_name, qty, warn)
+            debug = 'product.product id=%s name=%s qty=%s warn=%s loc=%s' % (
+                product.id, product.display_name, qty, warn, context.get('location'))
             _logger.info("[POS Stock Alert] %s", debug)
             return {
                 'qty_available': qty,
@@ -26,12 +37,12 @@ class PosStockAlertController(http.Controller):
             }
 
         # Maybe the POS sent a product.template ID
-        template = PT.browse(product_id)
+        template = PT.with_context(**context).browse(product_id)
         if template.exists():
             qty = template.qty_available
             warn = template.x_qty_to_warn
-            debug = 'product.template id=%s name=%s qty=%s warn=%s' % (
-                template.id, template.display_name, qty, warn)
+            debug = 'product.template id=%s name=%s qty=%s warn=%s loc=%s' % (
+                template.id, template.display_name, qty, warn, context.get('location'))
             _logger.info("[POS Stock Alert] %s", debug)
             return {
                 'qty_available': qty,
