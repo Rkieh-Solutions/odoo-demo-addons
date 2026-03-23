@@ -4,7 +4,6 @@ import { patch } from "@web/core/utils/patch";
 import { PosStore } from "@point_of_sale/app/services/pos_store";
 import { _t } from "@web/core/l10n/translation";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
-import { rpc } from "@web/core/network/rpc";
 
 patch(PosStore.prototype, {
     async addLineToOrder(vals, order, opts = {}, configure = true) {
@@ -18,22 +17,27 @@ patch(PosStore.prototype, {
         }
 
         if (product) {
-            // Fetch REAL stock from our dedicated backend endpoint
+            // Use the ORM service (same pattern as pharmacy module)
+            const orm = this.env.services.orm;
             let qty_available = 0;
             let threshold = 0;
+
             try {
-                const result = await rpc("/pos_stock_alert/get_stock", {
-                    product_id: product.id,
-                });
-                qty_available = result.qty_available || 0;
-                threshold = result.x_qty_to_warn || 0;
+                const result = await orm.call(
+                    "product.product",
+                    "read",
+                    [[product.id], ["qty_available", "x_qty_to_warn"]]
+                );
+                if (result && result.length > 0) {
+                    qty_available = result[0].qty_available || 0;
+                    threshold = result[0].x_qty_to_warn || 0;
+                }
             } catch (e) {
-                console.warn("[POS Stock Alert] RPC failed:", e);
+                console.warn("[POS Stock Alert] ORM call failed:", e);
                 qty_available = product.qty_available || 0;
                 threshold = product.x_qty_to_warn || 0;
             }
 
-            // Fallback to global threshold if product has none
             if (!threshold) {
                 threshold = (this.config && this.config.x_global_stock_warn_threshold) || 0;
             }
