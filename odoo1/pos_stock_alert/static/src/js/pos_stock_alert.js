@@ -17,9 +17,14 @@ patch(PosStore.prototype, {
         }
 
         if (product) {
+            // Requirement: add to allow some product not related to this warning
+            if (product.x_no_stock_warning) {
+                return await super.addLineToOrder(...arguments);
+            }
+
             const qty_available = product.qty_available || 0;
             // Use product specific threshold first, then global threshold from pos.config
-            const threshold = product.x_qty_to_warn || this.config.x_global_stock_warn_threshold || 0;
+            const threshold = product.x_qty_to_warn || (this.config && this.config.x_global_stock_warn_threshold) || 0;
 
             if (qty_available <= 0) {
                 await this.dialog.add(AlertDialog, {

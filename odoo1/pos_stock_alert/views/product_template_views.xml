@@ -9,6 +9,7 @@
                 <page string="Stock Alerts" name="stock_alerts">
                     <group>
                         <field name="x_qty_to_warn" string="POS Warning Threshold"/>
+                        <field name="x_no_stock_warning"/>
                     </group>
                 </page>
             </xpath>
