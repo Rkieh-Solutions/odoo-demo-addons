@@ -44,8 +44,8 @@ patch(PosStore.prototype, {
                 return; // Abort adding the line
             } else if (qty_available <= threshold) {
                 await this.dialog.add(AlertDialog, {
-                    title: _t("LOW STOCK ALERT (Allow Sell)"),
-                    body: _t("Warning Still there is only %s quantity of %s. You can still sell this product.", qty_available, final_product.display_name),
+                    title: _t("Low Stock Warning"),
+                    body: _t("warning  Quantity is low %s", qty_available),
                 });
                 // NO return here - allows selling
             }
