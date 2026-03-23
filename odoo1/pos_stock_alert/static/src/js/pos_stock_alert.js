@@ -19,37 +19,12 @@ patch(PosStore.prototype, {
         }
 
         if (product) {
-            let qty_available = 0;
-            let threshold = 0;
-
-            console.log("[POS Stock Alert] Checking stock for product:", product.display_name);
-
-            try {
-                const response = await fetch("/pos_stock_alert/get_stock", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        jsonrpc: "2.0",
-                        method: "call",
-                        params: { product_id: product.id },
-                    }),
-                });
-                const data = await response.json();
-                if (data && data.result && data.result.success) {
-                    const result = data.result;
-                    if (result.is_storable === false) {
-                        return await super.addLineToOrder(...arguments);
-                    }
-                    qty_available = parseFloat(result.qty_available) || 0;
-                    threshold = parseFloat(result.x_qty_to_warn) || 0;
-                }
-            } catch (e) {
-                console.warn("[POS Stock Alert] fetch error:", e);
-                return await super.addLineToOrder(...arguments);
-            }
+            // Read directly from POS loaded data
+            let qty_available = parseFloat(product.qty_available) || 0;
+            let threshold = parseFloat(product.x_qty_to_warn) || 0;
 
             if (!threshold) {
-                threshold = (this.config && this.config.x_global_stock_warn_threshold) || 0;
+                threshold = parseFloat(this.config && this.config.x_global_stock_warn_threshold) || 0;
             }
 
             // Calculate total quantity of this product already in the order
