@@ -32,6 +32,10 @@ class PosStockAlertController(http.Controller):
         # Try as product.product
         product = PP.with_context(**context).browse(product_id)
         if product.exists():
+            # In Odoo 17/18/20, 'consu' (Goods) or 'product' are tangible.
+            # Services typically have qty_available=0 anyway.
+            is_storable = product.type in ('product', 'consu')
+            
             qty = product.qty_available
             # Fallback to global if location-specific is 0 but we see global stock
             if qty <= 0:
@@ -41,10 +45,12 @@ class PosStockAlertController(http.Controller):
                     qty = global_qty
 
             warn = product.x_qty_to_warn
-            debug = 'product.product id=%s name=%s qty=%s (loc=%s) warn=%s' % (
-                product.id, product.display_name, qty, context.get('location'), warn)
+            debug = 'product.product id=%s name=%s type=%s qty=%s (loc=%s) warn=%s' % (
+                product.id, product.display_name, product.type, qty, context.get('location'), warn)
             _logger.info("[POS Stock Alert] %s", debug)
             return {
+                'success': True,
+                'is_storable': is_storable,
                 'qty_available': qty,
                 'x_qty_to_warn': warn,
                 'debug': debug,
@@ -53,6 +59,7 @@ class PosStockAlertController(http.Controller):
         # Maybe template
         template = PT.with_context(**context).browse(product_id)
         if template.exists():
+            is_storable = template.type in ('product', 'consu')
             qty = template.qty_available
             if qty <= 0:
                 global_qty = template.with_context(location=None).qty_available
@@ -60,10 +67,12 @@ class PosStockAlertController(http.Controller):
                     qty = global_qty
 
             warn = template.x_qty_to_warn
-            debug = 'product.template id=%s name=%s qty=%s (loc=%s) warn=%s' % (
-                template.id, template.display_name, qty, context.get('location'), warn)
+            debug = 'product.template id=%s name=%s type=%s qty=%s (loc=%s) warn=%s' % (
+                template.id, template.display_name, template.type, qty, context.get('location'), warn)
             _logger.info("[POS Stock Alert] %s", debug)
             return {
+                'success': True,
+                'is_storable': is_storable,
                 'qty_available': qty,
                 'x_qty_to_warn': warn,
                 'debug': debug,
@@ -71,4 +80,4 @@ class PosStockAlertController(http.Controller):
 
         debug = 'NOT FOUND id=%s' % product_id
         _logger.warning("[POS Stock Alert] %s", debug)
-        return {'qty_available': 0, 'x_qty_to_warn': 0, 'debug': debug}
+        return {'success': False, 'qty_available': 0, 'x_qty_to_warn': 0, 'debug': debug}

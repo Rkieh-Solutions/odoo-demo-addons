@@ -34,27 +34,35 @@ patch(PosStore.prototype, {
                     }),
                 });
                 const data = await response.json();
-                if (data && data.result) {
-                    qty_available = parseFloat(data.result.qty_available) || 0;
-                    threshold = parseFloat(data.result.x_qty_to_warn) || 0;
-                    debugInfo = data.result.debug || "no debug";
+                if (data && data.result && data.result.success) {
+                    const result = data.result;
+                    // Only process alert if it's a storable product
+                    if (result.is_storable === false) {
+                        console.log("[POS Stock Alert] Product is not storable, ignoring alerts.");
+                        return await super.addLineToOrder(...arguments);
+                    }
+
+                    qty_available = parseFloat(result.qty_available) || 0;
+                    threshold = parseFloat(result.x_qty_to_warn) || 0;
+                    debugInfo = result.debug || "no debug";
                     console.log("[POS Stock Alert] Received: qty=" + qty_available + ", threshold=" + threshold + ", debug=" + debugInfo);
+                } else {
+                    console.warn("[POS Stock Alert] Server returned failure or no data:", data);
+                    return await super.addLineToOrder(...arguments); // Proceed without alert
                 }
             } catch (e) {
                 console.warn("[POS Stock Alert] Fetch error:", e);
-                debugInfo = "fetch failed: " + e.message;
+                return await super.addLineToOrder(...arguments); // Proceed without alert
             }
 
             if (!threshold) {
                 threshold = (this.config && this.config.x_global_stock_warn_threshold) || 0;
             }
 
-            console.log("[POS Stock Alert] " + product.display_name + " (JS id=" + product.id + "): qty=" + qty_available + ", threshold=" + threshold + ", debug=" + debugInfo);
-
             if (qty_available <= 0) {
                 await this.dialog.add(AlertDialog, {
                     title: _t("CRITICAL: Out of Stock!"),
-                    body: _t("the product (%s) is completly out of stock you can cannot sold this product", product.display_name),
+                    body: _t("The product (%s) is completely out of stock; you cannot sell this product.", product.display_name),
                 });
                 return;
             } else if (threshold > 0 && qty_available <= threshold) {
