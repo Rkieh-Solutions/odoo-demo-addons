@@ -61,12 +61,22 @@ patch(PosStore.prototype, {
 
             console.log("[POS Stock Alert] " + product.display_name + " (JS id=" + product.id + "): qty=" + qty_available + ", threshold=" + threshold + ", debug=" + debugInfo);
 
-            // Calculate total quantity of this product already in the order
+            // Calculate total quantity of this product already in the order carefully
             const currentOrder = order || this.getOrder();
             let current_qty_in_order = 0;
-            if (currentOrder && currentOrder.lines) {
-                const existingLines = currentOrder.lines.filter(l => l.product_id && l.product_id.id === product.id);
-                current_qty_in_order = existingLines.reduce((sum, l) => sum + parseFloat(l.getQuantity() || 0), 0);
+            if (currentOrder) {
+                const lines = currentOrder.get_orderlines ? currentOrder.get_orderlines() : (currentOrder.lines || []);
+                lines.forEach(l => {
+                    const p = l.product || l.product_id || (l.get_product ? l.get_product() : null);
+                    if (p && p.id === product.id) {
+                        let q = 1;
+                        if (typeof l.getQuantity === "function") q = l.getQuantity();
+                        else if (typeof l.get_quantity === "function") q = l.get_quantity();
+                        else if (l.qty !== undefined) q = l.qty;
+
+                        current_qty_in_order += parseFloat(q) || 0;
+                    }
+                });
             }
 
             const new_total_qty = parseFloat(current_qty_in_order) + parseFloat(vals.qty || 1);
