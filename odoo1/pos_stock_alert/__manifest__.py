@@ -1,6 +1,6 @@
 {
     'name': 'POS Stock Alert',
-    'version': '19.0.1.5.0',
+    'version': '19.0.1.6.0',
     'category': 'Industry',
     'sequence': 1,
     'summary': 'Advanced POS Stock Notifications & Low Stock Warnings',
@@ -25,7 +25,7 @@
     },
     'installable': True,
     'application': True,
-    'web_icon': 'pos_stock_alert,static/description/icon.png',
+    'web_icon': 'pos_stock_alert,static/description/icon_new.png',
     'auto_install': False,
     'license': 'LGPL-3',
 }
