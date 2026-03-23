@@ -53,9 +53,12 @@ patch(PosStore.prototype, {
             }
 
             // Calculate total quantity of this product already in the order
-            const current_qty_in_order = order.get_orderlines()
-                .filter(line => line.product.id === product.id)
-                .reduce((sum, line) => sum + line.get_quantity(), 0);
+            const currentOrder = order || this.getOrder();
+            let current_qty_in_order = 0;
+            if (currentOrder && currentOrder.lines) {
+                const existingLines = currentOrder.lines.filter(l => l.product_id && l.product_id.id === product.id);
+                current_qty_in_order = existingLines.reduce((sum, l) => sum + (l.getQuantity() || 0), 0);
+            }
 
             const new_total_qty = current_qty_in_order + (vals.qty || 1);
 
