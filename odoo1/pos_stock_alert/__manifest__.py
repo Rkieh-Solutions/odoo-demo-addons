@@ -2,7 +2,7 @@
     'name': 'POS Stock Alert',
     'version': '19.0.1.0.0',
     'category': 'Industry',
-    'sequence': 5,
+    'sequence': 1,
     'summary': 'Advanced POS Stock Notifications & Low Stock Warnings',
     'description': """
         Real-time Stock Awareness for POS:
@@ -12,7 +12,7 @@
         - Intelligent stock location detection with global fallback.
     """,
     'author': 'Rkiehsoloutions',
-    'depends': ['base', 'product', 'stock', 'point_of_sale'],
+    'depends': ['base', 'product', 'stock', 'point_of_sale', 'product_expiry', 'sale', 'purchase'],
     'data': [
         'views/product_template_views.xml',
         'views/res_config_settings_views.xml',
