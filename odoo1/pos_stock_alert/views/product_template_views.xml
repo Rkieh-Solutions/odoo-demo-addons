@@ -17,16 +17,16 @@
 
     <!-- Specialized List View for POS Stock Alerts -->
     <record id="view_product_template_tree_pos_stock_alert" model="ir.ui.view">
-        <field name="name">product.template.tree.pos.stock.alert</field>
+        <field name="name">product.template.list.pos.stock.alert</field>
         <field name="model">product.template</field>
         <field name="arch" type="xml">
-            <tree string="POS Stock Alerts" editable="bottom" create="false" delete="false">
+            <list string="POS Stock Alerts" editable="bottom" create="false" delete="false">
                 <field name="default_code" readonly="1"/>
                 <field name="name" readonly="1"/>
                 <field name="qty_available" readonly="1"/>
                 <field name="uom_id" readonly="1" groups="uom.group_uom"/>
                 <field name="x_qty_to_warn" string="Warning Threshold"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -35,7 +35,7 @@
         <field name="name">POS Stock Alerts</field>
         <field name="type">ir.actions.act_window</field>
         <field name="res_model">product.template</field>
-        <field name="view_mode">tree</field>
+        <field name="view_mode">list</field>
         <field name="view_id" ref="view_product_template_tree_pos_stock_alert"/>
         <field name="domain">[('available_in_pos', '=', True)]</field>
         <field name="help" type="html">
