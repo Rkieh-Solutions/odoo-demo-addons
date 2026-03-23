@@ -20,13 +20,30 @@
         <field name="name">product.template.list.pos.stock.alert</field>
         <field name="model">product.template</field>
         <field name="arch" type="xml">
-            <list string="POS Stock Alerts" editable="bottom" create="false" delete="false">
+            <list string="POS Stock Alerts" editable="bottom" create="false" delete="false" multi_edit="1">
                 <field name="default_code" readonly="1"/>
                 <field name="name" readonly="1"/>
                 <field name="qty_available" readonly="1"/>
-                <field name="uom_id" readonly="1" groups="uom.group_uom"/>
+                <field name="uom_id" readonly="1" groups="uom.group_uom" optional="hide"/>
                 <field name="x_qty_to_warn" string="Warning Threshold"/>
             </list>
+        </field>
+    </record>
+
+    <!-- Search View for POS Stock Alerts -->
+    <record id="view_product_template_search_pos_stock_alert" model="ir.ui.view">
+        <field name="name">product.template.search.pos.stock.alert</field>
+        <field name="model">product.template</field>
+        <field name="arch" type="xml">
+            <search string="POS Stock Alerts">
+                <field name="name" string="Product" filter_domain="['|', ('name', 'ilike', self), ('default_code', 'ilike', self)]"/>
+                <field name="categ_id" filter_domain="[('categ_id', 'child_of', self)]"/>
+                <separator/>
+                <filter string="Low Stock" name="low_stock" domain="[('qty_available', '&lt;=', 0)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Category" name="groupby_category" domain="[]" context="{'group_by': 'categ_id'}"/>
+                </group>
+            </search>
         </field>
     </record>
 
@@ -37,6 +54,7 @@
         <field name="res_model">product.template</field>
         <field name="view_mode">list</field>
         <field name="view_id" ref="view_product_template_tree_pos_stock_alert"/>
+        <field name="search_view_id" ref="view_product_template_search_pos_stock_alert"/>
         <field name="domain">[('available_in_pos', '=', True)]</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">

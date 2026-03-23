@@ -17,16 +17,24 @@ patch(PosStore.prototype, {
         }
 
         if (product) {
+            // DEEP DEBUG: Log the entire vals object to see why the name might be wrong
+            console.log("[POS Stock Alert] addLineToOrder vals:", vals);
+
             // Ensure we have the most up-to-date product data from the store
-            const product_id = product.id;
+            const product_id = typeof product === 'object' ? product.id : product;
             const store_product = this.data.models["product.product"].get(product_id);
-            const final_product = store_product || product;
+            const final_product = store_product || (typeof product === 'object' ? product : null);
+
+            if (!final_product) {
+                console.warn("[POS Stock Alert] Could not resolve final_product for ID:", product_id);
+                return await super.addLineToOrder(...arguments);
+            }
+
+            console.log(`[POS Stock Alert] Checking: ${final_product.display_name} (ID: ${final_product.id}), Qty: ${final_product.qty_available}, Warn: ${final_product.x_qty_to_warn}`);
 
             const qty_available = final_product.qty_available || 0;
             // Use product specific threshold first, then global threshold from pos.config
             const threshold = final_product.x_qty_to_warn || (this.config && this.config.x_global_stock_warn_threshold) || 0;
-
-            console.log(`[POS Stock Alert] Product: ${final_product.display_name}, Qty: ${qty_available}, Threshold: ${threshold}`);
 
             if (qty_available <= 0) {
                 await this.dialog.add(AlertDialog, {
