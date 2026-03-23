@@ -66,21 +66,22 @@ patch(PosStore.prototype, {
             let current_qty_in_order = 0;
             if (currentOrder && currentOrder.lines) {
                 const existingLines = currentOrder.lines.filter(l => l.product_id && l.product_id.id === product.id);
-                current_qty_in_order = existingLines.reduce((sum, l) => sum + (l.getQuantity() || 0), 0);
+                current_qty_in_order = existingLines.reduce((sum, l) => sum + parseFloat(l.getQuantity() || 0), 0);
             }
 
-            const new_total_qty = current_qty_in_order + (vals.qty || 1);
+            const new_total_qty = parseFloat(current_qty_in_order) + parseFloat(vals.qty || 1);
+            const safe_qty_available = parseFloat(qty_available) || 0;
 
-            console.log("[POS Stock Alert] qty_available:", qty_available, "current_in_order:", current_qty_in_order, "new_total:", new_total_qty);
+            console.log("[POS Stock Alert] safe_qty_available:", safe_qty_available, "current_in_order:", current_qty_in_order, "new_total:", new_total_qty);
 
-            if (new_total_qty > qty_available) {
+            if (new_total_qty > safe_qty_available) {
                 await this.dialog.add(AlertDialog, {
                     title: _t("CRITICAL: Stock Exceeded!"),
                     body: _t("You are trying to add %s units of '%s', but only %s units are available in stock. Total order quantity for this item would be: %s.",
-                        (vals.qty || 1), product.display_name, qty_available, new_total_qty),
+                        parseFloat(vals.qty || 1), product.display_name, safe_qty_available, new_total_qty),
                 });
                 return;
-            } else if (qty_available <= 0) {
+            } else if (safe_qty_available <= 0) {
                 await this.dialog.add(AlertDialog, {
                     title: _t("CRITICAL: Out of Stock!"),
                     body: _t("The product (%s) is completely out of stock; you cannot sell this product.", product.display_name),
