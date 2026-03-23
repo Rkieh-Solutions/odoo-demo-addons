@@ -32,9 +32,9 @@ class PosStockAlertController(http.Controller):
         # Try as product.product
         product = PP.with_context(**context).browse(product_id)
         if product.exists():
-            # In Odoo 17/18/20, 'consu' (Goods) or 'product' are tangible.
-            # Services typically have qty_available=0 anyway.
-            is_storable = product.type in ('product', 'consu')
+            # Check if it actually tracks inventory
+            # In Odoo 17/18, 'is_storable' or Type check
+            is_storable = product.detailed_type == 'product' or product.type == 'product'
             
             qty = product.qty_available
             # Fallback to global if location-specific is 0 but we see global stock
@@ -59,7 +59,7 @@ class PosStockAlertController(http.Controller):
         # Maybe template
         template = PT.with_context(**context).browse(product_id)
         if template.exists():
-            is_storable = template.type in ('product', 'consu')
+            is_storable = template.detailed_type == 'product' or template.type == 'product'
             qty = template.qty_available
             if qty <= 0:
                 global_qty = template.with_context(location=None).qty_available
