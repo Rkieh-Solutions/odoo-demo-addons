@@ -46,3 +46,4 @@ class PosConfig(models.Model):
 
 class PosSession(models.Model):
     _inherit = 'pos.session'
+

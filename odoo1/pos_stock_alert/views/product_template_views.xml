@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_template_form_view_stock_alert" model="ir.ui.view">
+        <field name="name">product.template.form.stock.alert</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='inventory']" position="inside">
+                <group string="POS Stock Alert">
+                    <field name="x_qty_to_warn"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_pos_stock_alert_products" model="ir.actions.act_window">
+        <field name="name">POS Stock Alerts</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('x_qty_to_warn', '>', 0)]</field>
+    </record>
+
+    <menuitem id="menu_pos_stock_alert" name="Stock Alerts" parent="point_of_sale.menu_point_root" sequence="100"/>
+    <menuitem id="menu_pos_stock_alert_products" name="Products (Alert Setup)" parent="menu_pos_stock_alert" action="action_pos_stock_alert_products" sequence="1"/>
+</odoo>

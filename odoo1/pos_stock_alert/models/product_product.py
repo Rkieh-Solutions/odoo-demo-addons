@@ -6,7 +6,6 @@ class ProductProduct(models.Model):
     @api.model
     def _load_pos_data_fields(self, config):
         fields = super()._load_pos_data_fields(config)
-        # Ensure our custom fields and qty_available are loaded
         extra = ['qty_available', 'x_qty_to_warn']
         for f in extra:
             if f not in fields:
@@ -16,7 +15,6 @@ class ProductProduct(models.Model):
     @api.model
     def _load_pos_data_read(self, records, config):
         res = super()._load_pos_data_read(records, config)
-        # Explicitly ensure qty_available is in the results as a float
         product_map = {p.id: p.qty_available for p in records}
         for r in res:
             r['qty_available'] = product_map.get(r['id'], 0.0)
