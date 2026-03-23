@@ -7,7 +7,7 @@ class ProductProduct(models.Model):
     def _load_pos_data_fields(self, config):
         fields = super()._load_pos_data_fields(config)
         # Ensure our custom fields and qty_available are loaded
-        extra = ['qty_available', 'x_qty_to_warn', 'x_no_stock_warning']
+        extra = ['qty_available', 'x_qty_to_warn']
         for f in extra:
             if f not in fields:
                 fields.append(f)

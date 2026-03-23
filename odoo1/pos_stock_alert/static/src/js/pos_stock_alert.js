@@ -17,25 +17,27 @@ patch(PosStore.prototype, {
         }
 
         if (product) {
-            // Requirement: add to allow some product not related to this warning
-            if (product.x_no_stock_warning) {
-                return await super.addLineToOrder(...arguments);
-            }
+            // Ensure we have the most up-to-date product data from the store
+            const product_id = product.id;
+            const store_product = this.data.models["product.product"].get(product_id);
+            const final_product = store_product || product;
 
-            const qty_available = product.qty_available || 0;
+            const qty_available = final_product.qty_available || 0;
             // Use product specific threshold first, then global threshold from pos.config
-            const threshold = product.x_qty_to_warn || (this.config && this.config.x_global_stock_warn_threshold) || 0;
+            const threshold = final_product.x_qty_to_warn || (this.config && this.config.x_global_stock_warn_threshold) || 0;
+
+            console.log(`[POS Stock Alert] Product: ${final_product.display_name}, Qty: ${qty_available}, Threshold: ${threshold}`);
 
             if (qty_available <= 0) {
                 await this.dialog.add(AlertDialog, {
                     title: _t("Warning: Out of Stock!"),
-                    body: _t("the product (%s) is completly out of stock you can cannot sold this product", product.display_name),
+                    body: _t("the product (%s) is completly out of stock you can cannot sold this product", final_product.display_name),
                 });
                 return; // Abort adding the line
             } else if (qty_available <= threshold) {
                 await this.dialog.add(AlertDialog, {
                     title: _t("Low Stock Warning"),
-                    body: _t("Warning Still there is only %s quantity of %s", qty_available, product.display_name),
+                    body: _t("Warning Still there is only %s quantity of %s", qty_available, final_product.display_name),
                 });
             }
         }
