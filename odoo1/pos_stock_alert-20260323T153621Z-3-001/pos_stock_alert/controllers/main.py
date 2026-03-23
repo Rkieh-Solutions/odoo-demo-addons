@@ -4,79 +4,71 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-
 class PosStockAlertController(http.Controller):
-    @http.route('/pos_stock_alert/get_stock', type='jsonrpc', auth='user')
-    def get_stock(self, product_id, config_id=None, model=None, product_name=None):
+    @http.route('/pos_stock_alert/get_stock', type='json', auth='user')
+    def get_stock(self, product_id):
         PP = request.env['product.product'].sudo()
         PT = request.env['product.template'].sudo()
 
-        _logger.info("[POS Stock Alert] INVOKED: id=%s name=%s model=%s config=%s", product_id, product_name, model, config_id)
+        _logger.info("[POS Stock Alert] get_stock for id=%s", product_id)
 
-        # Convert to int if needed
-        try:
-            pid = int(product_id)
-        except:
-            pid = product_id
-
-        if config_id:
-            config = request.env['pos.config'].sudo().browse(config_id)
-            if config.exists():
-                location = config.picking_type_id.default_location_src_id
-                if location:
-                    PP = PP.with_context(location=location.id)
-                    PT = PT.with_context(location=location.id)
-                if config.picking_type_id.warehouse_id:
-                    PP = PP.with_context(warehouse=config.picking_type_id.warehouse_id.id)
-                    PT = PT.with_context(warehouse=config.picking_type_id.warehouse_id.id)
-
-        # 1. Try the requested model first
-        record = None
-        if model == 'product.template':
-            candidate = PT.browse(pid)
-            if candidate.exists() and (not product_name or candidate.display_name == product_name):
-                record = candidate
-        elif model == 'product.product':
-            candidate = PP.browse(pid)
-            if candidate.exists() and (not product_name or candidate.display_name == product_name or candidate.name == product_name):
-                record = candidate
+        # Try to find a POS session for context
+        context = {}
+        session = request.env['pos.session'].sudo().search([
+            ('user_id', '=', request.uid),
+            ('state', '=', 'opened')
+        ], limit=1, order='id desc')
         
-        # 2. If no match (or name mismatch), try the OTHER model
-        if not record:
-             other_pp = PT if model == 'product.product' or not model else PP
-             candidate = other_pp.browse(pid)
-             if candidate.exists():
-                  # Only switch if name matches, to be safe
-                  if not product_name or candidate.display_name == product_name or (hasattr(candidate, 'name') and candidate.name == product_name):
-                       record = candidate
-                       _logger.info("[POS Stock Alert] Model correction: using %s for ID %s because name matched.", record._name, pid)
+        if not session:
+            # Fallback: search for ANY open session
+            session = request.env['pos.session'].sudo().search([
+                ('state', '=', 'opened')
+            ], limit=1, order='id desc')
 
-        # 3. Final fallback: search by name only if ID matching failed completely
-        if not record and product_name:
-             found = PP.search([('display_name', '=', product_name)], limit=1)
-             if found:
-                  record = found
-                  _logger.info("[POS Stock Alert] Found by name search: %s (id %s)", record.display_name, record.id)
+        if session:
+            loc_id = session.config_id.picking_type_id.default_location_src_id.id
+            if loc_id:
+                context['location'] = loc_id
 
-        if record:
-            qty = record.qty_available
-            warn = getattr(record, 'x_qty_to_warn', 0.0)
-            if not warn and hasattr(record, 'product_tmpl_id'):
-                warn = record.product_tmpl_id.x_qty_to_warn
-            
-            if qty == 0:
-                 qty_all = record.with_context(location=False, warehouse=False).qty_available
-                 _logger.info("[POS Stock Alert] Stock is 0 in POS location, but %s total for %s.", qty_all, record.display_name)
+        # Try as product.product
+        product = PP.with_context(**context).browse(product_id)
+        if product.exists() and product._name == 'product.product':
+            is_storable = product.detailed_type == 'product'
+            qty = product.qty_available
+            # Fallback to global if location-specific is 0
+            if qty <= 0:
+                global_qty = product.with_context(location=None).qty_available
+                if global_qty > 0:
+                    qty = global_qty
 
-            debug = '%s id=%s name=%s qty=%s warn=%s' % (
-                record._name, record.id, record.display_name, qty, warn)
-            _logger.info("[POS Stock Alert] %s", debug)
+            warn = product.x_qty_to_warn
+            debug = 'product.product id=%s name=%s qty=%s warn=%s' % (product.id, product.display_name, qty, warn)
             return {
+                'success': True,
+                'is_storable': is_storable,
                 'qty_available': qty,
                 'x_qty_to_warn': warn,
                 'debug': debug,
             }
 
-        debug = 'NOT FOUND id=%s model=%s name=%s' % (product_id, model, product_name)
-        _logger.warning("[POS Stock Alert] %s", debug)
-        return {'qty_available': 0, 'x_qty_to_warn': 0, 'debug': debug}
+        # Try as product.template
+        template = PT.with_context(**context).browse(product_id)
+        if template.exists():
+            is_storable = template.detailed_type == 'product'
+            qty = template.qty_available
+            if qty <= 0:
+                global_qty = template.with_context(location=None).qty_available
+                if global_qty > 0:
+                    qty = global_qty
+
+            warn = template.x_qty_to_warn
+            debug = 'product.template id=%s name=%s qty=%s warn=%s' % (template.id, template.display_name, qty, warn)
+            return {
+                'success': True,
+                'is_storable': is_storable,
+                'qty_available': qty,
+                'x_qty_to_warn': warn,
+                'debug': debug,
+            }
+
+        return {'success': False, 'qty_available': 0, 'x_qty_to_warn': 0}

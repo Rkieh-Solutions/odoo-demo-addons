@@ -4,6 +4,8 @@ import { patch } from "@web/core/utils/patch";
 import { PosStore } from "@point_of_sale/app/services/pos_store";
 import { _t } from "@web/core/l10n/translation";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
+import { ProductProduct } from "@point_of_sale/app/models/product_product";
+import { ProductTemplate } from "@point_of_sale/app/models/product_template";
 
 patch(PosStore.prototype, {
     async addLineToOrder(vals, order, opts = {}, configure = true) {
@@ -35,24 +37,22 @@ patch(PosStore.prototype, {
                     body: JSON.stringify({
                         jsonrpc: "2.0",
                         method: "call",
-                        params: {
-                            product_id: product.id,
-                            product_name: product.display_name,
-                            model: productModel,
-                            config_id: (this.config && this.config.id) || this.config_id || null,
-                        },
+                        params: { product_id: product.id },
                     }),
                 });
-                console.log("[POS Stock Alert] Fetching stock for product=" + product.id + ", config_id=" + ((this.config && this.config.id) || this.config_id));
                 const data = await response.json();
-                if (data && data.result) {
-                    qty_available = data.result.qty_available || 0;
-                    threshold = data.result.x_qty_to_warn || 0;
-                    debugInfo = data.result.debug || "no debug";
+                if (data && data.result && data.result.success) {
+                    const result = data.result;
+                    if (result.is_storable === false) {
+                        return await super.addLineToOrder(...arguments);
+                    }
+                    qty_available = parseFloat(result.qty_available) || 0;
+                    threshold = parseFloat(result.x_qty_to_warn) || 0;
+                    debugInfo = result.debug || "ok";
                 }
             } catch (e) {
                 console.warn("[POS Stock Alert] fetch error:", e);
-                debugInfo = "fetch failed: " + e.message;
+                return await super.addLineToOrder(...arguments);
             }
 
             if (!threshold) {
