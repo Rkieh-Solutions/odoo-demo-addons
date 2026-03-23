@@ -4,8 +4,6 @@ import { patch } from "@web/core/utils/patch";
 import { PosStore } from "@point_of_sale/app/services/pos_store";
 import { _t } from "@web/core/l10n/translation";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
-import { ProductProduct } from "@point_of_sale/app/models/product_product";
-import { ProductTemplate } from "@point_of_sale/app/models/product_template";
 
 patch(PosStore.prototype, {
     async addLineToOrder(vals, order, opts = {}, configure = true) {
@@ -19,43 +17,60 @@ patch(PosStore.prototype, {
         }
 
         if (product) {
-            // Read directly from POS loaded data
-            let qty_available = parseFloat(product.qty_available) || 0;
-            let threshold = parseFloat(product.x_qty_to_warn) || 0;
+            let qty_available = 0;
+            let threshold = 0;
+            let debugInfo = "no response";
+
+            console.log("[POS Stock Alert] Checking product:", product);
+            console.log("[POS Stock Alert] Product database ID:", product.id);
+            console.log("[POS Stock Alert] Product name:", product.display_name);
+
+            const productModel = product.modelName || (product._model ? product._model.name : (product.constructor.modelName || 'product.product'));
+            console.log("[POS Stock Alert] modelName identified:", productModel);
+
+            try {
+                const response = await fetch("/pos_stock_alert/get_stock", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        jsonrpc: "2.0",
+                        method: "call",
+                        params: {
+                            product_id: product.id,
+                            product_name: product.display_name,
+                            model: productModel,
+                            config_id: (this.config && this.config.id) || this.config_id || null,
+                        },
+                    }),
+                });
+                console.log("[POS Stock Alert] Fetching stock for product=" + product.id + ", config_id=" + ((this.config && this.config.id) || this.config_id));
+                const data = await response.json();
+                if (data && data.result) {
+                    qty_available = data.result.qty_available || 0;
+                    threshold = data.result.x_qty_to_warn || 0;
+                    debugInfo = data.result.debug || "no debug";
+                }
+            } catch (e) {
+                console.warn("[POS Stock Alert] fetch error:", e);
+                debugInfo = "fetch failed: " + e.message;
+            }
 
             if (!threshold) {
-                threshold = parseFloat(this.config && this.config.x_global_stock_warn_threshold) || 0;
+                threshold = (this.config && this.config.x_global_stock_warn_threshold) || 0;
             }
 
-            // Calculate total quantity of this product already in the order
-            const currentOrder = order || this.getOrder();
-            let current_qty_in_order = 0;
-            if (currentOrder && currentOrder.lines) {
-                const existingLines = currentOrder.lines.filter(l => l.product_id && l.product_id.id === product.id);
-                current_qty_in_order = existingLines.reduce((sum, l) => sum + (l.getQuantity() || 0), 0);
-            }
+            console.log("[POS Stock Alert] " + product.display_name + " (JS id=" + product.id + "): qty=" + qty_available + ", threshold=" + threshold + ", debug=" + debugInfo);
 
-            const new_total_qty = current_qty_in_order + (vals.qty || 1);
-
-            console.log("[POS Stock Alert] qty_available:", qty_available, "current_in_order:", current_qty_in_order, "new_total:", new_total_qty);
-
-            if (new_total_qty > qty_available) {
-                await this.dialog.add(AlertDialog, {
-                    title: _t("CRITICAL: Stock Exceeded!"),
-                    body: _t("You are trying to add %s units of '%s', but only %s units are available in stock. Order current quantity for this item: %s.",
-                        (vals.qty || 1), product.display_name, qty_available, current_qty_in_order),
-                });
-                return;
-            } else if (qty_available <= 0) {
+            if (qty_available <= 0) {
                 await this.dialog.add(AlertDialog, {
                     title: _t("CRITICAL: Out of Stock!"),
-                    body: _t("The product (%s) is completely out of stock.", product.display_name),
+                    body: _t("The product (%s) is completely out of stock; you cannot sell this product.", product.display_name),
                 });
                 return;
             } else if (threshold > 0 && qty_available <= threshold) {
                 await this.dialog.add(AlertDialog, {
                     title: _t("Low Stock Warning"),
-                    body: _t("Warning: Remaining quantity for '%s' is low (%s).", product.display_name, qty_available),
+                    body: _t("Warning: Remaining quantity is low (%s).", qty_available),
                 });
             }
         }
