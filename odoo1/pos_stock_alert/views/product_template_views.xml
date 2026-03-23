@@ -48,7 +48,7 @@
     <!-- Menu Item under Inventory > Products -->
     <menuitem id="menu_pos_stock_alert_products"
               name="POS Stock Alerts"
-              parent="stock.menu_product_in_config_main"
+              parent="stock.menu_stock_inventory_control"
               action="action_pos_stock_alert_config"
               sequence="20"/>
 
