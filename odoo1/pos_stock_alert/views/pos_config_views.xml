@@ -6,9 +6,11 @@
         <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//setting[@id='other_devices']" position="after">
+                <!-- Temporarily disabled to fix migration deadlock
                 <setting string="Stock Alerts" help="Set a global threshold for low stock warnings in POS.">
                     <field name="x_global_stock_warn_threshold"/>
                 </setting>
+                -->
             </xpath>
         </field>
     </record>

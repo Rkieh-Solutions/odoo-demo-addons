@@ -3,7 +3,8 @@ from odoo import models, fields
 class PosConfig(models.Model):
     _inherit = 'pos.config'
 
-    x_global_stock_warn_threshold = fields.Float(string='Global Stock Warning Threshold', default=0.0, help='Default threshold for all products if they have 0 specifically set.')
+    # Temporarily disabled to fix migration deadlock
+    # x_global_stock_warn_threshold = fields.Float(string='Global Stock Warning Threshold', default=0.0)
 
 class PosSession(models.Model):
     _inherit = 'pos.session'
