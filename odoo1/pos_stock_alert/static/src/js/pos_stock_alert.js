@@ -19,9 +19,9 @@ patch(PosStore.prototype, {
         if (product) {
             let qty_available = 0;
             let threshold = 0;
+            let debugInfo = "no response";
 
             try {
-                // Use raw fetch - this ALWAYS works in any browser
                 const response = await fetch("/pos_stock_alert/get_stock", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -32,19 +32,21 @@ patch(PosStore.prototype, {
                     }),
                 });
                 const data = await response.json();
-                if (data.result) {
+                if (data && data.result) {
                     qty_available = data.result.qty_available || 0;
                     threshold = data.result.x_qty_to_warn || 0;
+                    debugInfo = data.result.debug || "no debug";
                 }
             } catch (e) {
-                console.warn("[POS Stock Alert] fetch failed:", e);
+                console.warn("[POS Stock Alert] fetch error:", e);
+                debugInfo = "fetch failed: " + e.message;
             }
 
             if (!threshold) {
                 threshold = (this.config && this.config.x_global_stock_warn_threshold) || 0;
             }
 
-            console.log(`[POS Stock Alert] ${product.display_name} (JS id=${product.id}): qty=${qty_available}, threshold=${threshold}, debug=${data.result?.debug || 'no debug'}`);
+            console.log("[POS Stock Alert] " + product.display_name + " (JS id=" + product.id + "): qty=" + qty_available + ", threshold=" + threshold + ", debug=" + debugInfo);
 
             if (qty_available <= 0) {
                 await this.dialog.add(AlertDialog, {
