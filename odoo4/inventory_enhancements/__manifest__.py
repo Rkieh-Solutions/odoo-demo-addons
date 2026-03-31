@@ -11,7 +11,7 @@
     'category': 'Inventory/Inventory',
     'author': 'Antigravity',
     'sequence': 1,
-    'depends': ['product', 'stock'],
+    'depends': ['base', 'product', 'stock'],
     'data': [
         'views/product_views.xml',
     ],
@@ -22,5 +22,6 @@
     },
     'installable': True,
     'application': True,
+    'auto_install': False,
     'license': 'LGPL-3',
 }
