@@ -13,7 +13,7 @@
                 </group>
             </xpath>
 
-            <!-- Larger Image Display with Zoom (re-implemented for odoo4) -->
+            <!-- Larger Image Display with Zoom -->
             <xpath expr="//field[@name='image_1920']" position="attributes">
                 <attribute name="options">{'zoom': true, 'preview_image': 'image_128', 'size': [256, 256]}</attribute>
                 <attribute name="class">oe_avatar custom_larger_image</attribute>
