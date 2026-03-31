@@ -11,7 +11,7 @@
     'category': 'Industry',
     'sequence': 1,
     'author': 'Rkiehsoloutions',
-    'depends': ['base', 'product', 'stock'],
+    'depends': ['base', 'product', 'stock', 'point_of_sale', 'product_expiry', 'sale', 'purchase'],
     'data': [
         'views/product_views.xml',
     ],
