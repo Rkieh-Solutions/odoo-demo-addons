@@ -1,0 +1,12 @@
+.custom_larger_image {
+    width: 256px !important;
+    height: 256px !important;
+    max-width: 256px !important;
+    max-height: 256px !important;
+}
+
+.custom_larger_image img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+}
