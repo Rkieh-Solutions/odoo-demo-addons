@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="product_template_form_view_inherit_enhancements" model="ir.ui.view">
-        <name>product.template.form.inherit.enhancements</name>
+    <record id="product_template_form_view_inherit_odoo4" model="ir.ui.view">
+        <name>product.template.form.inherit.odoo4</name>
         <model>product.template</model>
         <inherit_id ref="product.product_template_only_form_view"/>
         <arch type="xml">
-            <!-- Larger Image Display with Zoom -->
-            <xpath expr="//field[@name='image_1920']" position="attributes">
-                <attribute name="options">{'zoom': true, 'preview_image': 'image_128', 'size': [256, 256]}</attribute>
-                <attribute name="class">oe_avatar custom_larger_image</attribute>
-            </xpath>
-
             <!-- Add Margin fields to General Information -->
             <xpath expr="//group[@name='group_standard_price']" position="after">
                 <group name="margin_tracking" string="Margin Analysis">
                     <field name="margin" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                     <field name="margin_percent" widget="percentage"/>
                 </group>
+            </xpath>
+
+            <!-- Larger Image Display with Zoom (re-implemented for odoo4) -->
+            <xpath expr="//field[@name='image_1920']" position="attributes">
+                <attribute name="options">{'zoom': true, 'preview_image': 'image_128', 'size': [256, 256]}</attribute>
+                <attribute name="class">oe_avatar custom_larger_image</attribute>
             </xpath>
         </arch>
     </record>
