@@ -1,6 +1,6 @@
 {
     'name': 'Inventory Enhancement',
-    'version': '16.0.1.0.0',
+    'version': '19.0.1.0.0',
     'summary': 'Enhanced product image display, Margin and Margin % in Inventory',
     'description': """
         This module enhances the inventory experience by:
