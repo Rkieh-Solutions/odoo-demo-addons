@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+
 {
     'name': 'Inventory Enhancements',
     'version': '16.0.1.0.0',
@@ -10,6 +10,7 @@
     """,
     'category': 'Inventory/Inventory',
     'author': 'Antigravity',
+    'sequence': 1,
     'depends': ['product', 'stock'],
     'data': [
         'views/product_views.xml',
@@ -20,6 +21,6 @@
         ],
     },
     'installable': True,
-    'application': False,
+    'application': True,
     'license': 'LGPL-3',
 }
