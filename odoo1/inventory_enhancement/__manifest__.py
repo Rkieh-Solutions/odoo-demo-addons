@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'Inventory Enhancements',
+    'name': 'Inventory Enhancement',
     'version': '19.0.1.0.0',
     'summary': 'Enhanced product image display, Margin and Margin % in Inventory',
     'description': """
@@ -17,12 +17,12 @@
     ],
     'assets': {
         'web.assets_backend': [
-            'inventory_enhancements/static/src/css/product_style.css',
+            'inventory_enhancement/static/src/css/product_style.css',
         ],
     },
     'installable': True,
     'application': True,
     'auto_install': False,
     'license': 'LGPL-3',
-    'web_icon': 'inventory_enhancements,static/description/icon.png',
+    'web_icon': 'inventory_enhancement,static/description/icon.png',
 }
