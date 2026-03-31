@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 {
-    'name': 'Inventory Enhancement',
+    'name': 'Inventory Enhancements',
     'version': '19.0.1.0.0',
     'summary': 'Enhanced product image display, Margin and Margin % in Inventory',
     'description': """
@@ -8,20 +9,20 @@
         2. Adding Margin and Margin % fields to the product template for better performance tracking.
     """,
     'category': 'Industry',
-    'author': 'Antigravity',
     'sequence': 1,
+    'author': 'Rkiehsoloutions',
     'depends': ['base', 'product', 'stock'],
     'data': [
         'views/product_views.xml',
     ],
     'assets': {
         'web.assets_backend': [
-            'odoo4/static/src/css/product_style.css',
+            'inventory_enhancements/static/src/css/product_style.css',
         ],
     },
     'installable': True,
     'application': True,
     'auto_install': False,
     'license': 'LGPL-3',
-    'web_icon': 'odoo4,static/description/icon.png',
+    'web_icon': 'inventory_enhancements,static/description/icon.png',
 }
