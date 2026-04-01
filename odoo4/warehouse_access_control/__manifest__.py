@@ -27,12 +27,14 @@
         'views/picking_workflow_views.xml',
         'views/warehouse_map_views.xml',
         'views/product_views.xml',
+        'views/sale_purchase_map_views.xml',
         'views/quality_capa_views.xml',
         'views/picking_route_map_views.xml',
         'views/dashboards/warehouse_dashboard_views.xml',
         'views/mobile_views.xml',
         # Report
         'report/delivery_note_report.xml',
+        'report/cargo_instructions_report.xml',
         # Menus — last, after all actions are defined
         'views/menus.xml',
         # Post-install data

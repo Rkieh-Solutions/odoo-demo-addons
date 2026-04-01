@@ -18,7 +18,8 @@
                     <separator string="Cargo Loading Order"/>
                     <field name="line_ids">
                         <list create="0" edit="0" delete="0" decoration-success="is_picked" decoration-danger="'Fragile' in stacking_priority" decoration-info="'Heavy' in stacking_priority" default_order="step">
-                            <field name="step" string="Load Order" widget="badge"/>
+                            <field name="step" string="Order" widget="badge"/>
+                            <field name="direction_arrow" string="Direction" decoration-bf="1" decoration-info="direction_arrow == '⬇️ Next'" decoration-success="direction_arrow == '✅ Done'"/>
                             <field name="product_id" string="Product"/>
                             <field name="location_code" string="Location (Where to get it)"/>
                             <field name="qty" string="Qty"/>
@@ -28,8 +29,8 @@
                     </field>
                 </sheet>
                 <footer>
-                    <button name="action_close" string="Close Map"
-                            type="object" class="btn-primary"/>
+                    <button name="action_print_pdf" string="🖨️ Print Driver Instructions" type="object" class="btn-primary"/>
+                    <button name="action_close" string="Close Map" type="object" class="btn-secondary"/>
                 </footer>
             </form>
         </field>

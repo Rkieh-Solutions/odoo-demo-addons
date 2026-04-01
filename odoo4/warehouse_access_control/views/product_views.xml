@@ -70,8 +70,6 @@
                 <xpath expr="//field[@name='type']" position="after">
                     <field name="incoming_qty" string="On Order (Incoming)" readonly="1"
                            groups="warehouse_access_control.group_inventory_editor,warehouse_access_control.group_inventory_viewer,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_purchasing_user"/>
-                    <field name="cargo_stacking_priority" string="Cargo Packing Logic"
-                           groups="warehouse_access_control.group_inventory_editor,warehouse_access_control.group_warehouse_supervisor"/>
                 </xpath>
 
                 <!-- Add Main / Sub category fields -->
@@ -105,6 +103,24 @@
                 <p class="o_view_nocontent_smiling_face">
                     No products found. Create your first product.
                 </p>
+            </field>
+        </record>
+
+        <!-- ── Product Category FORM — cargo logic ── -->
+        <record id="view_category_property_form_cargo_logic" model="ir.ui.view">
+            <field name="name">product.category.property.form.cargo.logic</field>
+            <field name="model">product.category</field>
+            <field name="inherit_id" ref="product.product_category_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//group[@name='first']" position="after">
+                    <group name="cargo_logic" string="Warehouse &amp; Logistics">
+                        <field name="cargo_stacking_type" widget="radio"/>
+                        <field name="cargo_tier"/>
+                        <div class="text-muted" colspan="2">
+                            <b>Hint:</b> Tier 1 is placed at the absolute bottom of the cargo. Tier 99 is placed at the absolute top.
+                        </div>
+                    </group>
+                </xpath>
             </field>
         </record>
 
