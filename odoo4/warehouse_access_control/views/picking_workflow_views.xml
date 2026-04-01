@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ══════════════════════════════════════════════════════════
+             PICKING WORKFLOW — Custom transfer view for warehouse roles
+        ══════════════════════════════════════════════════════════════ -->
+
+        <!-- ── Extend stock.picking form with warehouse workflow ── -->
+        <record id="view_picking_warehouse_form" model="ir.ui.view">
+            <field name="name">stock.picking.warehouse.form</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_form"/>
+            <field name="arch" type="xml">
+
+                <!-- Add workflow buttons to header -->
+                <xpath expr="//header" position="inside">
+                    <button name="action_start_picking"
+                            string="Start Picking"
+                            type="object"
+                            class="btn-primary"
+                            groups="warehouse_access_control.group_picker,warehouse_access_control.group_warehouse_supervisor"
+                            invisible="custom_status != 'released'"/>
+                    <button name="action_picker_confirm"
+                            string="Confirm Picked ✓"
+                            type="object"
+                            class="btn-success"
+                            groups="warehouse_access_control.group_picker,warehouse_access_control.group_warehouse_supervisor"
+                            invisible="custom_status != 'picking_in_progress'"/>
+                    <button name="action_checker_start"
+                            string="Start Checking"
+                            type="object"
+                            class="btn-primary"
+                            groups="warehouse_access_control.group_checker,warehouse_access_control.group_warehouse_supervisor"
+                            invisible="custom_status != 'pending_checking'"/>
+                    <button name="action_checker_confirm"
+                            string="Confirm Checked ✓"
+                            type="object"
+                            class="btn-success"
+                            groups="warehouse_access_control.group_checker,warehouse_access_control.group_warehouse_supervisor"
+                            invisible="custom_status != 'checking_in_progress'"/>
+                    <button name="action_ready_dispatch"
+                            string="Ready for Dispatch"
+                            type="object"
+                            groups="warehouse_access_control.group_dispatch_coordinator,warehouse_access_control.group_warehouse_supervisor"
+                            invisible="custom_status != 'checked_complete'"/>
+                    <button name="action_open_skid_assign_wizard"
+                            string="Assign to Skid"
+                            type="object"
+                            class="btn-secondary"
+                            groups="warehouse_access_control.group_picker,warehouse_access_control.group_warehouse_supervisor"
+                            invisible="custom_status not in ('picking_in_progress', 'released')"/>
+                    <button name="action_open_checker_exception_wizard"
+                            string="Log Exception"
+                            type="object"
+                            class="btn-warning"
+                            groups="warehouse_access_control.group_checker,warehouse_access_control.group_warehouse_supervisor"
+                            invisible="custom_status != 'checking_in_progress'"/>
+                    <button name="action_open_barcode_scan_wizard"
+                            string="Scan Barcode"
+                            type="object"
+                            class="btn-secondary"
+                            groups="warehouse_access_control.group_picker,warehouse_access_control.group_warehouse_supervisor"
+                            invisible="custom_status not in ('picking_in_progress', 'released')"/>
+                </xpath>
+
+                <!-- Add warehouse status field next to standard status -->
+                <xpath expr="//field[@name='state']" position="after">
+                    <field name="custom_status" widget="statusbar"
+                           statusbar_visible="released,picking_in_progress,pending_checking,checking_in_progress,checked_complete,ready_dispatch"
+                           groups="warehouse_access_control.group_picker,warehouse_access_control.group_checker,warehouse_access_control.group_dispatch_coordinator,warehouse_access_control.group_warehouse_supervisor"/>
+                </xpath>
+
+                <!-- Add skid info panel -->
+                <xpath expr="//sheet" position="inside">
+                    <group string="Skid Summary"
+                           groups="warehouse_access_control.group_picker,warehouse_access_control.group_checker,warehouse_access_control.group_dispatch_coordinator,warehouse_access_control.group_warehouse_supervisor"
+                           invisible="skid_count == 0">
+                        <field name="skid_count" string="Total Skids"/>
+                        <field name="total_weight" string="Total Weight (kg)"/>
+                        <field name="exception_flag" string="Has Exceptions"
+                               invisible="not exception_flag"/>
+                    </group>
+                </xpath>
+
+                <!-- Add picker/checker notes at bottom -->
+                <xpath expr="//notebook" position="inside">
+                    <page string="Warehouse Notes"
+                          groups="warehouse_access_control.group_picker,warehouse_access_control.group_checker,warehouse_access_control.group_dispatch_coordinator,warehouse_access_control.group_warehouse_supervisor">
+                        <group>
+                            <group string="Picker Notes">
+                                <field name="picker_notes" nolabel="1"
+                                       placeholder="Picker notes..."
+                                       groups="warehouse_access_control.group_picker,warehouse_access_control.group_warehouse_supervisor"/>
+                            </group>
+                            <group string="Checker Notes">
+                                <field name="checker_notes" nolabel="1"
+                                       placeholder="Checker notes..."
+                                       groups="warehouse_access_control.group_checker,warehouse_access_control.group_warehouse_supervisor"/>
+                            </group>
+                        </group>
+                        <group string="Exception" invisible="not exception_flag">
+                            <field name="exception_reason" nolabel="1" readonly="1"/>
+                        </group>
+                    </page>
+                </xpath>
+
+            </field>
+        </record>
+
+        <!-- ── Pick Ticket List View (sorted by location) ── -->
+        <record id="view_picking_pick_ticket_list" model="ir.ui.view">
+            <field name="name">stock.move.line.pick.ticket.list</field>
+            <field name="model">stock.move.line</field>
+            <field name="arch" type="xml">
+                <list string="Pick Ticket" default_order="picking_sequence,location_code,product_id"
+                      decoration-success="state == 'done'"
+                      decoration-muted="state == 'cancel'">
+                    <field name="picking_sequence" string="Seq" optional="show"/>
+                    <field name="location_code" string="Location" optional="show"/>
+                    <field name="location_id" string="Full Location" optional="hide"/>
+                    <field name="product_id"/>
+                    <field name="lot_id" optional="show"/>
+                    <field name="quantity" string="To Pick"/>
+                    <field name="qty_done" string="Done"/>
+                    <field name="assigned_skid_id" string="Skid" optional="show"/>
+                    <field name="state" widget="badge"
+                           decoration-success="state == 'done'"
+                           decoration-warning="state == 'assigned'"
+                           optional="show"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- ── Location form extension — add picking sequence ── -->
+        <record id="view_location_picking_seq_form" model="ir.ui.view">
+            <field name="name">stock.location.picking.seq.form</field>
+            <field name="model">stock.location</field>
+            <field name="inherit_id" ref="stock.view_location_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//sheet" position="inside">
+                    <group string="Picking Path"
+                           groups="base.group_system,warehouse_access_control.group_warehouse_supervisor">
+                        <field name="picking_sequence"/>
+                        <field name="aisle"/>
+                        <field name="rack"/>
+                        <field name="bin"/>
+                        <field name="location_code" readonly="1"/>
+                    </group>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- ── Skid Assign Wizard views ── -->
+        <record id="view_skid_assign_wizard_form" model="ir.ui.view">
+            <field name="name">warehouse.skid.assign.wizard.form</field>
+            <field name="model">warehouse.skid.assign.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Assign Products to Skid">
+                    <sheet>
+                        <group>
+                            <group string="Skid">
+                                <field name="picking_id" readonly="1"/>
+                                <field name="skid_id"
+                                       invisible="create_new_skid"/>
+                                <field name="create_new_skid"/>
+                            </group>
+                        </group>
+                        <field name="line_ids">
+                            <list editable="bottom" default_order="picking_sequence,location_code">
+                                <field name="selected" optional="show"/>
+                                <field name="picking_sequence" string="Seq" readonly="1"/>
+                                <field name="location_code" string="Location" readonly="1"/>
+                                <field name="product_id" readonly="1"/>
+                                <field name="lot_id"/>
+                                <field name="qty_todo" string="Required" readonly="1"/>
+                                <field name="qty_assign" string="Assign Qty"/>
+                                <field name="already_assigned" string="On Skid?" readonly="1" optional="show"/>
+                            </list>
+                        </field>
+                    </sheet>
+                    <footer>
+                        <button name="action_confirm" string="Assign to Skid"
+                                type="object" class="btn-primary"/>
+                        <button string="Cancel" class="btn-secondary"
+                                special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_skid_assign_wizard" model="ir.actions.act_window">
+            <field name="name">Assign to Skid</field>
+            <field name="res_model">warehouse.skid.assign.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="context">{'default_picking_id': active_id}</field>
+        </record>
+
+        <!-- ── Checker Exception Wizard views ── -->
+        <record id="view_checker_exception_wizard_form" model="ir.ui.view">
+            <field name="name">warehouse.checker.exception.wizard.form</field>
+            <field name="model">warehouse.checker.exception.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Log Exception / Discrepancy">
+                    <sheet>
+                        <group>
+                            <group string="Exception Details">
+                                <field name="picking_id" readonly="1"/>
+                                <field name="skid_id"/>
+                                <field name="exception_type"/>
+                                <field name="action"/>
+                            </group>
+                            <group string="Weight Correction">
+                                <field name="update_weight"/>
+                                <field name="new_weight" invisible="not update_weight"/>
+                            </group>
+                        </group>
+                        <field name="notes" placeholder="Describe the issue in detail..."/>
+                        <field name="line_ids"
+                               invisible="exception_type not in ('qty_mismatch','wrong_product','missing')">
+                            <list editable="bottom">
+                                <field name="product_id" readonly="1"/>
+                                <field name="qty_expected" readonly="1"/>
+                                <field name="qty_actual"/>
+                                <field name="discrepancy" readonly="1"
+                                       decoration-danger="discrepancy &lt; 0"
+                                       decoration-warning="discrepancy &gt; 0"/>
+                            </list>
+                        </field>
+                    </sheet>
+                    <footer>
+                        <button name="action_confirm" string="Confirm Exception"
+                                type="object" class="btn-warning"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_checker_exception_wizard" model="ir.actions.act_window">
+            <field name="name">Log Exception</field>
+            <field name="res_model">warehouse.checker.exception.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="context">{'default_picking_id': active_id}</field>
+        </record>
+
+    </data>
+</odoo>

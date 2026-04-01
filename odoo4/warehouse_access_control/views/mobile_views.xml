@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ══════════════════════════════════════════════════════════
+             MOBILE / BARCODE INTERFACE
+             Simplified views for Picker, Checker, Shop Floor Operator
+        ══════════════════════════════════════════════════════════════ -->
+
+        <!-- ── Barcode Scan Wizard ── -->
+        <record id="view_barcode_scan_wizard_form" model="ir.ui.view">
+            <field name="name">warehouse.barcode.scan.wizard.form</field>
+            <field name="model">warehouse.barcode.scan.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Barcode Scanner">
+                    <sheet>
+                        <div class="oe_title">
+                            <h2>Barcode Scanner</h2>
+                        </div>
+                        <group>
+                            <field name="picking_id" readonly="1"/>
+                            <field name="barcode" string="Scan Barcode"
+                                   placeholder="Scan or type barcode..."
+                                   autofocus="1"/>
+                            <field name="scan_status" widget="badge"
+                                   decoration-success="scan_status == 'found'"
+                                   decoration-danger="scan_status == 'not_found'"
+                                   decoration-info="scan_status == 'done'"/>
+                            <field name="message" readonly="1"
+                                   invisible="not message"/>
+                        </group>
+                        <group invisible="scan_status not in ('found',)">
+                            <group string="Product">
+                                <field name="product_id" readonly="1"/>
+                                <field name="qty_to_pick" readonly="1" string="Required Qty"/>
+                                <field name="lot_id"
+                                       domain="[('product_id','=',product_id)]"/>
+                            </group>
+                            <group string="Confirm">
+                                <field name="qty_done" string="Qty Done"/>
+                            </group>
+                        </group>
+                    </sheet>
+                    <footer>
+                        <button name="action_scan" string="Scan"
+                                type="object" class="btn-primary"
+                                invisible="scan_status == 'found'"/>
+                        <button name="action_confirm_scan" string="Confirm"
+                                type="object" class="btn-success"
+                                invisible="scan_status != 'found'"/>
+                        <button string="Close" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- ── Mobile Picker: My Active Transfers (Kanban) ── -->
+        <record id="view_picking_mobile_picker_kanban" model="ir.ui.view">
+            <field name="name">stock.picking.mobile.picker.kanban</field>
+            <field name="model">stock.picking</field>
+            <field name="arch" type="xml">
+                <kanban default_order="scheduled_date asc"
+                        class="o_kanban_mobile"
+                        quick_create="false">
+                    <field name="name"/>
+                    <field name="partner_id"/>
+                    <field name="scheduled_date"/>
+                    <field name="custom_status"/>
+                    <field name="skid_count"/>
+                    <field name="exception_flag"/>
+                    <templates>
+                        <t t-name="card">
+                            <div class="d-flex justify-content-between">
+                                <strong><field name="name"/></strong>
+                                <field name="custom_status" widget="badge"
+                                       decoration-warning="custom_status == 'picking_in_progress'"/>
+                            </div>
+                            <div class="text-muted small">
+                                <field name="partner_id"/> | <field name="scheduled_date" widget="date"/>
+                            </div>
+                            <div t-if="record.skid_count.value">
+                                Skids: <field name="skid_count"/>
+                            </div>
+                            <div t-if="record.exception_flag.raw_value" class="text-danger">
+                                ⚠ Has Exceptions
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <!-- ── Mobile Picker: Pick Lines List (sorted by location) ── -->
+        <record id="view_move_line_mobile_picker_list" model="ir.ui.view">
+            <field name="name">stock.move.line.mobile.picker.list</field>
+            <field name="model">stock.move.line</field>
+            <field name="arch" type="xml">
+                <list string="Pick Lines"
+                      default_order="picking_sequence,location_code,product_id"
+                      editable="bottom"
+                      decoration-success="qty_done >= quantity"
+                      decoration-muted="state == 'cancel'">
+                    <field name="picking_sequence" string="Seq" readonly="1" optional="show"/>
+                    <field name="location_code" string="Location" readonly="1"/>
+                    <field name="product_id" readonly="1"/>
+                    <field name="lot_id" domain="[('product_id','=',product_id)]"/>
+                    <field name="quantity" string="Required" readonly="1"/>
+                    <field name="qty_done" string="Done"/>
+                    <field name="assigned_skid_id" string="Skid" readonly="1" optional="show"/>
+                    <field name="state" widget="badge"
+                           decoration-success="state == 'done'"
+                           decoration-warning="state == 'assigned'"
+                           readonly="1" optional="show"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- ── Mobile Checker: Transfers Awaiting Check (List) ── -->
+        <record id="view_picking_mobile_checker_list" model="ir.ui.view">
+            <field name="name">stock.picking.mobile.checker.list</field>
+            <field name="model">stock.picking</field>
+            <field name="arch" type="xml">
+                <list string="Awaiting Check"
+                      default_order="scheduled_date asc"
+                      decoration-warning="exception_flag == True"
+                      decoration-success="custom_status == 'checked_complete'">
+                    <field name="name"/>
+                    <field name="partner_id"/>
+                    <field name="scheduled_date" widget="date"/>
+                    <field name="custom_status" widget="badge"
+                           decoration-warning="custom_status == 'checking_in_progress'"
+                           decoration-success="custom_status == 'checked_complete'"/>
+                    <field name="skid_count" string="Skids"/>
+                    <field name="total_weight" string="Weight (kg)" optional="show"/>
+                    <field name="exception_flag" string="Exception" optional="show"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- ── Mobile Shop Floor: My Manufacturing Orders (Kanban) ── -->
+        <record id="view_mrp_production_mobile_kanban" model="ir.ui.view">
+            <field name="name">mrp.production.mobile.shop.floor.kanban</field>
+            <field name="model">mrp.production</field>
+            <field name="arch" type="xml">
+                <kanban default_order="date_start asc"
+                        class="o_kanban_mobile"
+                        quick_create="false">
+                    <field name="name"/>
+                    <field name="product_id"/>
+                    <field name="product_qty"/>
+                    <field name="qty_produced"/>
+                    <field name="state"/>
+                    <field name="date_start"/>
+                    <templates>
+                        <t t-name="card">
+                            <div class="d-flex justify-content-between">
+                                <strong><field name="name"/></strong>
+                                <field name="state" widget="badge"
+                                       decoration-warning="state == 'progress'"
+                                       decoration-success="state == 'done'"/>
+                            </div>
+                            <div>
+                                <field name="product_id"/>
+                            </div>
+                            <div class="text-muted small">
+                                Qty: <field name="qty_produced"/>/<field name="product_qty"/>
+                                | <field name="date_start" widget="date"/>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <!-- ── Mobile Skid Detail Form (Checker) ── -->
+        <record id="view_skid_mobile_checker_form" model="ir.ui.view">
+            <field name="name">warehouse.skid.mobile.checker.form</field>
+            <field name="model">warehouse.skid</field>
+            <field name="arch" type="xml">
+                <form string="Skid Check">
+                    <header>
+                        <button name="action_start_checking" string="Start Checking"
+                                type="object" class="btn-primary"
+                                invisible="status != 'picked'"/>
+                        <button name="action_confirm_checked" string="Confirm Checked"
+                                type="object" class="btn-success"
+                                invisible="status != 'checking'"/>
+                        <field name="status" widget="statusbar"
+                               statusbar_visible="picking,picked,checking,checked"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="name" readonly="1"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="picking_id" readonly="1"/>
+                                <field name="picker_id" readonly="1"/>
+                                <field name="staging_location_id"/>
+                            </group>
+                            <group string="Weight">
+                                <field name="weight"/>
+                                <field name="weight_verified"/>
+                                <field name="weight_note" invisible="not weight_note"/>
+                            </group>
+                        </group>
+                        <field name="line_ids" readonly="1">
+                            <list>
+                                <field name="product_id"/>
+                                <field name="lot_id"/>
+                                <field name="qty_done" string="Qty"/>
+                                <field name="product_uom_id" string="UOM"/>
+                            </list>
+                        </field>
+                        <field name="notes" placeholder="Checker notes..."/>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- ── Actions ── -->
+        <record id="action_mobile_picker_transfers" model="ir.actions.act_window">
+            <field name="name">My Transfers</field>
+            <field name="res_model">stock.picking</field>
+            <field name="view_mode">kanban,list,form</field>
+            <field name="domain">[('custom_status','in',['released','picking_in_progress','pending_checking']),('state','not in',['done','cancel'])]</field>
+            <field name="context">{}</field>
+        </record>
+
+        <record id="action_mobile_picker_lines" model="ir.actions.act_window">
+            <field name="name">Pick Lines</field>
+            <field name="res_model">stock.move.line</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('state','not in',['done','cancel']),('picking_id.custom_status','in',['released','picking_in_progress'])]</field>
+            <field name="context">{}</field>
+        </record>
+
+        <record id="action_mobile_checker_transfers" model="ir.actions.act_window">
+            <field name="name">Transfers to Check</field>
+            <field name="res_model">stock.picking</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('custom_status','in',['pending_checking','checking_in_progress']),('state','not in',['done','cancel'])]</field>
+        </record>
+
+        <record id="action_mobile_shop_floor_mos" model="ir.actions.act_window">
+            <field name="name">My Work Orders</field>
+            <field name="res_model">mrp.production</field>
+            <field name="view_mode">kanban,list,form</field>
+            <field name="domain">[('state','in',['confirmed','progress'])]</field>
+        </record>
+
+        <!-- ── Mobile menus under Warehouse Portal ── -->
+        <menuitem id="menu_wh_mobile_root"
+                  name="Mobile"
+                  parent="menu_warehouse_portal_root"
+                  sequence="50"
+                  groups="warehouse_access_control.group_picker,warehouse_access_control.group_checker,warehouse_access_control.group_shop_floor_operator,warehouse_access_control.group_warehouse_supervisor"/>
+
+        <menuitem id="menu_wh_mobile_picker_transfers"
+                  name="My Transfers"
+                  parent="menu_wh_mobile_root"
+                  action="action_mobile_picker_transfers"
+                  sequence="1"
+                  groups="warehouse_access_control.group_picker,warehouse_access_control.group_warehouse_supervisor"/>
+
+        <menuitem id="menu_wh_mobile_picker_lines"
+                  name="Pick Lines"
+                  parent="menu_wh_mobile_root"
+                  action="action_mobile_picker_lines"
+                  sequence="2"
+                  groups="warehouse_access_control.group_picker,warehouse_access_control.group_warehouse_supervisor"/>
+
+        <menuitem id="menu_wh_mobile_checker"
+                  name="Transfers to Check"
+                  parent="menu_wh_mobile_root"
+                  action="action_mobile_checker_transfers"
+                  sequence="3"
+                  groups="warehouse_access_control.group_checker,warehouse_access_control.group_warehouse_supervisor"/>
+
+        <menuitem id="menu_wh_mobile_shop_floor"
+                  name="My Work Orders"
+                  parent="menu_wh_mobile_root"
+                  action="action_mobile_shop_floor_mos"
+                  sequence="4"
+                  groups="warehouse_access_control.group_shop_floor_operator,warehouse_access_control.group_warehouse_supervisor"/>
+
+    </data>
+</odoo>

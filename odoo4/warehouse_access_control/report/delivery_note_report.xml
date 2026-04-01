@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ══════════════════════════════════════════════════════════
+             DELIVERY NOTE — Printable PDF with full skid details
+        ══════════════════════════════════════════════════════════════ -->
+
+        <report id="action_report_delivery_note"
+                string="Delivery Note"
+                model="stock.picking"
+                report_type="qweb-pdf"
+                name="warehouse_access_control.report_delivery_note_document"
+                file="warehouse_access_control.report_delivery_note_document"
+                attachment_use="False"
+                groups="warehouse_access_control.group_dispatch_coordinator,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_checker"/>
+
+        <template id="report_delivery_note_document">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="picking">
+                    <t t-call="web.external_layout">
+                        <div class="page">
+
+                            <!-- Header -->
+                            <div class="row mb-4">
+                                <div class="col-6">
+                                    <h2>Delivery Note</h2>
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td><strong>Transfer:</strong></td>
+                                            <td><t t-esc="picking.name"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Sales Order:</strong></td>
+                                            <td><t t-esc="picking.sale_id.name or '-'"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Customer:</strong></td>
+                                            <td><t t-esc="picking.partner_id.name or '-'"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Date:</strong></td>
+                                            <td><t t-esc="picking.date_done or picking.scheduled_date" t-options="{'widget': 'date'}"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Status:</strong></td>
+                                            <td><t t-esc="dict(picking._fields['custom_status'].selection).get(picking.custom_status, picking.custom_status)"/></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-6 text-end">
+                                    <table class="table table-sm table-bordered">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th colspan="2" class="text-center">Shipment Summary</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><strong>Total Skids</strong></td>
+                                                <td class="text-center"><t t-esc="picking.skid_count"/></td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Total Weight (kg)</strong></td>
+                                                <td class="text-center"><t t-esc="'%.3f' % picking.total_weight"/></td>
+                                            </tr>
+                                            <tr t-if="picking.exception_flag">
+                                                <td><strong>⚠ Exceptions</strong></td>
+                                                <td class="text-center text-danger">YES</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Skid Details -->
+                            <h4 class="mt-4">Skid Details</h4>
+                            <t t-foreach="picking.skid_ids" t-as="skid">
+                                <div class="mb-4 border rounded p-3">
+                                    <div class="row mb-2">
+                                        <div class="col-4">
+                                            <strong>Skid ID:</strong>
+                                            <span class="ms-2 fs-5"><t t-esc="skid.name"/></span>
+                                        </div>
+                                        <div class="col-4">
+                                            <strong>Weight:</strong>
+                                            <span class="ms-2"><t t-esc="'%.3f kg' % skid.weight"/></span>
+                                            <span t-if="skid.weight_verified" class="badge bg-success ms-1">Verified</span>
+                                        </div>
+                                        <div class="col-4">
+                                            <strong>Staging Location:</strong>
+                                            <span class="ms-2"><t t-esc="skid.staging_location_id.name or '-'"/></span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-4">
+                                            <strong>Picker:</strong>
+                                            <span class="ms-2"><t t-esc="skid.picker_id.name or '-'"/></span>
+                                        </div>
+                                        <div class="col-4">
+                                            <strong>Picked On:</strong>
+                                            <span class="ms-2"><t t-esc="skid.picker_confirm_date" t-options="{'widget': 'datetime'}"/></span>
+                                        </div>
+                                        <div class="col-4">
+                                            <strong>Checker:</strong>
+                                            <span class="ms-2"><t t-esc="skid.checker_id.name or '-'"/></span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-4">
+                                            <strong>Checked On:</strong>
+                                            <span class="ms-2"><t t-esc="skid.checker_confirm_date" t-options="{'widget': 'datetime'}"/></span>
+                                        </div>
+                                        <div class="col-4" t-if="skid.weight_note">
+                                            <strong>Weight Note:</strong>
+                                            <span class="ms-2 text-warning"><t t-esc="skid.weight_note"/></span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Skid Contents -->
+                                    <table class="table table-sm table-bordered mt-2">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Product</th>
+                                                <th>Lot / Serial</th>
+                                                <th class="text-end">Quantity</th>
+                                                <th>Unit</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="skid.line_ids" t-as="line">
+                                                <tr>
+                                                    <td><t t-esc="line_index + 1"/></td>
+                                                    <td><t t-esc="line.product_id.name"/></td>
+                                                    <td><t t-esc="line.lot_id.name or '-'"/></td>
+                                                    <td class="text-end"><t t-esc="line.qty_done"/></td>
+                                                    <td><t t-esc="line.product_uom_id.name"/></td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </t>
+
+                            <!-- Products Summary -->
+                            <h4 class="mt-4">Products Summary</h4>
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Product</th>
+                                        <th class="text-end">Total Qty</th>
+                                        <th>Unit</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="picking.move_ids" t-as="move">
+                                        <tr>
+                                            <td><t t-esc="move.product_id.name"/></td>
+                                            <td class="text-end"><t t-esc="move.quantity"/></td>
+                                            <td><t t-esc="move.product_uom.name"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+
+                            <!-- Signatures -->
+                            <div class="row mt-5">
+                                <div class="col-4 text-center">
+                                    <div style="border-top: 1px solid #000; padding-top: 8px;">
+                                        Picker Signature
+                                    </div>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <div style="border-top: 1px solid #000; padding-top: 8px;">
+                                        Checker Signature
+                                    </div>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <div style="border-top: 1px solid #000; padding-top: 8px;">
+                                        Driver / Carrier Signature
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </t>
+                </t>
+            </t>
+        </template>
+
+    </data>
+</odoo>
