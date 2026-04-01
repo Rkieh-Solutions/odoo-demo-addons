@@ -27,6 +27,7 @@
         'views/picking_workflow_views.xml',
         'views/product_views.xml',
         'views/quality_capa_views.xml',
+        'views/picking_route_map_views.xml',
         'views/dashboards/warehouse_dashboard_views.xml',
         'views/mobile_views.xml',
         # Report

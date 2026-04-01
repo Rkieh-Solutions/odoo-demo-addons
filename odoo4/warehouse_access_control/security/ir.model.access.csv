@@ -186,3 +186,5 @@ access_uom_all_r12,uom.all.r12,uom.model_uom_uom,warehouse_access_control.group_
 access_uom_all_r13,uom.all.r13,uom.model_uom_uom,warehouse_access_control.group_sales_coordinator,1,0,0,0
 access_uom_all_r14,uom.all.r14,uom.model_uom_uom,warehouse_access_control.group_finance_viewer,1,0,0,0
 access_uom_all_r15,uom.all.r15,uom.model_uom_uom,warehouse_access_control.group_quality_manager,1,0,0,0
+access_picking_route_map_wizard,picking.route.map.wizard,warehouse_access_control.model_picking_route_map_wizard,base.group_user,1,1,1,1
+access_picking_route_map_line_wizard,picking.route.map.line.wizard,warehouse_access_control.model_picking_route_map_line_wizard,base.group_user,1,1,1,1
