@@ -70,6 +70,8 @@
                 <xpath expr="//field[@name='type']" position="after">
                     <field name="incoming_qty" string="On Order (Incoming)" readonly="1"
                            groups="warehouse_access_control.group_inventory_editor,warehouse_access_control.group_inventory_viewer,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_purchasing_user"/>
+                    <field name="cargo_stacking_priority" string="Cargo Packing Logic"
+                           groups="warehouse_access_control.group_inventory_editor,warehouse_access_control.group_warehouse_supervisor"/>
                 </xpath>
 
                 <!-- Add Main / Sub category fields -->

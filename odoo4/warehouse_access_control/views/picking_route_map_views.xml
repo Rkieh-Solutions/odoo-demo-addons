@@ -1,24 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Map Wizard View -->
     <record id="view_picking_route_map_wizard_form" model="ir.ui.view">
         <field name="name">picking.route.map.wizard.form</field>
         <field name="model">picking.route.map.wizard</field>
         <field name="arch" type="xml">
-            <form string="Picking Route Map">
+            <form string="Cargo Setup &amp; Map Visualizer">
                 <sheet>
                     <div class="oe_title mb-4">
-                        <h1>Route Map for <field name="picking_id" readonly="1" class="oe_inline"/></h1>
-                        <p class="text-muted">Follow these steps in order for the most efficient picking path.</p>
+                        <h1>Loading sequence for <field name="picking_id" readonly="1" class="oe_inline"/></h1>
+                        <p class="text-muted">Follow this Sequence to correctly load heavy items on bottom, fragile on top.</p>
                     </div>
                     
+                    <group invisible="not map_image">
+                        <field name="map_image" widget="image" nolabel="1" class="mx-auto d-block" style="max-height: 400px; max-width: 100%; border: 1px solid #ddd; border-radius: 4px;"/>
+                    </group>
+
+                    <separator string="Cargo Loading Order"/>
                     <field name="line_ids">
-                        <list create="0" edit="0" delete="0" decoration-success="is_picked" default_order="step">
-                            <field name="step" string="Step No." widget="badge"/>
-                            <field name="location_code" string="Walk to Bin"/>
-                            <field name="product_id" string="Pick Product"/>
-                            <field name="qty" string="Qty to Pick"/>
-                            <field name="is_picked" string="Picked?" widget="boolean_toggle" readonly="1"/>
+                        <list create="0" edit="0" delete="0" decoration-success="is_picked" decoration-danger="'Fragile' in stacking_priority" decoration-info="'Heavy' in stacking_priority" default_order="step">
+                            <field name="step" string="Load Order" widget="badge"/>
+                            <field name="product_id" string="Product"/>
+                            <field name="location_code" string="Location (Where to get it)"/>
+                            <field name="qty" string="Qty"/>
+                            <field name="stacking_priority" string="Logic"/>
+                            <field name="is_picked" string="Loaded?" widget="boolean_toggle" readonly="1"/>
                         </list>
                     </field>
                 </sheet>
@@ -30,24 +35,21 @@
         </field>
     </record>
 
-    <!-- Action for the Wizard -->
     <record id="action_picking_route_map_wizard" model="ir.actions.act_window">
-        <field name="name">Route Map</field>
+        <field name="name">Map &amp; Cargo Order</field>
         <field name="res_model">picking.route.map.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
     </record>
 
-    <!-- Inherit Picking to Add Smart Button/Action -->
     <record id="view_picking_form_route_map_inherit" model="ir.ui.view">
         <field name="name">stock.picking.form.route.map.inherit</field>
         <field name="model">stock.picking</field>
         <field name="inherit_id" ref="warehouse_access_control.view_picking_warehouse_form"/>
         <field name="arch" type="xml">
-            <!-- Add a button in header directly -->
             <xpath expr="//header" position="inside">
                 <button name="%(action_picking_route_map_wizard)d"
-                        string="🗺️ Map Route"
+                        string="📦 Map &amp; Cargo Order"
                         type="action"
                         class="btn-info"
                         groups="warehouse_access_control.group_picker,warehouse_access_control.group_warehouse_supervisor"

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_warehouse_map_form" model="ir.ui.view">
+        <field name="name">warehouse.map.form</field>
+        <field name="model">warehouse.map</field>
+        <field name="arch" type="xml">
+            <form string="Warehouse Map Area">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="bg-danger" invisible="active == False"/>
+                    <field name="image" widget="image" class="oe_avatar" options="{'size': [900, 900]}"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="E.g. Main Layout Blueprint"/></h1>
+                    </div>
+                    <group>
+                        <field name="active" invisible="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_warehouse_map_tree" model="ir.ui.view">
+        <field name="name">warehouse.map.tree</field>
+        <field name="model">warehouse.map</field>
+        <field name="arch" type="xml">
+            <list string="Maps">
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_warehouse_map_config" model="ir.actions.act_window">
+        <field name="name">Warehouse Map Images</field>
+        <field name="res_model">warehouse.map</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Add to standard Odoo Inventory > Configuration menu -->
+    <menuitem id="menu_standard_warehouse_map_config"
+              name="Warehouse Map Images"
+              parent="stock.menu_stock_config_settings"
+              action="action_warehouse_map_config"
+              sequence="120"
+              groups="stock.group_stock_manager"/>
+</odoo>

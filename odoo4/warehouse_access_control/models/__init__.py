@@ -7,3 +7,5 @@ from . import product_category_extend
 from . import quality_capa
 from . import quality_block
 from . import dashboard_data
+from . import warehouse_map
+from . import product_extend_map

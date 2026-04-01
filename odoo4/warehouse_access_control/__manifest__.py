@@ -25,6 +25,7 @@
         # Views — models must be loaded before views
         'views/warehouse_skid_views.xml',
         'views/picking_workflow_views.xml',
+        'views/warehouse_map_views.xml',
         'views/product_views.xml',
         'views/quality_capa_views.xml',
         'views/picking_route_map_views.xml',

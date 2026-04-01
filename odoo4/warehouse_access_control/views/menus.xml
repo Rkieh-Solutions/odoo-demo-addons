@@ -20,6 +20,7 @@
         <menuitem id="menu_wh_inventory" name="Inventory" parent="menu_warehouse_portal_root" sequence="30" groups="warehouse_access_control.group_inventory_viewer,warehouse_access_control.group_inventory_editor,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_report_viewer"/>
         <menuitem id="menu_wh_products" name="Products" parent="menu_wh_inventory" action="product.product_template_action_all" sequence="10" groups="warehouse_access_control.group_inventory_viewer,warehouse_access_control.group_inventory_editor,warehouse_access_control.group_warehouse_supervisor"/>
         <menuitem id="menu_wh_stock" name="Current Stock" parent="menu_wh_inventory" action="stock.stock_quant_action" sequence="20" groups="warehouse_access_control.group_inventory_viewer,warehouse_access_control.group_inventory_editor,warehouse_access_control.group_warehouse_supervisor"/>
+        <menuitem id="menu_wh_maps" name="Warehouse Map Images" parent="menu_wh_inventory" action="action_warehouse_map_config" sequence="30" groups="warehouse_access_control.group_warehouse_supervisor"/>
 
         <!-- MANUFACTURING -->
         <menuitem id="menu_wh_manufacturing" name="Manufacturing" parent="menu_warehouse_portal_root" sequence="40" groups="warehouse_access_control.group_shop_floor_operator,warehouse_access_control.group_production_planner,warehouse_access_control.group_maintenance_user,warehouse_access_control.group_warehouse_supervisor"/>
