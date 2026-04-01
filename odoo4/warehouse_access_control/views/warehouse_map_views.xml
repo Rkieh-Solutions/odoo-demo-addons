@@ -36,11 +36,10 @@
         <field name="view_mode">list,form</field>
     </record>
 
-    <!-- Add to standard Odoo Inventory > Configuration menu -->
+    <!-- Add to standard Odoo Inventory > Configuration menu under Warehouse Management -->
     <menuitem id="menu_standard_warehouse_map_config"
               name="Warehouse Map Images"
-              parent="stock.menu_stock_config_settings"
+              parent="stock.menu_warehouse_config"
               action="action_warehouse_map_config"
-              sequence="120"
-              groups="stock.group_stock_manager"/>
+              sequence="120"/>
 </odoo>
