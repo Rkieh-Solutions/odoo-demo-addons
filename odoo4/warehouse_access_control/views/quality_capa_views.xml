@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ── CAPA List ── -->
+        <record id="view_quality_capa_list" model="ir.ui.view">
+            <field name="name">quality.capa.list</field>
+            <field name="model">quality.capa</field>
+            <field name="arch" type="xml">
+                <list string="CAPA Actions" default_order="create_date desc"
+                      decoration-danger="status == 'new' and deadline and deadline &lt; current_date"
+                      decoration-success="status == 'closed'"
+                      decoration-muted="status == 'resolved'">
+                    <field name="name" string="Reference"/>
+                    <field name="title"/>
+                    <field name="alert_id" optional="show"/>
+                    <field name="product_id" optional="show"/>
+                    <field name="responsible_id"/>
+                    <field name="deadline" optional="show"/>
+                    <field name="priority" widget="priority"/>
+                    <field name="status" widget="badge"
+                           decoration-danger="status == 'new'"
+                           decoration-warning="status == 'in_progress'"
+                           decoration-success="status in ('resolved','closed')"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- ── CAPA Form ── -->
+        <record id="view_quality_capa_form" model="ir.ui.view">
+            <field name="name">quality.capa.form</field>
+            <field name="model">quality.capa</field>
+            <field name="arch" type="xml">
+                <form string="CAPA">
+                    <header>
+                        <button name="action_in_progress" string="Start"
+                                type="object" class="btn-primary"
+                                invisible="status != 'new'"/>
+                        <button name="action_resolve" string="Mark Resolved"
+                                type="object" class="btn-success"
+                                invisible="status != 'in_progress'"/>
+                        <button name="action_close" string="Close"
+                                type="object" class="btn-secondary"
+                                invisible="status != 'resolved'"/>
+                        <button name="action_reopen" string="Re-Open"
+                                type="object"
+                                invisible="status not in ('resolved','closed')"/>
+                        <field name="status" widget="statusbar"
+                               statusbar_visible="new,in_progress,resolved,closed"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" readonly="1"/>
+                                <field name="priority" widget="priority" class="ms-2"/>
+                            </h1>
+                            <h3><field name="title" placeholder="CAPA Title..."/></h3>
+                        </div>
+                        <group>
+                            <group string="References">
+                                <field name="alert_id"/>
+                                <field name="product_id"/>
+                                <field name="lot_id"
+                                       domain="[('product_id','=',product_id)]"/>
+                            </group>
+                            <group string="Responsibility">
+                                <field name="responsible_id"/>
+                                <field name="team_id"/>
+                                <field name="deadline"/>
+                                <field name="close_date" readonly="1"
+                                       invisible="not close_date"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Actions">
+                                <group>
+                                    <field name="root_cause"
+                                           placeholder="Describe the root cause of the issue..."/>
+                                    <field name="corrective_action"
+                                           placeholder="What immediate action was taken to fix the problem?"/>
+                                    <field name="preventive_action"
+                                           placeholder="What long-term action prevents recurrence?"/>
+                                </group>
+                            </page>
+                            <page string="Notes">
+                                <field name="notes"/>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+
+        <!-- ── CAPA Action ── -->
+        <record id="action_quality_capa" model="ir.actions.act_window">
+            <field name="name">CAPA Actions</field>
+            <field name="res_model">quality.capa</field>
+            <field name="view_mode">list,form</field>
+            <field name="context">{'search_default_filter_open': 1}</field>
+        </record>
+
+        <!-- ── Add CAPA button to Quality Alert form ── -->
+        <record id="view_quality_alert_capa_extend" model="ir.ui.view">
+            <field name="name">quality.alert.capa.extend</field>
+            <field name="model">quality.alert</field>
+            <field name="inherit_id" ref="quality_control.quality_alert_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//sheet" position="before">
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_capa" type="object"
+                                class="oe_stat_button" icon="fa-shield"
+                                invisible="capa_count == 0">
+                            <field name="capa_count" widget="statinfo" string="CAPA"/>
+                        </button>
+                    </div>
+                </xpath>
+                <xpath expr="//footer" position="before">
+                    <div>
+                        <button name="action_create_capa" string="Create CAPA"
+                                type="object" class="btn-secondary"/>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- ── Add quality check count to Picking form ── -->
+        <record id="view_picking_quality_check_btn" model="ir.ui.view">
+            <field name="name">stock.picking.quality.check.btn</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='button_box']" position="inside">
+                    <button name="action_view_quality_checks" type="object"
+                            class="oe_stat_button" icon="fa-check-circle"
+                            groups="warehouse_access_control.group_quality_user,warehouse_access_control.group_quality_manager,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_purchasing_user">
+                        <span class="o_stat_text">Quality Checks</span>
+                    </button>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- ── Quality menu additions ── -->
+        <menuitem id="menu_wh_quality_capa"
+                  name="CAPA Actions"
+                  parent="menu_warehouse_portal_root"
+                  action="action_quality_capa"
+                  sequence="25"
+                  groups="warehouse_access_control.group_quality_manager,warehouse_access_control.group_warehouse_supervisor"/>
+
+    </data>
+</odoo>

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ── LIST VIEW ── -->
+        <record id="view_warehouse_skid_list" model="ir.ui.view">
+            <field name="name">warehouse.skid.list</field>
+            <field name="model">warehouse.skid</field>
+            <field name="arch" type="xml">
+                <list string="Skids" decoration-success="status=='checked'" decoration-warning="status=='picking'">
+                    <field name="name"/>
+                    <field name="sale_order_id"/>
+                    <field name="picker_id"/>
+                    <field name="checker_id"/>
+                    <field name="staging_location_id"/>
+                    <field name="weight"/>
+                    <field name="line_count" string="Lines"/>
+                    <field name="status" widget="badge"
+                           decoration-success="status in ('checked','dispatched')"
+                           decoration-warning="status in ('picking','pending_checking')"
+                           decoration-info="status=='checking'"/>
+                    <field name="picker_confirm_date"/>
+                    <field name="checker_confirm_date"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- ── FORM VIEW ── -->
+        <record id="view_warehouse_skid_form" model="ir.ui.view">
+            <field name="name">warehouse.skid.form</field>
+            <field name="model">warehouse.skid</field>
+            <field name="arch" type="xml">
+                <form string="Skid">
+                    <header>
+                        <button name="action_confirm_picked" string="Confirm Picked"
+                                type="object" class="btn-primary"
+                                groups="warehouse_access_control.group_picker"
+                                invisible="status != 'picking'"/>
+                        <button name="action_start_checking" string="Start Checking"
+                                type="object" class="btn-primary"
+                                groups="warehouse_access_control.group_checker"
+                                invisible="status != 'picked'"/>
+                        <button name="action_confirm_checked" string="Confirm Checked"
+                                type="object" class="btn-success"
+                                groups="warehouse_access_control.group_checker"
+                                invisible="status != 'checking'"/>
+                        <button name="action_dispatch" string="Mark Dispatched"
+                                type="object"
+                                groups="warehouse_access_control.group_dispatch_coordinator"
+                                invisible="status != 'checked'"/>
+                        <field name="status" widget="statusbar"
+                               statusbar_visible="draft,picking,picked,checking,checked,dispatched"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="name" readonly="1"/></h1>
+                        </div>
+                        <group>
+                            <group string="Order Info">
+                                <field name="picking_id"/>
+                                <field name="sale_order_id" readonly="1"/>
+                                <field name="staging_location_id"/>
+                            </group>
+                            <group string="Weight &amp; Responsibility">
+                                <field name="weight"/>
+                                <field name="weight_verified"/>
+                                <field name="weight_note" invisible="not weight_verified"/>
+                                <field name="picker_id" readonly="1"/>
+                                <field name="checker_id" readonly="1"/>
+                            </group>
+                        </group>
+                        <group string="Timestamps">
+                            <field name="picker_confirm_date" readonly="1"/>
+                            <field name="checker_confirm_date" readonly="1"/>
+                        </group>
+                        <notebook>
+                            <page string="Contents">
+                                <field name="line_ids">
+                                    <list editable="bottom">
+                                        <field name="product_id"/>
+                                        <field name="lot_id"/>
+                                        <field name="qty_done"/>
+                                        <field name="product_uom_id" readonly="1"/>
+                                        <field name="move_line_id" optional="hide"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Notes">
+                                <field name="notes" placeholder="Add notes..."/>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+
+        <!-- ── SEARCH VIEW ── -->
+        <record id="view_warehouse_skid_search" model="ir.ui.view">
+            <field name="name">warehouse.skid.search</field>
+            <field name="model">warehouse.skid</field>
+            <field name="arch" type="xml">
+                <search string="Search Skids">
+                    <field name="name" string="Skid ID"/>
+                    <field name="sale_order_id"/>
+                    <field name="picker_id"/>
+                    <filter string="My Skids" name="my_skids" domain="[('picker_id','=',uid)]"/>
+                    <filter string="Pending Checking" name="pending_check" domain="[('status','=','picked')]"/>
+                    <filter string="Ready for Dispatch" name="ready_dispatch" domain="[('status','=','checked')]"/>
+                    <separator/>
+                    <filter string="Group by Status" name="group_status" context="{'group_by': 'status'}"/>
+                    <filter string="Group by Order" name="group_order" context="{'group_by': 'sale_order_id'}"/>
+                    <filter string="Group by Picker" name="group_picker" context="{'group_by': 'picker_id'}"/>
+                </search>
+            </field>
+        </record>
+
+        <!-- ── ACTION ── -->
+        <record id="action_warehouse_skid" model="ir.actions.act_window">
+            <field name="name">Skids</field>
+            <field name="res_model">warehouse.skid</field>
+            <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="view_warehouse_skid_search"/>
+            <field name="context">{}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    No skids yet. Create one from a picking.
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

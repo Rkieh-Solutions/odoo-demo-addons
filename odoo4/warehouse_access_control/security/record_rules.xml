@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- ── PICKER: only see assigned pickings ── -->
+        <record id="rule_picker_own_picking" model="ir.rule">
+            <field name="name">Picker: own assigned pickings only</field>
+            <field name="model_id" ref="stock.model_stock_picking"/>
+            <field name="groups" eval="[(4, ref('warehouse_access_control.group_picker'))]"/>
+            <field name="domain_force">['|', ('custom_status', '=', 'released'), ('user_id', '=', user.id)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- ── PICKER: own skids only ── -->
+        <record id="rule_picker_own_skid" model="ir.rule">
+            <field name="name">Picker: own skids only</field>
+            <field name="model_id" ref="warehouse_access_control.model_warehouse_skid"/>
+            <field name="groups" eval="[(4, ref('warehouse_access_control.group_picker'))]"/>
+            <field name="domain_force">['|', ('picker_id', '=', user.id), ('picker_id', '=', False)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- ── CHECKER: only see pickings in status Pending Checking or above ── -->
+        <record id="rule_checker_picking" model="ir.rule">
+            <field name="name">Checker: pickings pending check only</field>
+            <field name="model_id" ref="stock.model_stock_picking"/>
+            <field name="groups" eval="[(4, ref('warehouse_access_control.group_checker'))]"/>
+            <field name="domain_force">[('custom_status', 'in', ['pending_checking', 'checking_in_progress', 'checked_complete', 'ready_dispatch'])]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- ── QUALITY USER: own quality checks only ── -->
+        <record id="rule_quality_user_own_check" model="ir.rule">
+            <field name="name">Quality User: own checks only</field>
+            <field name="model_id" ref="quality_control.model_quality_check"/>
+            <field name="groups" eval="[(4, ref('warehouse_access_control.group_quality_user'))]"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- ── MAINTENANCE USER: own requests only ── -->
+        <record id="rule_maintenance_own_request" model="ir.rule">
+            <field name="name">Maintenance User: own requests only</field>
+            <field name="model_id" ref="maintenance.model_maintenance_request"/>
+            <field name="groups" eval="[(4, ref('warehouse_access_control.group_maintenance_user'))]"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- ── SHOP FLOOR OPERATOR: only assigned MOs ── -->
+        <record id="rule_floor_own_mo" model="ir.rule">
+            <field name="name">Shop Floor: assigned production orders only</field>
+            <field name="model_id" ref="mrp.model_mrp_production"/>
+            <field name="groups" eval="[(4, ref('warehouse_access_control.group_shop_floor_operator'))]"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+    </data>
+</odoo>

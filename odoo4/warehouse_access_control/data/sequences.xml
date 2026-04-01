@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="sequence_quality_capa" model="ir.sequence">
+            <field name="name">Quality CAPA</field>
+            <field name="code">quality.capa</field>
+            <field name="prefix">CAPA/%(year)s/</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>
