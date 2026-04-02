@@ -17,17 +17,6 @@ class StockPickingQualityBlock(models.Model):
         }
 
     def button_validate(self):
-        """Block validation if any quality check on this picking has failed."""
-        for picking in self:
-            failed = self.env['quality.check'].search([
-                ('picking_id', '=', picking.id),
-                ('quality_state', '=', 'fail'),
-            ])
-            if failed:
-                products = ', '.join(failed.mapped('product_id.name'))
-                raise UserError(_(
-                    'Cannot validate transfer — the following products '
-                    'have FAILED quality checks:\n\n%s\n\n'
-                    'Resolve all quality issues before proceeding.'
-                ) % products)
+        """Allow validation even if quality check fails for Supplier Dashboard tracking."""
+        pass
         return super().button_validate()

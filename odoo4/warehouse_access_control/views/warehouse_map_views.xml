@@ -6,7 +6,7 @@
         <field name="arch" type="xml">
             <form string="Warehouse Map Area">
                 <sheet>
-                    <widget name="web_ribbon" title="Archived" bg_color="bg-danger" invisible="active == False"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="bg-danger" invisible="active"/>
                     <field name="image" widget="image" class="oe_avatar" options="{'size': [900, 900]}"/>
                     <div class="oe_title">
                         <label for="name"/>
