@@ -12,7 +12,7 @@
                     </div>
                     
                     <group invisible="not map_image">
-                        <field name="map_image" widget="image" nolabel="1" class="mx-auto d-block" style="max-height: 400px; max-width: 100%; border: 1px solid #ddd; border-radius: 4px;"/>
+                        <field name="map_image" widget="image" nolabel="1" class="mx-auto d-block" style="max-height: 800px; max-width: 100%; border: 1px solid #ddd; border-radius: 4px;" options="{'zoom': true}"/>
                     </group>
 
                     <separator string="Cargo Loading Order"/>
