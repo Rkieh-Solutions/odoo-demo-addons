@@ -35,6 +35,7 @@
         # Report
         'report/delivery_note_report.xml',
         'report/cargo_instructions_report.xml',
+        'report/quality_check_report.xml',
         # Menus — last, after all actions are defined
         'views/menus.xml',
         # Post-install data

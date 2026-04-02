@@ -3,7 +3,7 @@
 import OrderPaymentValidation from "@point_of_sale/app/utils/order_payment_validation";
 import { patch } from "@web/core/utils/patch";
 import { _t } from "@web/core/l10n/translation";
-import { ask } from "@point_of_sale/app/utils/make_awaitable_dialog";
+import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 
 patch(OrderPaymentValidation.prototype, {
     async isOrderValid(isForceValidate) {
@@ -15,21 +15,15 @@ patch(OrderPaymentValidation.prototype, {
             });
 
             if (overStockLines.length > 0) {
-                const productList = overStockLines.map(line => {
-                    const stock = line.product_id.qty_available || 0;
-                    return `${line.product_id.display_name} (Stock: ${stock}, In Cart: ${line.getQuantity()})`;
-                }).join(", ");
+                const line = overStockLines[0];
+                const stock = line.product_id.qty_available || 0;
 
-                const confirmed = await ask(this.pos.dialog, {
-                    title: _t("Out of Stock Warning"),
-                    body: _t(
-                        "The following products have insufficient stock: %s.\nAre you sure you want to validate this order?",
-                        productList
-                    ),
+                this.pos.env.services.dialog.add(AlertDialog, {
+                    title: _t("Warning: Out of Stock!"),
+                    body: `LOW QUANTITY QUANTITY IS (${stock})`
                 });
-                if (!confirmed) {
-                    return false;
-                }
+
+                return false;
             }
         }
         return await super.isOrderValid(...arguments);
