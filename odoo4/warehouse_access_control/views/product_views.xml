@@ -34,11 +34,7 @@
                            groups="warehouse_access_control.group_inventory_editor,warehouse_access_control.group_finance_viewer,warehouse_access_control.group_inventory_viewer"/>
                 </xpath>
 
-                <!-- Add category columns -->
-                <xpath expr="//field[@name='categ_id']" position="after">
-                    <field name="main_categ_id" string="Main Category" optional="show"/>
-                    <field name="sub_categ_id" string="Sub-Category" optional="show"/>
-                </xpath>
+                <!-- Removed undefined category columns -->
 
             </field>
         </record>
@@ -72,11 +68,7 @@
                            groups="warehouse_access_control.group_inventory_editor,warehouse_access_control.group_inventory_viewer,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_purchasing_user"/>
                 </xpath>
 
-                <!-- Add Main / Sub category fields -->
-                <xpath expr="//field[@name='categ_id']" position="after">
-                    <field name="main_categ_id" string="Main Category" readonly="1"/>
-                    <field name="sub_categ_id" string="Sub-Category"/>
-                </xpath>
+                <!-- Removed Main / Sub category fields for compatibility -->
 
             </field>
         </record>

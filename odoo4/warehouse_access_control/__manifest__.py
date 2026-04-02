@@ -27,6 +27,7 @@
         'views/picking_workflow_views.xml',
         'views/warehouse_map_views.xml',
         'views/product_views.xml',
+        'views/res_partner_quality_views.xml',
         'views/sale_purchase_map_views.xml',
         'views/quality_capa_views.xml',
         'views/picking_route_map_views.xml',

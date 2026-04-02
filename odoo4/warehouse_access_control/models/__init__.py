@@ -9,3 +9,4 @@ from . import quality_block
 from . import dashboard_data
 from . import warehouse_map
 from . import product_category_extend
+from . import res_partner_quality
