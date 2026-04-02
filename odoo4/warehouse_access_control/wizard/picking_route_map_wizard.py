@@ -38,19 +38,19 @@ class PickingRouteMapWizard(models.TransientModel):
             
             is_receipt = picking.picking_type_id.code == 'incoming'
             
-            def sort_key(l):
-                tier = l.product_id.categ_id.cargo_tier or 50
-                loc_seq = l.location_dest_id.picking_sequence if is_receipt else l.location_id.picking_sequence
+            def sort_key(mv):
+                tier = mv.product_id.categ_id.cargo_tier or 50
+                loc_seq = mv.location_dest_id.picking_sequence if is_receipt else mv.location_id.picking_sequence
                 return (tier, loc_seq or 999)
                 
-            move_lines = picking.move_line_ids.sorted(key=sort_key)
+            moves = picking.move_ids.sorted(key=sort_key)
             
             lines = []
             step = 1
-            for ml in move_lines:
-                loc = ml.location_dest_id if is_receipt else ml.location_id
-                c_type = ml.product_id.categ_id.cargo_stacking_type or 'normal'
-                c_tier = ml.product_id.categ_id.cargo_tier or 50
+            for mv in moves:
+                loc = mv.location_dest_id if is_receipt else mv.location_id
+                c_type = mv.product_id.categ_id.cargo_stacking_type or 'normal'
+                c_tier = mv.product_id.categ_id.cargo_tier or 50
                 
                 type_label = dict(self.env['product.category']._fields['cargo_stacking_type'].selection).get(c_type)
                 final_label = f"[{type_label}] Tier {c_tier}"
@@ -59,11 +59,10 @@ class PickingRouteMapWizard(models.TransientModel):
                     'step': step,
                     'location_id': loc.id,
                     'location_code': loc.location_code or loc.name,
-                    'product_id': ml.product_id.id,
+                    'product_id': mv.product_id.id,
                     'stacking_priority': final_label,
-                    'qty': getattr(ml, 'quantity', getattr(ml, 'reserved_uom_qty', getattr(ml, 'qty_todo', 0.0))),
-                    'move_line_id': ml.id,
-                    'is_picked': ml.qty_done > 0
+                    'qty': getattr(mv, 'product_uom_qty', 0.0),
+                    'is_picked': mv.quantity > 0
                 }))
                 step += 1
             res['line_ids'] = lines
