@@ -23,7 +23,32 @@
                         
                         <t t-if="doc.map_image">
                             <div class="row justify-content-center mb-4">
-                                <img t-att-src="image_data_uri(doc.map_image)" style="max-height: 300px; max-width: 100%; border: 1px solid #ccc;"/>
+                                <div style="position: relative; display: inline-block; border: 2px solid #333; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                                    <img t-att-src="image_data_uri(doc.map_image)" style="max-height: 500px; max-width: 100%; display: block;"/>
+                                    <!-- Visual Markers Overlay -->
+                                    <t t-foreach="doc.line_ids" t-as="line">
+                                        <t t-if="line.x_pos or line.y_pos">
+                                            <div t-attf-style="position: absolute; 
+                                                              left: #{line.x_pos}%; 
+                                                              top: #{line.y_pos}%; 
+                                                              transform: translate(-50%, -50%);
+                                                              width: 24px; 
+                                                              height: 24px; 
+                                                              background-color: #{'#dc3545' if 'Fragile' in line.stacking_priority else '#007bff'}; 
+                                                              color: white; 
+                                                              border: 2px solid white;
+                                                              border-radius: 50%; 
+                                                              text-align: center; 
+                                                              font-size: 12px; 
+                                                              font-weight: bold;
+                                                              line-height: 20px;
+                                                              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                                                              z-index: 10;">
+                                                <t t-esc="line.step"/>
+                                            </div>
+                                        </t>
+                                    </t>
+                                </div>
                             </div>
                         </t>
 

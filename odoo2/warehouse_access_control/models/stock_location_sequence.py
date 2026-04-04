@@ -19,6 +19,11 @@ class StockLocation(models.Model):
         store=True,
         help='Formatted code: Aisle-Rack-Bin',
     )
+    
+    # ── Visual Map Tracking ────────────────────────────────────────────
+    x_pos = fields.Integer(string='X Position (%)', default=0, help='0-100% horizontal position on map image')
+    y_pos = fields.Integer(string='Y Position (%)', default=0, help='0-100% vertical position on map image')
+    warehouse_map_id = fields.Many2one('warehouse.map', string='Warehouse Map')
 
     def _compute_location_code(self):
         for loc in self:

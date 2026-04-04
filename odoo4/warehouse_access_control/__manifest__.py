@@ -24,6 +24,7 @@
         'data/sequences.xml',
         # Views - models must be loaded before views
         'views/warehouse_skid_views.xml',
+        'views/stock_location_views.xml',
         'views/picking_workflow_views.xml',
         'views/warehouse_map_views.xml',
         'views/product_views.xml',

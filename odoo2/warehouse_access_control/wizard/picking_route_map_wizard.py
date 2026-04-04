@@ -67,7 +67,9 @@ class PickingRouteMapWizard(models.TransientModel):
                     'product_id': mv.product_id.id,
                     'stacking_priority': final_label,
                     'qty': getattr(mv, 'product_uom_qty', getattr(mv, 'quantity', 0.0)),
-                    'is_picked': getattr(mv, 'quantity_done', getattr(mv, 'quantity', 0.0)) > 0
+                    'is_picked': getattr(mv, 'quantity_done', getattr(mv, 'quantity', 0.0)) > 0,
+                    'x_pos': loc.x_pos,
+                    'y_pos': loc.y_pos,
                 }))
                 step += 1
             res['line_ids'] = lines
@@ -95,6 +97,8 @@ class PickingRouteMapLineWizard(models.TransientModel):
     qty = fields.Float(string='Quantity')
     move_line_id = fields.Many2one('stock.move.line')
     is_picked = fields.Boolean(string='Done?', readonly=True)
+    x_pos = fields.Integer(string='X')
+    y_pos = fields.Integer(string='Y')
 
     @api.depends('step')
     def _compute_direction_arrow(self):

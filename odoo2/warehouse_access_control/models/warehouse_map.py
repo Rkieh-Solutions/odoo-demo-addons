@@ -7,3 +7,4 @@ class WarehouseMap(models.Model):
     name = fields.Char(string='Map Name', required=True, default='Main Warehouse Blueprint')
     image = fields.Image(string='Map Upload (Image)', max_width=1920, max_height=1920)
     active = fields.Boolean(default=True)
+    location_ids = fields.One2many('stock.location', 'warehouse_map_id', string='Mapped Locations')

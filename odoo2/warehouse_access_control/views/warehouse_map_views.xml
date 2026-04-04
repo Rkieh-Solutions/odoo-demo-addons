@@ -15,6 +15,18 @@
                     <group>
                         <field name="active" invisible="1"/>
                     </group>
+                    <notebook>
+                        <page string="Mapped Locations" name="mapped_locations">
+                            <field name="location_ids" context="{'default_warehouse_map_id': active_id}">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="location_code"/>
+                                    <field name="x_pos"/>
+                                    <field name="y_pos"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>
