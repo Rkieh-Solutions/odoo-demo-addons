@@ -91,6 +91,15 @@ patch(PosStore.prototype, {
 
             console.log("[POS Stock Alert] safe_qty_available:", safe_qty_available, "new_total:", new_total_qty, "remaining:", remaining_qty, "threshold:", threshold);
 
+            // 🚨 PRIMARY CHECK: Product is already out of stock (qty <= 0)
+            if (safe_qty_available <= 0) {
+                await this.dialog.add(AlertDialog, {
+                    title: _t("⚠️ Out of Stock!"),
+                    body: _t("Cannot add this product. Quantity is (%s).", safe_qty_available),
+                });
+                return;
+            }
+
             if (remaining_qty < 0) {
                 // Blocks the sale because we exceed the stock
                 await this.dialog.add(AlertDialog, {
