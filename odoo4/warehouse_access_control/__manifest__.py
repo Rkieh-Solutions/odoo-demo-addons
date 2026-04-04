@@ -1,5 +1,5 @@
 {
-    'name': 'Warehouse Access Control',
+    'name': 'Warehouse Access Control (Odoo 4)',
     'version': '19.0.3.0.0',
     'summary': '15 custom warehouse user roles — not counted in Odoo license',
     'category': 'Warehouse',
