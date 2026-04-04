@@ -29,13 +29,6 @@ class ResPartnerQuality(models.Model):
 
     def _compute_vendor_quality_stats(self):
         for partner in self:
-            # Only calculate for actual vendors
-            if not partner.supplier_rank and not partner.is_company:
-                partner.custom_accepted_qty = 0.0
-                partner.custom_failed_qty = 0.0
-                partner.custom_damage_rate = 0.0
-                partner.custom_vendor_rating = 'excellent'
-                continue
 
             # Fetch all incoming transfers from this vendor that are DONE
             pickings = self.env['stock.picking'].search([
@@ -54,8 +47,8 @@ class ResPartnerQuality(models.Model):
             ])
 
             for check in quality_checks:
-                # Odoo Studio places custom fields dynamically.
-                # We try extracting the exact failed qty if the user typed it into a custom box.
+                # Odoo standard quality check doesn't store direct quantities easily.
+                # If custom fields are missing, assume the fail applies to the related standard move
                 if hasattr(check, 'x_quantity_failed'):
                     total_failed += getattr(check, 'x_quantity_failed')
                 elif hasattr(check, 'x_failed_qty'):
@@ -63,7 +56,8 @@ class ResPartnerQuality(models.Model):
                 elif hasattr(check, 'qty_line'):
                     total_failed += check.qty_line
                 else:
-                    total_failed += check.product_id.qty_available
+                    move = pickings.move_ids.filtered(lambda m: m.product_id.id == check.product_id.id)
+                    total_failed += sum(move.mapped('quantity'))
 
             total_accepted = total_received - total_failed
 
@@ -74,12 +68,13 @@ class ResPartnerQuality(models.Model):
             total_overall = total_accepted + total_failed
             rate = (total_failed / total_overall * 100.0) if total_overall > 0 else 0.0
 
+            company = self.env.company
             # Assign Rating Badge
-            if rate <= 5.0:
+            if rate <= company.quality_excellent_limit:
                 badge = 'excellent'
-            elif rate <= 15.0:
+            elif rate <= company.quality_good_limit:
                 badge = 'good'
-            elif rate <= 30.0:
+            elif rate <= company.quality_average_limit:
                 badge = 'average'
             else:
                 badge = 'poor'
