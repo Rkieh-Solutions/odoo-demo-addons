@@ -27,25 +27,18 @@ class WarehouseDashboard(models.Model):
             rec.orders_with_exceptions = Picking.search_count([('exception_flag', '=', True)])
 
     # ── Quality KPIs ──────────────────────────────────────────
-    quality_checks_today = fields.Integer(compute='_compute_quality_kpis')
-    quality_pass_today = fields.Integer(compute='_compute_quality_kpis')
-    quality_fail_today = fields.Integer(compute='_compute_quality_kpis')
-    open_alerts = fields.Integer(compute='_compute_quality_kpis')
-    open_capa = fields.Integer(compute='_compute_quality_kpis')
+    # quality_checks_today = fields.Integer(compute='_compute_quality_kpis')
+    # quality_pass_today = fields.Integer(compute='_compute_quality_kpis')
+    # quality_fail_today = fields.Integer(compute='_compute_quality_kpis')
+    # open_alerts = fields.Integer(compute='_compute_quality_kpis')
+    # open_capa = fields.Integer(compute='_compute_quality_kpis')
 
-    @api.depends_context('uid')
     def _compute_quality_kpis(self):
-        today = fields.Date.today()
-        Check = self.env['quality.check']
-        Alert = self.env['quality.alert']
-        Capa = self.env['quality.capa']
-        for rec in self:
-            checks_today = Check.search([('create_date', '>=', today)])
-            rec.quality_checks_today = len(checks_today)
-            rec.quality_pass_today = len(checks_today.filtered(lambda c: c.quality_state == 'pass'))
-            rec.quality_fail_today = len(checks_today.filtered(lambda c: c.quality_state == 'fail'))
-            rec.open_alerts = Alert.search_count([('stage_id.done', '=', False)])
-            rec.open_capa = Capa.search_count([('status', 'in', ['new', 'in_progress'])])
+        self.quality_checks_today = 0
+        self.quality_pass_today = 0
+        self.quality_fail_today = 0
+        self.open_alerts = 0
+        self.open_capa = 0
 
     # ── Inventory KPIs ────────────────────────────────────────
     low_stock_count = fields.Integer(compute='_compute_inventory_kpis')
@@ -69,13 +62,10 @@ class WarehouseDashboard(models.Model):
     mo_confirmed = fields.Integer(compute='_compute_mrp_kpis')
     mo_in_progress = fields.Integer(compute='_compute_mrp_kpis')
     mo_late = fields.Integer(compute='_compute_mrp_kpis')
-    open_maintenance = fields.Integer(compute='_compute_mrp_kpis')
+    # open_maintenance = fields.Integer(compute='_compute_mrp_kpis')
 
-    @api.depends_context('uid')
     def _compute_mrp_kpis(self):
-        today = fields.Date.today()
         MO = self.env['mrp.production']
-        Maint = self.env['maintenance.request']
         for rec in self:
             rec.mo_confirmed = MO.search_count([('state', '=', 'confirmed')])
             rec.mo_in_progress = MO.search_count([('state', '=', 'progress')])
@@ -83,9 +73,9 @@ class WarehouseDashboard(models.Model):
                 ('state', 'in', ['confirmed', 'progress']),
                 ('date_deadline', '<', fields.Datetime.now()),
             ])
-            rec.open_maintenance = Maint.search_count([
-                ('stage_id.done', '=', False)
-            ])
+            # rec.open_maintenance = self.env['maintenance.request'].search_count([
+            #     ('stage_id.done', '=', False)
+            # ])
 
     @api.model
     def get_or_create_dashboard(self):
