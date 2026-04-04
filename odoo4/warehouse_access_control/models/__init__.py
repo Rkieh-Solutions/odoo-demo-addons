@@ -1,4 +1,5 @@
 from . import warehouse_skid
+from . import order_line_tier
 from . import product_margin
 from . import stock_picking_extend
 from . import stock_location_sequence
