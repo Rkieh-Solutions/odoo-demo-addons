@@ -5,7 +5,7 @@
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//group[@name='purchase']" position="inside">
+            <xpath expr="//page[@name='sales_purchase']/group" position="inside">
                 <group name="quality_stats" string="Lifetime Quality Performance">
                     <field name="custom_accepted_qty" widget="integer"/>
                     <field name="custom_failed_qty" widget="integer"/>
