@@ -5,12 +5,13 @@
         <field name="model">stock.location</field>
         <field name="inherit_id" ref="stock.view_location_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//group[@name='localization']" position="after">
-                <group string="Visual Map Positioning" name="map_positioning">
+            <!-- Insert our map coordinate group after the 'usage' field which exists in all Odoo versions -->
+            <xpath expr="//field[@name='usage']" position="after">
+                <group string="Visual Map Position" name="group_map_position">
                     <field name="warehouse_map_id"/>
-                    <label for="x_pos" string="Coordinate (X, Y)"/>
+                    <label for="x_pos" string="Position on Map (X % , Y %)"/>
                     <div class="o_row">
-                        <field name="x_pos" class="oe_inline"/> % , 
+                        <field name="x_pos" class="oe_inline"/> % ,&#160;
                         <field name="y_pos" class="oe_inline"/> %
                     </div>
                 </group>
