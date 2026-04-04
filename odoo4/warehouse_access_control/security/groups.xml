@@ -9,24 +9,16 @@
              and therefore do NOT count toward Odoo license.
         ============================================================ -->
 
-        <!-- Module category for grouping in settings -->
         <record id="module_category_warehouse_custom" model="ir.module.category">
             <field name="name">Warehouse Custom Roles</field>
-            <field name="description">Custom warehouse roles outside standard Odoo license</field>
+            <field name="description">Custom warehouse roles</field>
             <field name="sequence">100</field>
-        </record>
-
-        <!-- Privilege (groups container) for Odoo 19 -->
-        <record id="privilege_warehouse_custom" model="res.groups.privilege">
-            <field name="name">Warehouse Custom Roles</field>
-            <field name="sequence">100</field>
-            <field name="category_id" ref="module_category_warehouse_custom"/>
         </record>
 
         <!-- 1. Quality User -->
         <record id="group_quality_user" model="res.groups">
             <field name="name">Quality User</field>
-            <field name="privilege_id" ref="privilege_warehouse_custom"/>
+            <field name="category_id" ref="module_category_warehouse_custom"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
             <field name="comment">Perform quality checks and create quality alerts</field>
         </record>
@@ -34,7 +26,7 @@
         <!-- 2. Quality Manager -->
         <record id="group_quality_manager" model="res.groups">
             <field name="name">Quality Manager</field>
-            <field name="privilege_id" ref="privilege_warehouse_custom"/>
+            <field name="category_id" ref="module_category_warehouse_custom"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
             <field name="comment">Configure control points, approve alerts, access all quality reports</field>
         </record>
@@ -42,7 +34,7 @@
         <!-- 3. Picker -->
         <record id="group_picker" model="res.groups">
             <field name="name">Picker</field>
-            <field name="privilege_id" ref="privilege_warehouse_custom"/>
+            <field name="category_id" ref="module_category_warehouse_custom"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
             <field name="comment">Pick sales orders, scan products, build skids, record weights</field>
         </record>
@@ -50,7 +42,7 @@
         <!-- 4. Checker -->
         <record id="group_checker" model="res.groups">
             <field name="name">Checker</field>
-            <field name="privilege_id" ref="privilege_warehouse_custom"/>
+            <field name="category_id" ref="module_category_warehouse_custom"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
             <field name="comment">Verify picked skids, confirm quantities and weights</field>
         </record>
@@ -58,7 +50,7 @@
         <!-- 5. Dispatch Coordinator -->
         <record id="group_dispatch_coordinator" model="res.groups">
             <field name="name">Dispatch Coordinator</field>
-            <field name="privilege_id" ref="privilege_warehouse_custom"/>
+            <field name="category_id" ref="module_category_warehouse_custom"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
             <field name="comment">Manage staging locations and ready-for-dispatch orders</field>
         </record>
@@ -66,7 +58,7 @@
         <!-- 6. Warehouse Supervisor -->
         <record id="group_warehouse_supervisor" model="res.groups">
             <field name="name">Warehouse Supervisor</field>
-            <field name="privilege_id" ref="privilege_warehouse_custom"/>
+            <field name="category_id" ref="module_category_warehouse_custom"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
             <field name="comment">Full warehouse visibility, edit transfers, no configuration access</field>
         </record>
@@ -74,7 +66,7 @@
         <!-- 7. Inventory Viewer -->
         <record id="group_inventory_viewer" model="res.groups">
             <field name="name">Inventory Viewer</field>
-            <field name="privilege_id" ref="privilege_warehouse_custom"/>
+            <field name="category_id" ref="module_category_warehouse_custom"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
             <field name="comment">Read-only access to stock, products, margins</field>
         </record>
@@ -82,7 +74,7 @@
         <!-- 8. Inventory Editor -->
         <record id="group_inventory_editor" model="res.groups">
             <field name="name">Inventory Editor</field>
-            <field name="privilege_id" ref="privilege_warehouse_custom"/>
+            <field name="category_id" ref="module_category_warehouse_custom"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
             <field name="comment">Create and edit products, categories, stock adjustments</field>
         </record>
@@ -90,7 +82,7 @@
         <!-- 9. Shop Floor Operator -->
         <record id="group_shop_floor_operator" model="res.groups">
             <field name="name">Shop Floor Operator</field>
-            <field name="privilege_id" ref="privilege_warehouse_custom"/>
+            <field name="category_id" ref="module_category_warehouse_custom"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
             <field name="comment">Confirm work orders, log time, fill quality results on tablet</field>
         </record>
@@ -98,7 +90,7 @@
         <!-- 10. Production Planner -->
         <record id="group_production_planner" model="res.groups">
             <field name="name">Production Planner</field>
-            <field name="privilege_id" ref="privilege_warehouse_custom"/>
+            <field name="category_id" ref="module_category_warehouse_custom"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
             <field name="comment">Create and manage manufacturing orders, BoM, routing</field>
         </record>
@@ -106,7 +98,7 @@
         <!-- 11. Maintenance User -->
         <record id="group_maintenance_user" model="res.groups">
             <field name="name">Maintenance User</field>
-            <field name="privilege_id" ref="privilege_warehouse_custom"/>
+            <field name="category_id" ref="module_category_warehouse_custom"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
             <field name="comment">Log breakdown requests and view maintenance schedules</field>
         </record>
@@ -114,7 +106,7 @@
         <!-- 12. Report Viewer -->
         <record id="group_report_viewer" model="res.groups">
             <field name="name">Report Viewer</field>
-            <field name="privilege_id" ref="privilege_warehouse_custom"/>
+            <field name="category_id" ref="module_category_warehouse_custom"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
             <field name="comment">Read-only access to all dashboards and reports</field>
         </record>
@@ -122,7 +114,7 @@
         <!-- 13. Purchasing User -->
         <record id="group_purchasing_user" model="res.groups">
             <field name="name">Purchasing User</field>
-            <field name="privilege_id" ref="privilege_warehouse_custom"/>
+            <field name="category_id" ref="module_category_warehouse_custom"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
             <field name="comment">View POs, process incoming receipts, fill quality checks on receipt</field>
         </record>
@@ -130,7 +122,7 @@
         <!-- 14. Sales Coordinator -->
         <record id="group_sales_coordinator" model="res.groups">
             <field name="name">Sales Coordinator</field>
-            <field name="privilege_id" ref="privilege_warehouse_custom"/>
+            <field name="category_id" ref="module_category_warehouse_custom"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
             <field name="comment">Read-only access to sales orders and delivery status</field>
         </record>
@@ -138,7 +130,7 @@
         <!-- 15. Finance Viewer -->
         <record id="group_finance_viewer" model="res.groups">
             <field name="name">Finance Viewer</field>
-            <field name="privilege_id" ref="privilege_warehouse_custom"/>
+            <field name="category_id" ref="module_category_warehouse_custom"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
             <field name="comment">Read-only access to invoices, costs, margins, stock valuation</field>
         </record>

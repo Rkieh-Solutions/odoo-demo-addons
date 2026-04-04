@@ -41,10 +41,8 @@
         'report/quality_check_report.xml',
         # Menus - last, after all actions are defined
         'views/menus.xml',
-        # Post-install data
-        'data/home_actions.xml',
     ],
     'installable': True,
-    'application': False,
+    'application': True,
     'license': 'LGPL-3',
 }

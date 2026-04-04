@@ -41,7 +41,7 @@
         <!-- REPORTS -->
         <menuitem id="menu_wh_reports" name="Reports" parent="menu_warehouse_portal_root" sequence="70" groups="warehouse_access_control.group_report_viewer,warehouse_access_control.group_quality_manager,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_production_planner,warehouse_access_control.group_inventory_editor"/>
         <menuitem id="menu_wh_report_stock" name="Stock Report" parent="menu_wh_reports" action="stock.stock_quant_action" sequence="10" groups="warehouse_access_control.group_report_viewer,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_inventory_editor"/>
-        <menuitem id="menu_wh_report_quality" name="Quality Report" parent="menu_wh_reports" action="quality_control.quality_alert_action_report" sequence="20" groups="warehouse_access_control.group_report_viewer,warehouse_access_control.group_quality_manager"/>
+        <menuitem id="menu_wh_report_quality" name="Quality Report" parent="menu_wh_reports" action="quality_control.quality_alert_action_check" sequence="20" groups="warehouse_access_control.group_report_viewer,warehouse_access_control.group_quality_manager"/>
         <menuitem id="menu_wh_report_production" name="Production Report" parent="menu_wh_reports" action="mrp.mrp_production_action" sequence="30" groups="warehouse_access_control.group_report_viewer,warehouse_access_control.group_production_planner"/>
 
     </data>
