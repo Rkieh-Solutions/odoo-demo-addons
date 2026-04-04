@@ -10,14 +10,13 @@
         - Error-free production ready.
     """,
     'author': 'Rkieh-Solutions',
-    'license': 'LGPL-3',
     'depends': ['point_of_sale'],
     'data': [
         'views/pos_config_views.xml',
         'views/res_config_settings_views.xml',
     ],
     'assets': {
-        'point_of_sale._assets_pos': [
+        'point_of_sale.assets': [
             'pos_dual_currency_display/static/src/js/dual_currency_service.js',
             'pos_dual_currency_display/static/src/js/pos_patches.js',
             'pos_dual_currency_display/static/src/xml/pos_dual_currency.xml',
