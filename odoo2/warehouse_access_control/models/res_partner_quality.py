@@ -47,7 +47,7 @@ class ResPartnerQuality(models.Model):
                 if pickings:
                     # Defensive quantity extraction (handle Odoo 15/16/17 field names)
                     def extract_qty(m):
-                        return getattr(m, 'quantity', getattr(m, 'quantity_done', getattr(m, 'product_uom_qty', 0.0)))
+                        return getattr(m, 'quantity', getattr(m, 'quantity_done', 0.0))
 
                     # Calculate total demand vs total received
                     total_demand = sum(m.product_uom_qty for m in pickings.move_ids)
