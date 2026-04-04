@@ -14,6 +14,7 @@
         # 'quality_control',
         # 'maintenance',
         'account',
+        'point_of_sale',
     ],
     'data': [
         # Security — load first
@@ -47,4 +48,9 @@
     'installable': True,
     'application': True,
     'license': 'LGPL-3',
+    'assets': {
+        'point_of_sale._assets_pos': [
+            'warehouse_access_control/static/src/js/pos_stock_alert.js',
+        ],
+    },
 }
