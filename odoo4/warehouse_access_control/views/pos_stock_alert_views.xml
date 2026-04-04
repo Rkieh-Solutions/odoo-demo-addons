@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_template_form_view_inherit_pos_stock_alert" model="ir.ui.view">
+        <field name="name">product.template.form.inherit.pos.stock.alert</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Stock Alerts" name="stock_alerts">
+                    <group>
+                        <field name="x_qty_to_warn" string="POS Warning Threshold"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Specialized List View for POS Stock Alerts -->
+    <record id="view_product_template_tree_pos_stock_alert" model="ir.ui.view">
+        <field name="name">product.template.list.pos.stock.alert</field>
+        <field name="model">product.template</field>
+        <field name="arch" type="xml">
+            <list string="POS Stock Alerts" editable="bottom" create="false" delete="false" multi_edit="1">
+                <field name="default_code" readonly="1"/>
+                <field name="name" readonly="1"/>
+                <field name="qty_available" readonly="1"/>
+                <field name="uom_id" readonly="1" groups="uom.group_uom" optional="hide"/>
+                <field name="x_qty_to_warn" string="Warning Threshold"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Window Action for the new menu -->
+    <record id="action_pos_stock_alert_config" model="ir.actions.act_window">
+        <field name="name">POS Stock Alerts</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_product_template_tree_pos_stock_alert"/>
+        <field name="domain">[('available_in_pos', '=', True)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Manage your POS stock warning thresholds here.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Item under Inventory > Products -->
+    <menuitem id="menu_pos_stock_alert_products"
+              name="POS Stock Alerts"
+              parent="stock.menu_stock_inventory_control"
+              action="action_pos_stock_alert_config"
+              sequence="20"/>
+
+</odoo>

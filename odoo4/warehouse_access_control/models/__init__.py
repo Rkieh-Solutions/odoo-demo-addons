@@ -12,3 +12,5 @@ from . import warehouse_map
 from . import res_partner_quality
 from . import res_company
 from . import purchase_sale_rating
+from . import pos_config
+from . import pos_product_alert
