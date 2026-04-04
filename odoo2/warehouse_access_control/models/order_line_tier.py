@@ -18,14 +18,12 @@ class SaleOrderLine(models.Model):
     cargo_stacking_type = fields.Selection(
         related='product_id.categ_id.cargo_stacking_type',
         string='Cargo Type',
-        readonly=True,
-        store=True
+        readonly=True
     )
     cargo_tier = fields.Integer(
         related='product_id.categ_id.cargo_tier',
         string='Tier',
-        readonly=True,
-        store=True
+        readonly=True
     )
 
 class PurchaseOrder(models.Model):
@@ -45,12 +43,10 @@ class PurchaseOrderLine(models.Model):
     cargo_stacking_type = fields.Selection(
         related='product_id.categ_id.cargo_stacking_type',
         string='Cargo Type',
-        readonly=True,
-        store=True
+        readonly=True
     )
     cargo_tier = fields.Integer(
         related='product_id.categ_id.cargo_tier',
         string='Tier',
-        readonly=True,
-        store=True
+        readonly=True
     )
