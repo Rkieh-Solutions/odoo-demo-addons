@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_quality_form" model="ir.ui.view">
+        <field name="name">res.partner.quality.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='purchase']" position="inside">
+                <group name="quality_stats" string="Lifetime Quality Performance">
+                    <field name="custom_accepted_qty" widget="integer"/>
+                    <field name="custom_failed_qty" widget="integer"/>
+                    <field name="custom_damage_rate" widget="progressbar"/>
+                    <field name="custom_vendor_rating" widget="badge" 
+                           decoration-success="custom_vendor_rating == 'excellent'"
+                           decoration-info="custom_vendor_rating == 'good'"
+                           decoration-warning="custom_vendor_rating == 'average'"
+                           decoration-danger="custom_vendor_rating == 'poor'"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

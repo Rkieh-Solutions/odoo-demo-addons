@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_res_config_settings_warehouse" model="ir.ui.view">
+        <field name="name">res.config.settings.warehouse.quality</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="stock.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@id='operations']" position="after">
+                <block title="Supplier Quality Ratings" id="supplier_quality_thresholds">
+                    <setting string="Rating Thresholds" help="Define the maximum damage percentage a vendor can have for each rating badge.">
+                        <div class="content-group">
+                            <div class="row mt16">
+                                <label for="quality_excellent_limit" class="col-lg-3 o_light_label" string="Excellent (Up to %)"/>
+                                <field name="quality_excellent_limit" class="col-lg-3"/>
+                            </div>
+                            <div class="row mt16">
+                                <label for="quality_good_limit" class="col-lg-3 o_light_label" string="Good (Up to %)"/>
+                                <field name="quality_good_limit" class="col-lg-3"/>
+                            </div>
+                            <div class="row mt16">
+                                <label for="quality_average_limit" class="col-lg-3 o_light_label" string="Average (Up to %)"/>
+                                <field name="quality_average_limit" class="col-lg-3"/>
+                            </div>
+                        </div>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

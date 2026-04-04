@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_cargo_instructions" model="ir.actions.report">
+        <field name="name">Cargo Loading Instructions</field>
+        <field name="model">picking.route.map.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">warehouse_access_control.report_cargo_instructions_document</field>
+        <field name="report_file">warehouse_access_control.report_cargo_instructions_document</field>
+        <field name="print_report_name">'Cargo_Load_Plan_%s' % (object.picking_id.name)</field>
+        <field name="binding_model_id" ref="model_picking_route_map_wizard"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_cargo_instructions_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="row text-center mb-4">
+                            <h2>Cargo Loading Plan</h2>
+                            <h4><span t-field="doc.picking_id.name"/></h4>
+                        </div>
+                        
+                        <t t-if="doc.map_image">
+                            <div class="row justify-content-center mb-4">
+                                <img t-att-src="image_data_uri(doc.map_image)" style="max-height: 300px; max-width: 100%; border: 1px solid #ccc;"/>
+                            </div>
+                        </t>
+
+                        <h3 class="mt-4">Loading Sequence</h3>
+                        <p class="text-muted">Drivers &amp; Loaders: Follow this highly optimized top-to-bottom sequence. Heavy base items are loaded first; fragile/glass items are loaded last on top.</p>
+                        
+                        <table class="table table-sm table-bordered mt-3">
+                            <thead>
+                                <tr class="bg-light">
+                                    <th class="text-center">Order</th>
+                                    <th>Direction</th>
+                                    <th>Bin / Shelf</th>
+                                    <th>Product</th>
+                                    <th class="text-right">Qty</th>
+                                    <th>Packing Logic</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="doc.line_ids" t-as="line">
+                                    <tr>
+                                        <td class="text-center"><strong><span t-field="line.step"/></strong></td>
+                                        <td class="text-center" style="color: #007bff; font-weight: bold; font-size: 18px;">
+                                            <t t-if="line.step != len(doc.line_ids)">
+                                                ↓ Next
+                                            </t>
+                                            <t t-else="">
+                                                ✓ Done
+                                            </t>
+                                        </td>
+                                        <td><span t-field="line.location_code"/></td>
+                                        <td><span t-field="line.product_id.display_name"/></td>
+                                        <td class="text-right"><span t-field="line.qty"/></td>
+                                        <td>
+                                            <t t-if="'Heavy' in line.stacking_priority">
+                                                <span class="badge badge-info" style="color: blue;" t-esc="line.stacking_priority"/>
+                                            </t>
+                                            <t t-elif="'Fragile' in line.stacking_priority">
+                                                <span class="badge badge-danger" style="color: red;" t-esc="line.stacking_priority"/>
+                                            </t>
+                                            <t t-else="">
+                                                <span t-esc="line.stacking_priority"/>
+                                            </t>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

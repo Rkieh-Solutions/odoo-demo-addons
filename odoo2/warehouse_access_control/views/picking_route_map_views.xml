@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_picking_route_map_wizard_form" model="ir.ui.view">
+        <field name="name">picking.route.map.wizard.form</field>
+        <field name="model">picking.route.map.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Cargo Setup &amp; Map Visualizer">
+                <sheet>
+                    <div class="oe_title mb-4">
+                        <h1>Loading sequence for <field name="picking_id" readonly="1" class="oe_inline"/></h1>
+                        <p class="text-muted">Follow this Sequence to correctly load heavy items on bottom, fragile on top.</p>
+                    </div>
+                    
+                    <group invisible="not map_image">
+                        <field name="map_image" widget="image" nolabel="1" class="mx-auto d-block" style="max-height: 800px; max-width: 100%; border: 1px solid #ddd; border-radius: 4px;" options="{'zoom': true}"/>
+                    </group>
+
+                    <separator string="Cargo Loading Order"/>
+                    <field name="line_ids">
+                        <list create="0" edit="0" delete="0" decoration-success="is_picked" decoration-danger="'Fragile' in stacking_priority" decoration-info="'Heavy' in stacking_priority" default_order="step">
+                            <field name="step" string="Order" widget="badge"/>
+                            <field name="direction_arrow" string="Direction" decoration-bf="1" decoration-info="direction_arrow == '⬇️ Next'" decoration-success="direction_arrow == '✅ Done'"/>
+                            <field name="product_id" string="Product"/>
+                            <field name="location_code" string="Location (Where to get it)"/>
+                            <field name="qty" string="Qty"/>
+                            <field name="stacking_priority" string="Logic"/>
+                            <field name="is_picked" string="Loaded?" widget="boolean_toggle" readonly="1"/>
+                        </list>
+                    </field>
+                </sheet>
+                <footer>
+                    <button name="action_print_pdf" string="🖨️ Print Driver Instructions" type="object" class="btn-primary"/>
+                    <button name="action_close" string="Close Map" type="object" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_picking_route_map_wizard" model="ir.actions.act_window">
+        <field name="name">Map &amp; Cargo Order</field>
+        <field name="res_model">picking.route.map.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_picking_form_route_map_inherit" model="ir.ui.view">
+        <field name="name">stock.picking.form.route.map.inherit</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="warehouse_access_control.view_picking_warehouse_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="%(action_picking_route_map_wizard)d"
+                        string="📦 Map &amp; Cargo Order"
+                        type="action"
+                        class="btn-info"
+                        groups="warehouse_access_control.group_picker,warehouse_access_control.group_warehouse_supervisor"
+                        invisible="custom_status not in ('picking_in_progress', 'released')"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

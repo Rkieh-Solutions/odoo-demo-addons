@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Each group gets a default home action so users land on the
+             right screen after login instead of the standard Odoo home. -->
+
+        <!-- Quality User → Quality Checks list -->
+        <record id="warehouse_access_control.group_quality_user" model="res.groups">
+            <field name="name">Quality User</field>
+        </record>
+
+        <!-- Quality Manager → Quality Alerts list -->
+        <record id="warehouse_access_control.group_quality_manager" model="res.groups">
+            <field name="name">Quality Manager</field>
+        </record>
+
+        <!-- Picker → Skids list filtered to own -->
+        <record id="warehouse_access_control.group_picker" model="res.groups">
+            <field name="name">Picker</field>
+        </record>
+
+        <!-- Checker → Skids pending checking -->
+        <record id="warehouse_access_control.group_checker" model="res.groups">
+            <field name="name">Checker</field>
+        </record>
+
+        <!-- Dispatch → Transfers ready for dispatch -->
+        <record id="warehouse_access_control.group_dispatch_coordinator" model="res.groups">
+            <field name="name">Dispatch Coordinator</field>
+        </record>
+
+        <!-- Supervisor → All transfers -->
+        <record id="warehouse_access_control.group_warehouse_supervisor" model="res.groups">
+            <field name="name">Warehouse Supervisor</field>
+        </record>
+
+        <!-- Inventory Viewer → Products list -->
+        <record id="warehouse_access_control.group_inventory_viewer" model="res.groups">
+            <field name="name">Inventory Viewer</field>
+        </record>
+
+        <!-- Inventory Editor → Products list -->
+        <record id="warehouse_access_control.group_inventory_editor" model="res.groups">
+            <field name="name">Inventory Editor</field>
+        </record>
+
+        <!-- Shop Floor → Production orders -->
+        <record id="warehouse_access_control.group_shop_floor_operator" model="res.groups">
+            <field name="name">Shop Floor Operator</field>
+        </record>
+
+        <!-- Production Planner → Manufacturing orders -->
+        <record id="warehouse_access_control.group_production_planner" model="res.groups">
+            <field name="name">Production Planner</field>
+        </record>
+
+        <!-- Maintenance User → Maintenance requests -->
+        <record id="warehouse_access_control.group_maintenance_user" model="res.groups">
+            <field name="name">Maintenance User</field>
+        </record>
+
+        <!-- Report Viewer → Stock report -->
+        <record id="warehouse_access_control.group_report_viewer" model="res.groups">
+            <field name="name">Report Viewer</field>
+        </record>
+
+        <!-- Purchasing User → Receipts -->
+        <record id="warehouse_access_control.group_purchasing_user" model="res.groups">
+            <field name="name">Purchasing User</field>
+        </record>
+
+        <!-- Sales Coordinator → Sales orders -->
+        <record id="warehouse_access_control.group_sales_coordinator" model="res.groups">
+            <field name="name">Sales Coordinator</field>
+        </record>
+
+        <!-- Finance Viewer → Invoices -->
+        <record id="warehouse_access_control.group_finance_viewer" model="res.groups">
+            <field name="name">Finance Viewer</field>
+        </record>
+
+    </data>
+</odoo>

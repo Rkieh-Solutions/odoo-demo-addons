@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ══════════════════════════════════════════════════════════
+             WAREHOUSE DASHBOARD — KPI tiles for all roles
+        ══════════════════════════════════════════════════════════════ -->
+
+        <record id="view_warehouse_dashboard_form" model="ir.ui.view">
+            <field name="name">warehouse.dashboard.form</field>
+            <field name="model">warehouse.dashboard</field>
+            <field name="arch" type="xml">
+                <form string="Warehouse Dashboard" create="false" edit="false" delete="false">
+                    <sheet>
+
+                        <!-- ── PICKING STATUS ── -->
+                        <group string="Picking Status"
+                               groups="warehouse_access_control.group_picker,warehouse_access_control.group_checker,warehouse_access_control.group_dispatch_coordinator,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_report_viewer">
+                            <div class="o_stat_buttons d-flex flex-wrap gap-2">
+                                <button type="action" name="%(stock.action_picking_tree_all)d"
+                                        class="btn btn-outline-secondary o_stat_button"
+                                        context="{'search_default_custom_status': 'released'}">
+                                    <div class="o_stat_info">
+                                        <field name="orders_released" class="o_stat_value"/>
+                                        <span class="o_stat_text">Released</span>
+                                    </div>
+                                </button>
+                                <button type="action" name="%(stock.action_picking_tree_all)d"
+                                        class="btn btn-outline-warning o_stat_button">
+                                    <div class="o_stat_info">
+                                        <field name="orders_picking" class="o_stat_value"/>
+                                        <span class="o_stat_text">Picking</span>
+                                    </div>
+                                </button>
+                                <button type="action" name="%(stock.action_picking_tree_all)d"
+                                        class="btn btn-outline-info o_stat_button">
+                                    <div class="o_stat_info">
+                                        <field name="orders_pending_check" class="o_stat_value"/>
+                                        <span class="o_stat_text">Pending Check</span>
+                                    </div>
+                                </button>
+                                <button type="action" name="%(stock.action_picking_tree_all)d"
+                                        class="btn btn-outline-success o_stat_button">
+                                    <div class="o_stat_info">
+                                        <field name="orders_ready_dispatch" class="o_stat_value"/>
+                                        <span class="o_stat_text">Ready Dispatch</span>
+                                    </div>
+                                </button>
+                                <button type="action" name="%(stock.action_picking_tree_all)d"
+                                        class="btn btn-outline-danger o_stat_button"
+                                        invisible="orders_with_exceptions == 0">
+                                    <div class="o_stat_info">
+                                        <field name="orders_with_exceptions" class="o_stat_value"/>
+                                        <span class="o_stat_text">⚠ Exceptions</span>
+                                    </div>
+                                </button>
+                            </div>
+                        </group>
+
+                        <!-- ── QUALITY KPIs ── -->
+                        <group string="Quality Today"
+                               groups="warehouse_access_control.group_quality_user,warehouse_access_control.group_quality_manager,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_report_viewer">
+                            <div class="o_stat_buttons d-flex flex-wrap gap-2">
+                                <button type="action" name="%(quality_control.quality_check_action_main)d"
+                                        class="btn btn-outline-secondary o_stat_button">
+                                    <div class="o_stat_info">
+                                        <field name="quality_checks_today" class="o_stat_value"/>
+                                        <span class="o_stat_text">Checks Today</span>
+                                    </div>
+                                </button>
+                                <button type="action" name="%(quality_control.quality_check_action_main)d"
+                                        class="btn btn-outline-success o_stat_button">
+                                    <div class="o_stat_info">
+                                        <field name="quality_pass_today" class="o_stat_value"/>
+                                        <span class="o_stat_text">Passed</span>
+                                    </div>
+                                </button>
+                                <button type="action" name="%(quality_control.quality_check_action_main)d"
+                                        class="btn btn-outline-danger o_stat_button">
+                                    <div class="o_stat_info">
+                                        <field name="quality_fail_today" class="o_stat_value"/>
+                                        <span class="o_stat_text">Failed</span>
+                                    </div>
+                                </button>
+                                <button type="action" name="%(quality_control.quality_alert_action_team)d"
+                                        class="btn btn-outline-warning o_stat_button">
+                                    <div class="o_stat_info">
+                                        <field name="open_alerts" class="o_stat_value"/>
+                                        <span class="o_stat_text">Open Alerts</span>
+                                    </div>
+                                </button>
+                                <button type="action" name="%(warehouse_access_control.action_quality_capa)d"
+                                        class="btn btn-outline-danger o_stat_button">
+                                    <div class="o_stat_info">
+                                        <field name="open_capa" class="o_stat_value"/>
+                                        <span class="o_stat_text">Open CAPA</span>
+                                    </div>
+                                </button>
+                            </div>
+                        </group>
+
+                        <!-- ── INVENTORY KPIs ── -->
+                        <group string="Inventory"
+                               groups="warehouse_access_control.group_inventory_viewer,warehouse_access_control.group_inventory_editor,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_report_viewer">
+                            <div class="o_stat_buttons d-flex flex-wrap gap-2">
+                                <button type="action" name="%(product.product_template_action_all)d"
+                                        class="btn btn-outline-secondary o_stat_button">
+                                    <div class="o_stat_info">
+                                        <field name="total_products" class="o_stat_value"/>
+                                        <span class="o_stat_text">Products</span>
+                                    </div>
+                                </button>
+                                <button type="action" name="%(stock.stock_quant_action)d"
+                                        class="btn btn-outline-warning o_stat_button">
+                                    <div class="o_stat_info">
+                                        <field name="low_stock_count" class="o_stat_value"/>
+                                        <span class="o_stat_text">Low Stock</span>
+                                    </div>
+                                </button>
+                                <button type="action" name="%(stock.stock_quant_action)d"
+                                        class="btn btn-outline-danger o_stat_button">
+                                    <div class="o_stat_info">
+                                        <field name="out_of_stock_count" class="o_stat_value"/>
+                                        <span class="o_stat_text">Out of Stock</span>
+                                    </div>
+                                </button>
+                            </div>
+                        </group>
+
+                        <!-- ── MANUFACTURING KPIs ── -->
+                        <group string="Manufacturing"
+                               groups="warehouse_access_control.group_shop_floor_operator,warehouse_access_control.group_production_planner,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_report_viewer">
+                            <div class="o_stat_buttons d-flex flex-wrap gap-2">
+                                <button type="action" name="%(mrp.mrp_production_action)d"
+                                        class="btn btn-outline-secondary o_stat_button">
+                                    <div class="o_stat_info">
+                                        <field name="mo_confirmed" class="o_stat_value"/>
+                                        <span class="o_stat_text">Confirmed MOs</span>
+                                    </div>
+                                </button>
+                                <button type="action" name="%(mrp.mrp_production_action)d"
+                                        class="btn btn-outline-primary o_stat_button">
+                                    <div class="o_stat_info">
+                                        <field name="mo_in_progress" class="o_stat_value"/>
+                                        <span class="o_stat_text">In Progress</span>
+                                    </div>
+                                </button>
+                                <button type="action" name="%(mrp.mrp_production_action)d"
+                                        class="btn btn-outline-danger o_stat_button"
+                                        invisible="mo_late == 0">
+                                    <div class="o_stat_info">
+                                        <field name="mo_late" class="o_stat_value"/>
+                                        <span class="o_stat_text">⚠ Late</span>
+                                    </div>
+                                </button>
+                                <button type="action" name="%(maintenance.hr_equipment_request_action)d"
+                                        class="btn btn-outline-warning o_stat_button">
+                                    <div class="o_stat_info">
+                                        <field name="open_maintenance" class="o_stat_value"/>
+                                        <span class="o_stat_text">Maintenance</span>
+                                    </div>
+                                </button>
+                            </div>
+                        </group>
+
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_warehouse_dashboard" model="ir.actions.act_window">
+            <field name="name">Dashboard</field>
+            <field name="res_model">warehouse.dashboard</field>
+            <field name="view_mode">form</field>
+            <field name="target">current</field>
+        </record>
+
+        <!-- Dashboard menu entry -->
+        <menuitem id="menu_wh_dashboard"
+                  name="Dashboard"
+                  parent="menu_warehouse_portal_root"
+                  action="action_warehouse_dashboard"
+                  sequence="1"
+                  groups="warehouse_access_control.group_quality_user,warehouse_access_control.group_quality_manager,warehouse_access_control.group_picker,warehouse_access_control.group_checker,warehouse_access_control.group_dispatch_coordinator,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_inventory_viewer,warehouse_access_control.group_inventory_editor,warehouse_access_control.group_shop_floor_operator,warehouse_access_control.group_production_planner,warehouse_access_control.group_maintenance_user,warehouse_access_control.group_report_viewer,warehouse_access_control.group_purchasing_user,warehouse_access_control.group_sales_coordinator,warehouse_access_control.group_finance_viewer"/>
+
+    </data>
+</odoo>
