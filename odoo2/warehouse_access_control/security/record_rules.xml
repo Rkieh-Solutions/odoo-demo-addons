@@ -38,29 +38,7 @@
             <field name="perm_unlink" eval="False"/>
         </record>
 
-        <!-- ── QUALITY USER: own quality checks only ── -->
-        <record id="rule_quality_user_own_check" model="ir.rule">
-            <field name="name">Quality User: own checks only</field>
-            <field name="model_id" ref="quality_control.model_quality_check"/>
-            <field name="groups" eval="[(4, ref('warehouse_access_control.group_quality_user'))]"/>
-            <field name="domain_force">[('user_id', '=', user.id)]</field>
-            <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
-            <field name="perm_create" eval="True"/>
-            <field name="perm_unlink" eval="False"/>
-        </record>
 
-        <!-- ── MAINTENANCE USER: own requests only ── -->
-        <record id="rule_maintenance_own_request" model="ir.rule">
-            <field name="name">Maintenance User: own requests only</field>
-            <field name="model_id" ref="maintenance.model_maintenance_request"/>
-            <field name="groups" eval="[(4, ref('warehouse_access_control.group_maintenance_user'))]"/>
-            <field name="domain_force">[('user_id', '=', user.id)]</field>
-            <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
-            <field name="perm_create" eval="True"/>
-            <field name="perm_unlink" eval="False"/>
-        </record>
 
         <!-- ── SHOP FLOOR OPERATOR: only assigned MOs ── -->
         <record id="rule_floor_own_mo" model="ir.rule">

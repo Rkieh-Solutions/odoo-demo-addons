@@ -57,47 +57,6 @@
                             </div>
                         </group>
 
-                        <!-- ── QUALITY KPIs ── -->
-                        <group string="Quality Today"
-                               groups="warehouse_access_control.group_quality_user,warehouse_access_control.group_quality_manager,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_report_viewer">
-                            <div class="o_stat_buttons d-flex flex-wrap gap-2">
-                                <button type="action" name="%(quality_control.quality_check_action_main)d"
-                                        class="btn btn-outline-secondary o_stat_button">
-                                    <div class="o_stat_info">
-                                        <field name="quality_checks_today" class="o_stat_value"/>
-                                        <span class="o_stat_text">Checks Today</span>
-                                    </div>
-                                </button>
-                                <button type="action" name="%(quality_control.quality_check_action_main)d"
-                                        class="btn btn-outline-success o_stat_button">
-                                    <div class="o_stat_info">
-                                        <field name="quality_pass_today" class="o_stat_value"/>
-                                        <span class="o_stat_text">Passed</span>
-                                    </div>
-                                </button>
-                                <button type="action" name="%(quality_control.quality_check_action_main)d"
-                                        class="btn btn-outline-danger o_stat_button">
-                                    <div class="o_stat_info">
-                                        <field name="quality_fail_today" class="o_stat_value"/>
-                                        <span class="o_stat_text">Failed</span>
-                                    </div>
-                                </button>
-                                <button type="action" name="%(quality_control.quality_alert_action_team)d"
-                                        class="btn btn-outline-warning o_stat_button">
-                                    <div class="o_stat_info">
-                                        <field name="open_alerts" class="o_stat_value"/>
-                                        <span class="o_stat_text">Open Alerts</span>
-                                    </div>
-                                </button>
-                                <button type="action" name="%(warehouse_access_control.action_quality_capa)d"
-                                        class="btn btn-outline-danger o_stat_button">
-                                    <div class="o_stat_info">
-                                        <field name="open_capa" class="o_stat_value"/>
-                                        <span class="o_stat_text">Open CAPA</span>
-                                    </div>
-                                </button>
-                            </div>
-                        </group>
 
                         <!-- ── INVENTORY KPIs ── -->
                         <group string="Inventory"
@@ -153,13 +112,6 @@
                                         <span class="o_stat_text">⚠ Late</span>
                                     </div>
                                 </button>
-                                <button type="action" name="%(maintenance.hr_equipment_request_action)d"
-                                        class="btn btn-outline-warning o_stat_button">
-                                    <div class="o_stat_info">
-                                        <field name="open_maintenance" class="o_stat_value"/>
-                                        <span class="o_stat_text">Maintenance</span>
-                                    </div>
-                                </button>
                             </div>
                         </group>
 
@@ -181,7 +133,7 @@
                   parent="menu_warehouse_portal_root"
                   action="action_warehouse_dashboard"
                   sequence="1"
-                  groups="warehouse_access_control.group_quality_user,warehouse_access_control.group_quality_manager,warehouse_access_control.group_picker,warehouse_access_control.group_checker,warehouse_access_control.group_dispatch_coordinator,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_inventory_viewer,warehouse_access_control.group_inventory_editor,warehouse_access_control.group_shop_floor_operator,warehouse_access_control.group_production_planner,warehouse_access_control.group_maintenance_user,warehouse_access_control.group_report_viewer,warehouse_access_control.group_purchasing_user,warehouse_access_control.group_sales_coordinator,warehouse_access_control.group_finance_viewer"/>
+                  groups="warehouse_access_control.group_picker,warehouse_access_control.group_checker,warehouse_access_control.group_dispatch_coordinator,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_inventory_viewer,warehouse_access_control.group_inventory_editor,warehouse_access_control.group_shop_floor_operator,warehouse_access_control.group_production_planner,warehouse_access_control.group_report_viewer,warehouse_access_control.group_purchasing_user,warehouse_access_control.group_sales_coordinator,warehouse_access_control.group_finance_viewer"/>
 
     </data>
 </odoo>

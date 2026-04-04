@@ -2,13 +2,8 @@
 <odoo>
     <data>
 
-        <menuitem id="menu_warehouse_portal_root" name="Warehouse" sequence="5" groups="warehouse_access_control.group_quality_user,warehouse_access_control.group_quality_manager,warehouse_access_control.group_picker,warehouse_access_control.group_checker,warehouse_access_control.group_dispatch_coordinator,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_inventory_viewer,warehouse_access_control.group_inventory_editor,warehouse_access_control.group_shop_floor_operator,warehouse_access_control.group_production_planner,warehouse_access_control.group_maintenance_user,warehouse_access_control.group_report_viewer,warehouse_access_control.group_purchasing_user,warehouse_access_control.group_sales_coordinator,warehouse_access_control.group_finance_viewer"/>
+        <menuitem id="menu_warehouse_portal_root" name="Warehouse" sequence="5" groups="warehouse_access_control.group_picker,warehouse_access_control.group_checker,warehouse_access_control.group_dispatch_coordinator,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_inventory_viewer,warehouse_access_control.group_inventory_editor,warehouse_access_control.group_shop_floor_operator,warehouse_access_control.group_production_planner,warehouse_access_control.group_report_viewer,warehouse_access_control.group_purchasing_user,warehouse_access_control.group_sales_coordinator,warehouse_access_control.group_finance_viewer"/>
 
-        <!-- QUALITY -->
-        <menuitem id="menu_wh_quality" name="Quality" parent="menu_warehouse_portal_root" sequence="10" groups="warehouse_access_control.group_quality_user,warehouse_access_control.group_quality_manager,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_report_viewer"/>
-        <menuitem id="menu_wh_quality_checks" name="Quality Checks" parent="menu_wh_quality" action="quality_control.quality_check_action_main" sequence="10" groups="warehouse_access_control.group_quality_user,warehouse_access_control.group_quality_manager,warehouse_access_control.group_warehouse_supervisor"/>
-        <menuitem id="menu_wh_quality_alerts" name="Quality Alerts" parent="menu_wh_quality" action="quality_control.quality_alert_action_team" sequence="20" groups="warehouse_access_control.group_quality_user,warehouse_access_control.group_quality_manager,warehouse_access_control.group_warehouse_supervisor"/>
-        <menuitem id="menu_wh_quality_control_points" name="Control Points" parent="menu_wh_quality" action="quality_control.quality_point_action" sequence="30" groups="warehouse_access_control.group_quality_manager"/>
 
         <!-- OPERATIONS -->
         <menuitem id="menu_wh_operations" name="Operations" parent="menu_warehouse_portal_root" sequence="20" groups="warehouse_access_control.group_picker,warehouse_access_control.group_checker,warehouse_access_control.group_dispatch_coordinator,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_purchasing_user"/>
@@ -23,11 +18,10 @@
         <menuitem id="menu_wh_maps" name="Warehouse Map Images" parent="menu_wh_inventory" action="action_warehouse_map_config" sequence="30" groups="warehouse_access_control.group_warehouse_supervisor"/>
 
         <!-- MANUFACTURING -->
-        <menuitem id="menu_wh_manufacturing" name="Manufacturing" parent="menu_warehouse_portal_root" sequence="40" groups="warehouse_access_control.group_shop_floor_operator,warehouse_access_control.group_production_planner,warehouse_access_control.group_maintenance_user,warehouse_access_control.group_warehouse_supervisor"/>
+        <menuitem id="menu_wh_manufacturing" name="Manufacturing" parent="menu_warehouse_portal_root" sequence="40" groups="warehouse_access_control.group_shop_floor_operator,warehouse_access_control.group_production_planner,warehouse_access_control.group_warehouse_supervisor"/>
         <menuitem id="menu_wh_production_orders" name="Production Orders" parent="menu_wh_manufacturing" action="mrp.mrp_production_action" sequence="10" groups="warehouse_access_control.group_shop_floor_operator,warehouse_access_control.group_production_planner,warehouse_access_control.group_warehouse_supervisor"/>
         <menuitem id="menu_wh_bom" name="Bills of Materials" parent="menu_wh_manufacturing" action="mrp.mrp_bom_form_action" sequence="20" groups="warehouse_access_control.group_production_planner"/>
         <menuitem id="menu_wh_workcenters" name="Work Centers" parent="menu_wh_manufacturing" action="mrp.mrp_workcenter_action" sequence="30" groups="warehouse_access_control.group_production_planner"/>
-        <menuitem id="menu_wh_maintenance" name="Maintenance Requests" parent="menu_wh_manufacturing" action="maintenance.hr_equipment_request_action" sequence="40" groups="warehouse_access_control.group_maintenance_user,warehouse_access_control.group_warehouse_supervisor"/>
 
         <!-- SALES -->
         <menuitem id="menu_wh_sales" name="Sales" parent="menu_warehouse_portal_root" sequence="50" groups="warehouse_access_control.group_sales_coordinator,warehouse_access_control.group_dispatch_coordinator,warehouse_access_control.group_warehouse_supervisor"/>
@@ -39,9 +33,8 @@
         <menuitem id="menu_wh_bills" name="Bills" parent="menu_wh_finance" action="account.action_move_in_invoice_type" sequence="20" groups="warehouse_access_control.group_finance_viewer"/>
 
         <!-- REPORTS -->
-        <menuitem id="menu_wh_reports" name="Reports" parent="menu_warehouse_portal_root" sequence="70" groups="warehouse_access_control.group_report_viewer,warehouse_access_control.group_quality_manager,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_production_planner,warehouse_access_control.group_inventory_editor"/>
+        <menuitem id="menu_wh_reports" name="Reports" parent="menu_warehouse_portal_root" sequence="70" groups="warehouse_access_control.group_report_viewer,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_production_planner,warehouse_access_control.group_inventory_editor"/>
         <menuitem id="menu_wh_report_stock" name="Stock Report" parent="menu_wh_reports" action="stock.stock_quant_action" sequence="10" groups="warehouse_access_control.group_report_viewer,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_inventory_editor"/>
-        <menuitem id="menu_wh_report_quality" name="Quality Report" parent="menu_wh_reports" action="quality_control.quality_alert_action_check" sequence="20" groups="warehouse_access_control.group_report_viewer,warehouse_access_control.group_quality_manager"/>
         <menuitem id="menu_wh_report_production" name="Production Report" parent="menu_wh_reports" action="mrp.mrp_production_action" sequence="30" groups="warehouse_access_control.group_report_viewer,warehouse_access_control.group_production_planner"/>
 
     </data>
