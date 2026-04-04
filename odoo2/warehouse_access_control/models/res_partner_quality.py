@@ -60,10 +60,13 @@ class ResPartnerQuality(models.Model):
                     
                     total_failed_checks = 0.0
                     # Loop through all quality checks attached to these deliveries
-                    quality_checks = self.env['quality.check'].sudo().search([
-                        ('picking_id', 'in', pickings.ids),
-                        ('quality_state', '=', 'fail')
-                    ])
+                    quality_check_model = self.env.get('quality.check')
+                    quality_checks = []
+                    if quality_check_model:
+                        quality_checks = quality_check_model.sudo().search([
+                            ('picking_id', 'in', pickings.ids),
+                            ('quality_state', '=', 'fail')
+                        ])
 
                     for check in quality_checks:
                         # Try to link to a specific move if move_id exists on quality.check
