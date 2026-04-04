@@ -19,20 +19,4 @@
             </xpath>
         </field>
     </record>
-
-    <!-- Show vendor rating badge in Contacts list view -->
-    <record id="view_partner_quality_list_inherit" model="ir.ui.view">
-        <field name="name">res.partner.quality.list.inherit</field>
-        <field name="model">res.partner</field>
-        <field name="inherit_id" ref="contacts.res_partner_view_list"/>
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='name']" position="after">
-                <field name="custom_vendor_rating" widget="badge" string="Rating" optional="show"
-                       decoration-success="custom_vendor_rating == 'excellent'"
-                       decoration-info="custom_vendor_rating == 'good'"
-                       decoration-warning="custom_vendor_rating == 'average'"
-                       decoration-danger="custom_vendor_rating == 'poor'"/>
-            </xpath>
-        </field>
-    </record>
 </odoo>
