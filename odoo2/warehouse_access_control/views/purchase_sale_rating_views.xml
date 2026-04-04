@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Purchase Order: Show vendor rating badge beside vendor name -->
+    <record id="view_purchase_order_vendor_rating" model="ir.ui.view">
+        <field name="name">purchase.order.vendor.rating</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="vendor_rating" widget="badge" readonly="1" nolabel="1"
+                       decoration-success="vendor_rating == 'excellent'"
+                       decoration-info="vendor_rating == 'good'"
+                       decoration-warning="vendor_rating == 'average'"
+                       decoration-danger="vendor_rating == 'poor'"
+                       invisible="not vendor_rating"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Sale Order: Show partner/customer rating badge beside customer name -->
+    <record id="view_sale_order_partner_rating" model="ir.ui.view">
+        <field name="name">sale.order.partner.rating</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="partner_rating" widget="badge" readonly="1" nolabel="1"
+                       decoration-success="partner_rating == 'excellent'"
+                       decoration-info="partner_rating == 'good'"
+                       decoration-warning="partner_rating == 'average'"
+                       decoration-danger="partner_rating == 'poor'"
+                       invisible="not partner_rating"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

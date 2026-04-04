@@ -31,6 +31,7 @@
         'views/res_partner_quality_views.xml',
         'views/picking_route_map_views.xml',
         'views/sale_purchase_map_views.xml',
+        'views/purchase_sale_rating_views.xml',
         'views/order_line_tier_views.xml',
         # 'views/quality_capa_views.xml',
         'views/dashboards/warehouse_dashboard_views.xml',
