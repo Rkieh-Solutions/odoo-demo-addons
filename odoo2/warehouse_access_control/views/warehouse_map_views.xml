@@ -17,7 +17,7 @@
                     </group>
                     <notebook>
                         <page string="Mapped Locations" name="mapped_locations">
-                            <field name="location_ids" context="{'default_warehouse_map_id': active_id}">
+                            <field name="location_ids">
                                 <list editable="bottom">
                                     <field name="name"/>
                                     <field name="location_code"/>
