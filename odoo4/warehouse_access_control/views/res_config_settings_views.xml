@@ -24,6 +24,11 @@
                         </div>
                     </setting>
                 </block>
+                <block title="POS Stock Alerts" id="pos_stock_alert_section">
+                    <setting string="Global Warning Threshold" help="Set a default threshold for low stock warnings in POS.">
+                        <field name="x_global_stock_warn_threshold"/>
+                    </setting>
+                </block>
             </xpath>
         </field>
     </record>
