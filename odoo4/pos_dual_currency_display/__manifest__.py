@@ -1,5 +1,5 @@
 {
-    'name': 'POS Dual Currency Display',
+    'name': 'POS Dual Currency Display (Odoo 4)',
     'version': '1.0.0',
     'category': 'Point of Sale',
     'summary': 'Display dual currency in POS without backend impact.',
