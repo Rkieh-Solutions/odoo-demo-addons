@@ -5,6 +5,8 @@ import { PosStore } from "@point_of_sale/app/services/pos_store";
 import { _t } from "@web/core/l10n/translation";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 
+console.log("🚨 [WH Stock Alert] MODULE LOADED — warehouse_access_control POS stock alert is active!");
+
 patch(PosStore.prototype, {
     async addLineToOrder(vals, order, opts = {}, configure = true) {
         let product = vals.product_id;
@@ -21,12 +23,9 @@ patch(PosStore.prototype, {
             let threshold = 0;
             let debugInfo = "no response";
 
-            console.log("[POS Stock Alert] Checking product:", product);
-            console.log("[POS Stock Alert] Product database ID:", product.id);
-            console.log("[POS Stock Alert] Product name:", product.display_name);
+            console.log("[WH Stock Alert] Checking product:", product.display_name, "id:", product.id);
 
             const productModel = product.modelName || (product._model ? product._model.name : (product.constructor.modelName || 'product.product'));
-            console.log("[POS Stock Alert] modelName identified:", productModel);
 
             try {
                 const response = await fetch("/warehouse_access_control/get_stock", {
@@ -43,23 +42,22 @@ patch(PosStore.prototype, {
                         },
                     }),
                 });
-                console.log("[POS Stock Alert] Fetching stock for product=" + product.id + ", config_id=" + ((this.config && this.config.id) || this.config_id));
                 const data = await response.json();
+                console.log("[WH Stock Alert] Server response:", JSON.stringify(data));
                 if (data && data.result) {
-                    qty_available = data.result.qty_available || 0;
+                    // IMPORTANT: Do NOT use || 0 here — negative values like -5 are falsy in JS!
+                    qty_available = (data.result.qty_available != null) ? data.result.qty_available : 0;
                     threshold = data.result.x_qty_to_warn || 0;
                     debugInfo = data.result.debug || "no debug";
                 }
             } catch (e) {
-                console.warn("[POS Stock Alert] fetch error:", e);
+                console.warn("[WH Stock Alert] fetch error:", e);
                 debugInfo = "fetch failed: " + e.message;
             }
 
             if (!threshold) {
                 threshold = (this.config && this.config.x_global_stock_warn_threshold) || 0;
             }
-
-            console.log("[POS Stock Alert] " + product.display_name + " (JS id=" + product.id + "): qty=" + qty_available + ", threshold=" + threshold + ", debug=" + debugInfo);
 
             // Calculate total quantity of this product already in the order
             const currentOrder = order || this.getOrder();
@@ -74,7 +72,6 @@ patch(PosStore.prototype, {
                             if (typeof l.getQuantity === "function") q = l.getQuantity();
                             else if (typeof l.get_quantity === "function") q = l.get_quantity();
                             else if (l.qty !== undefined) q = l.qty;
-
                             current_qty_in_order += parseFloat(q) || 0;
                         }
                     });
@@ -82,14 +79,15 @@ patch(PosStore.prototype, {
             }
 
             if (threshold <= 0) {
-                threshold = 100; // Hard fallback so the warning ALWAYS appears for testing
+                threshold = 100;
             }
 
             const new_total_qty = parseFloat(current_qty_in_order) + parseFloat(vals.qty || 1);
-            const safe_qty_available = parseFloat(qty_available) || 0;
+            // IMPORTANT: Do NOT use || 0 — it turns -5 into 0!
+            const safe_qty_available = (qty_available != null) ? parseFloat(qty_available) : 0;
             const remaining_qty = safe_qty_available - new_total_qty;
 
-            console.log("[POS Stock Alert] safe_qty_available:", safe_qty_available, "new_total:", new_total_qty, "remaining:", remaining_qty, "threshold:", threshold);
+            console.log("[WH Stock Alert]", product.display_name, "=> qty:", safe_qty_available, "cart:", current_qty_in_order, "remaining:", remaining_qty);
 
             // 🚨 PRIMARY CHECK: Product is already out of stock (qty <= 0)
             if (safe_qty_available <= 0) {
@@ -101,20 +99,17 @@ patch(PosStore.prototype, {
             }
 
             if (remaining_qty < 0) {
-                // Blocks the sale because we exceed the stock
                 await this.dialog.add(AlertDialog, {
-                    title: _t("CRITICAL: Stock Exceeded!"),
+                    title: _t("⚠️ Stock Exceeded!"),
                     body: _t("Cannot add more units. You already have %s in your cart, and only %s are available total.", current_qty_in_order, safe_qty_available),
                 });
                 return;
             } else if (remaining_qty === 0) {
-                // Allows the sale, but alerts that it's the absolute last one
                 await this.dialog.add(AlertDialog, {
-                    title: _t("CRITICAL: Out of Stock!"),
+                    title: _t("⚠️ Last Unit!"),
                     body: _t("You have added the last available unit(s). The product (%s) is now completely out of stock.", product.display_name),
                 });
             } else if (remaining_qty <= threshold) {
-                // Warning for low stock countdown
                 await this.dialog.add(AlertDialog, {
                     title: _t("Low Stock Warning"),
                     body: _t("Warning: Remaining quantity is low (%s).", remaining_qty),
