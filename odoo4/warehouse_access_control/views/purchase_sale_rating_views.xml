@@ -11,8 +11,7 @@
                        decoration-success="vendor_rating == 'excellent'"
                        decoration-info="vendor_rating == 'good'"
                        decoration-warning="vendor_rating == 'average'"
-                       decoration-danger="vendor_rating == 'poor'"
-                       invisible="not vendor_rating"/>
+                       decoration-danger="vendor_rating == 'poor'"/>
             </xpath>
         </field>
     </record>
@@ -28,8 +27,7 @@
                        decoration-success="partner_rating == 'excellent'"
                        decoration-info="partner_rating == 'good'"
                        decoration-warning="partner_rating == 'average'"
-                       decoration-danger="partner_rating == 'poor'"
-                       invisible="not partner_rating"/>
+                       decoration-danger="partner_rating == 'poor'"/>
             </xpath>
         </field>
     </record>
