@@ -6,14 +6,16 @@
              DELIVERY NOTE — Printable PDF with full skid details
         ══════════════════════════════════════════════════════════════ -->
 
-        <report id="action_report_delivery_note"
-                string="Delivery Note"
-                model="stock.picking"
-                report_type="qweb-pdf"
-                name="warehouse_access_control.report_delivery_note_document"
-                file="warehouse_access_control.report_delivery_note_document"
-                attachment_use="False"
-                groups="warehouse_access_control.group_dispatch_coordinator,warehouse_access_control.group_warehouse_supervisor,warehouse_access_control.group_checker"/>
+        <record id="action_report_delivery_note" model="ir.actions.report">
+            <field name="name">Delivery Note</field>
+            <field name="model">stock.picking</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">warehouse_access_control.report_delivery_note_document</field>
+            <field name="report_file">warehouse_access_control.report_delivery_note_document</field>
+            <field name="binding_model_id" ref="stock.model_stock_picking"/>
+            <field name="binding_type">report</field>
+            <field name="groups_id" eval="[(4, ref('warehouse_access_control.group_dispatch_coordinator')), (4, ref('warehouse_access_control.group_warehouse_supervisor')), (4, ref('warehouse_access_control.group_checker'))]"/>
+        </record>
 
         <template id="report_delivery_note_document">
             <t t-call="web.html_container">

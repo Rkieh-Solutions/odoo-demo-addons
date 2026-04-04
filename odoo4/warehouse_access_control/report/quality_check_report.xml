@@ -51,7 +51,7 @@
                             <div class="row mt-4">
                                 <div class="col-12">
                                     <h4>Inspection Notes / Instructions</h4>
-                                    <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px;" t-raw="doc.note"/>
+                                    <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px;" t-out="doc.note"/>
                                 </div>
                             </div>
                         </t>
