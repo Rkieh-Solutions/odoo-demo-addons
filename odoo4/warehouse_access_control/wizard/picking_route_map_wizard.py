@@ -19,12 +19,12 @@ class PickingRouteMapWizard(models.TransientModel):
             order = self.env['sale.order'].browse(active_id)
             if order.picking_ids:
                 picking = order.picking_ids.filtered(lambda p: p.state not in ['draft', 'cancel'])
-                picking_id = picking[0].id if picking else order.picking_ids[0].id
+                picking_id = picking[0].id if picking else (order.picking_ids[0].id if order.picking_ids else False)
         elif active_model == 'purchase.order' and active_id:
             order = self.env['purchase.order'].browse(active_id)
             if order.picking_ids:
                 picking = order.picking_ids.filtered(lambda p: p.state not in ['draft', 'cancel'])
-                picking_id = picking[0].id if picking else order.picking_ids[0].id
+                picking_id = picking[0].id if picking else (order.picking_ids[0].id if order.picking_ids else False)
         elif active_model == 'stock.picking' and active_id:
             picking_id = active_id
             
@@ -52,7 +52,12 @@ class PickingRouteMapWizard(models.TransientModel):
                 c_type = mv.product_id.categ_id.cargo_stacking_type or 'normal'
                 c_tier = mv.product_id.categ_id.cargo_tier or 50
                 
-                type_label = dict(self.env['product.category']._fields['cargo_stacking_type'].selection).get(c_type)
+                # Safe fallback if selection fails
+                try:
+                    type_label = dict(self.env['product.category']._fields['cargo_stacking_type'].selection).get(c_type, 'Normal')
+                except Exception:
+                    type_label = str(c_type).capitalize()
+                    
                 final_label = f"[{type_label}] Tier {c_tier}"
 
                 lines.append((0, 0, {
@@ -61,8 +66,8 @@ class PickingRouteMapWizard(models.TransientModel):
                     'location_code': loc.location_code or loc.name,
                     'product_id': mv.product_id.id,
                     'stacking_priority': final_label,
-                    'qty': getattr(mv, 'product_uom_qty', 0.0),
-                    'is_picked': mv.quantity > 0
+                    'qty': getattr(mv, 'product_uom_qty', getattr(mv, 'quantity', 0.0)),
+                    'is_picked': getattr(mv, 'quantity_done', getattr(mv, 'quantity', 0.0)) > 0
                 }))
                 step += 1
             res['line_ids'] = lines
