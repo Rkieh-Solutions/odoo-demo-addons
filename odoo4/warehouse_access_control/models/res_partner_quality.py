@@ -54,10 +54,11 @@ class ResPartnerQuality(models.Model):
                     total_received = sum(extract_qty(m) for m in pickings.move_ids)
                     
                     # Shortage (Demand - Done) is treated as Failed/Damaged by default
-                    total_failed = total_demand - total_received
-                    if total_failed < 0:
-                        total_failed = 0.0
+                    shortage = total_demand - total_received
+                    if shortage < 0:
+                        shortage = 0.0
                     
+                    total_failed_checks = 0.0
                     # Loop through all quality checks attached to these deliveries
                     quality_checks = self.env['quality.check'].sudo().search([
                         ('picking_id', 'in', pickings.ids),
@@ -65,30 +66,41 @@ class ResPartnerQuality(models.Model):
                     ])
 
                     for check in quality_checks:
-                        # Extract exact failed qty if the user typed it into a custom box (Studio)
+                        # Try to link to a specific move if move_id exists on quality.check
+                        check_qty = 0.0
                         if hasattr(check, 'x_quantity_failed'):
-                            total_failed += getattr(check, 'x_quantity_failed')
+                            check_qty = getattr(check, 'x_quantity_failed')
                         elif hasattr(check, 'x_failed_qty'):
-                            total_failed += getattr(check, 'x_failed_qty')
+                            check_qty = getattr(check, 'x_failed_qty')
                         elif hasattr(check, 'qty_line'):
-                            total_failed += check.qty_line
+                            check_qty = check.qty_line
                         else:
-                            # Fallback: if check failed but no specific qty, assume the whole received line failed
+                            # Fallback: find the specific move for this product in THIS picking
                             pkg_move = pickings.move_ids.filtered(
                                 lambda m: m.picking_id.id == check.picking_id.id and 
                                           m.product_id.id == check.product_id.id
                             )
-                            total_failed += sum(extract_qty(m) for m in pkg_move)
+                            # Use only the first move if there are multiple to avoid double counting
+                            # unless we can distinguish them. For now, this is a safer aggregate.
+                            check_qty = extract_qty(pkg_move[0]) if pkg_move else 0.0
+                        
+                        total_failed_checks += check_qty
 
-                    # Total Accepted is what was demanded minus what failed/was missing
-                    total_accepted = total_demand - total_failed
+                    # Total Failed = Shortage + Failures among received items
+                    total_failed = shortage + total_failed_checks
+                    
+                    # Total Accepted = What was actually received minus what failed quality checks
+                    total_accepted = total_received - total_failed_checks
                     if total_accepted < 0:
                         total_accepted = 0.0
 
-                    # Use total_demand as the base for the rate
+                    # Use total_demand as the base for the rate (matching user's 83% for 50/60)
                     total_overall = total_demand 
                     if total_overall > 0:
                         rate = (total_failed / total_overall * 100.0)
+                    elif total_received > 0:
+                        # If no demand but received items, use received as base
+                        rate = (total_failed / total_received * 100.0)
 
                     # Dynamic thresholds from Company Settings
                     company = self.env.company
