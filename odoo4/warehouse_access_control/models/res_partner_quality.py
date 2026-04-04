@@ -49,7 +49,14 @@ class ResPartnerQuality(models.Model):
                     def extract_qty(m):
                         return getattr(m, 'quantity', getattr(m, 'quantity_done', getattr(m, 'product_uom_qty', 0.0)))
 
+                    # Calculate total demand vs total received
+                    total_demand = sum(m.product_uom_qty for m in pickings.move_ids)
                     total_received = sum(extract_qty(m) for m in pickings.move_ids)
+                    
+                    # Shortage (Demand - Done) is treated as Failed/Damaged by default
+                    total_failed = total_demand - total_received
+                    if total_failed < 0:
+                        total_failed = 0.0
                     
                     # Loop through all quality checks attached to these deliveries
                     quality_checks = self.env['quality.check'].sudo().search([
@@ -66,18 +73,20 @@ class ResPartnerQuality(models.Model):
                         elif hasattr(check, 'qty_line'):
                             total_failed += check.qty_line
                         else:
-                            # Fallback: find the specific move for this product in THIS picking
+                            # Fallback: if check failed but no specific qty, assume the whole received line failed
                             pkg_move = pickings.move_ids.filtered(
                                 lambda m: m.picking_id.id == check.picking_id.id and 
                                           m.product_id.id == check.product_id.id
                             )
                             total_failed += sum(extract_qty(m) for m in pkg_move)
 
-                    total_accepted = total_received - total_failed
+                    # Total Accepted is what was demanded minus what failed/was missing
+                    total_accepted = total_demand - total_failed
                     if total_accepted < 0:
                         total_accepted = 0.0
 
-                    total_overall = total_received # Use total_received as base
+                    # Use total_demand as the base for the rate
+                    total_overall = total_demand 
                     if total_overall > 0:
                         rate = (total_failed / total_overall * 100.0)
 
