@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_wood_project,wood.project,model_wood_project,base.group_user,1,1,1,1
+access_wood_piece,wood.piece,model_wood_piece,base.group_user,1,1,1,1

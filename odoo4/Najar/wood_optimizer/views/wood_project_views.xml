@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_wood_project_list" model="ir.ui.view">
+        <field name="name">wood.project.list</field>
+        <field name="model">wood.project</field>
+        <field name="arch" type="xml">
+            <list string="Wood Projects" decoration-info="state == 'draft'" decoration-success="state == 'done'">
+                <field name="name"/>
+                <field name="student_id"/>
+                <field name="production_id"/>
+                <field name="progress" widget="progressbar"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'done'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_wood_project_form" model="ir.ui.view">
+        <field name="name">wood.project.form</field>
+        <field name="model">wood.project</field>
+        <field name="arch" type="xml">
+            <form string="Wood Project">
+                <header>
+                    <button name="action_open_optimizer" string="Open Optimizer" type="object" class="btn-primary" invisible="state == 'done'"/>
+                    <button name="action_pull_from_mo" string="Pull from MO" type="object" invisible="not production_id or state != 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only"/>
+                        <h1>
+                            <field name="name" placeholder="Project Name..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Project Assignment">
+                            <field name="student_id" options="{'no_create': True}"/>
+                            <field name="production_id" options="{'no_create': True}"/>
+                            <field name="wood_type"/>
+                            <field name="progress" widget="percentpie"/>
+                        </group>
+                        <group string="Board Details">
+                            <label for="board_width"/>
+                            <div class="o_row">
+                                <field name="board_width"/> x <field name="board_height"/>
+                                <field name="board_unit"/>
+                            </div>
+                            <field name="board_kerf"/>
+                            <field name="board_quantity"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Pieces List" name="pieces">
+                            <field name="piece_ids">
+                                <list editable="bottom" decoration-muted="completed">
+                                    <field name="name"/>
+                                    <field name="width"/>
+                                    <field name="height"/>
+                                    <field name="quantity"/>
+                                    <field name="allow_rotation"/>
+                                    <field name="completed" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_wood_project" model="ir.actions.act_window">
+        <field name="name">Wood Projects</field>
+        <field name="res_model">wood.project</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first woodworking project and link it to an MO!
+            </p>
+        </field>
+    </record>
+</odoo>

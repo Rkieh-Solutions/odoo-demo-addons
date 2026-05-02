@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo><template id="optimizer_template" name="Wood Optimizer UI">
+        &lt;!DOCTYPE html&gt;
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8"/>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+            <title>WoodCut Pro | Odoo Optimizer</title>
+            <script src="https://cdn.tailwindcss.com"></script>
+            <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+            <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+            <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+            <style>
+                body { font-family: 'Inter', sans-serif; background-color: #fcfcfb; }
+                .wood-gradient { background: linear-gradient(135deg, #5d4037 0%, #3e2723 100%); }
+                .wood-border { border-color: #8d6e63; }
+                .wood-text { color: #3e2723; }
+                .wood-bg { background-color: #efebe9; }
+                .card-shadow { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); }
+            </style>
+            <script>
+                tailwind.config = {
+                    theme: {
+                        extend: {
+                            colors: {
+                                wood: {
+                                    50: '#efebe9', 100: '#d7ccc8', 200: '#bcaaa4', 300: '#a1887f',
+                                    400: '#8d6e63', 500: '#795548', 600: '#6d4c41', 700: '#5d4037',
+                                    800: '#4e342e', 900: '#3e2723',
+                                }
+                            }
+                        }
+                    }
+                }
+            </script>
+        </head>
+        <body>
+            <div id="root"></div>
+
+            <!-- Inject Odoo Data -->
+            <script type="text/javascript">
+                window.odooProjectData = <t t-out="project_json"/>;
+            </script>
+
+            <script type="text/babel">
+                const { useState, useEffect, useMemo, useRef } = React;
+
+                // --- Icons ---
+                const Icons = {
+                    Saw: ({ className }) => (
+                        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="m12 13 8.5 8.5" /><path d="m16 7 4.5 4.5" /><path d="m11 8 8 8" /><path d="m3 3 8 8" /><path d="m8 11 8 8" /><path d="M12 13 3.5 4.5" /><path d="m7 16 4.5 4.5" />
+                        </svg>
+                    ),
+                    ArrowRight: ({ className }) => (
+                        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
+                        </svg>
+                    ),
+                    Maximize: ({ className }) => (
+                        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M8 3H5a2 2 0 0 0-2 2v3" /><path d="M21 8V5a2 2 0 0 0-2-2h-3" /><path d="M3 16v3a2 2 0 0 0 2 2h3" /><path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+                        </svg>
+                    ),
+                    Scissors: ({ className }) => (
+                        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="6" cy="6" r="3" /><path d="M8.12 8.12 12 12" /><circle cx="6" cy="18" r="3" /><path d="M14.8 14.8 20 20" /><path d="M8.12 15.88 12 12" /><path d="m14.8 9.2 5.2-5.2" />
+                        </svg>
+                    ),
+                    FileText: ({ className }) => (
+                        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" />
+                        </svg>
+                    ),
+                    Layers: ({ className }) => (
+                        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polygon points="12 2 2 7 12 12 22 7 12 2" /><polygon points="2 17 12 22 22 17" /><polygon points="2 12 12 17 22 12" />
+                        </svg>
+                    ),
+                    Plus: ({ className }) => (
+                        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 5v14" /><path d="M5 12h14" />
+                        </svg>
+                    ),
+                    Calculator: ({ className }) => (
+                        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect width="16" height="20" x="4" y="2" rx="2" /><line x1="8" y1="6" x2="16" y2="6" /><line x1="12" y1="10" x2="12" y2="10" />
+                        </svg>
+                    ),
+                    CheckCircle: ({ className }) => (
+                        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
+                        </svg>
+                    ),
+                    X: ({ className }) => (
+                        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    ),
+                    Layout: ({ className }) => (
+                        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect width="18" height="18" x="3" y="3" rx="2" /><path d="M3 9h18" /><path d="M9 21V9" />
+                        </svg>
+                    ),
+                    AlertCircle: ({ className }) => (
+                        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                        </svg>
+                    )
+                };
+
+                // --- Packing Algorithm ---
+                class MaxRectsPacker {
+                    constructor(width, height, kerf = 0) {
+                        this.width = width;
+                        this.height = height;
+                        this.kerf = kerf;
+                        this.freeRects = [{ x: 0, y: 0, w: width, h: height }];
+                        this.packedRects = [];
+                    }
+
+                    pack(piece, allowRotation = true) {
+                        let bestNode = null;
+                        let bestY = Infinity;
+                        let bestX = Infinity;
+                        let rotate = false;
+
+                        for (const fr of this.freeRects) {
+                            if (fr.w >= piece.width && fr.h >= piece.height) {
+                                if (fr.y < bestY || (fr.y === bestY && fr.x < bestX)) {
+                                    bestNode = { x: fr.x, y: fr.y, w: piece.width, h: piece.height };
+                                    bestY = fr.y; bestX = fr.x; rotate = false;
+                                }
+                            }
+                            if (allowRotation && piece.width !== piece.height) {
+                                if (fr.w >= piece.height && fr.h >= piece.width) {
+                                    if (fr.y < bestY || (fr.y === bestY && fr.x < bestX)) {
+                                        bestNode = { x: fr.x, y: fr.y, w: piece.height, h: piece.width };
+                                        bestY = fr.y; bestX = fr.x; rotate = true;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!bestNode) return null;
+
+                        const usedRect = { x: bestNode.x, y: bestNode.y, w: bestNode.w + this.kerf, h: bestNode.h + this.kerf };
+                        const newFreeRects = [];
+                        for (const fr of this.freeRects) {
+                            if (this.intersects(fr, usedRect)) {
+                                if (usedRect.x + usedRect.w < fr.x + fr.w) newFreeRects.push({ x: usedRect.x + usedRect.w, y: fr.y, w: (fr.x + fr.w) - (usedRect.x + usedRect.w), h: fr.h });
+                                if (usedRect.y + usedRect.h < fr.y + fr.h) newFreeRects.push({ x: fr.x, y: usedRect.y + usedRect.h, w: fr.w, h: (fr.y + fr.h) - (usedRect.y + usedRect.h) });
+                                if (usedRect.x > fr.x) newFreeRects.push({ x: fr.x, y: fr.y, w: usedRect.x - fr.x, h: fr.h });
+                                if (usedRect.y > fr.y) newFreeRects.push({ x: fr.x, y: fr.y, w: fr.w, h: usedRect.y - fr.y });
+                            } else {
+                                newFreeRects.push(fr);
+                            }
+                        }
+                        this.freeRects = this.pruneFreeList(newFreeRects);
+                        const packed = { ...piece, ...bestNode, rotated: rotate };
+                        this.packedRects.push(packed);
+                        return packed;
+                    }
+
+                    intersects(a, b) { return !(b.x >= a.x + a.w || b.x + b.w <= a.x || b.y >= a.y + a.h || b.y + b.h <= a.y); }
+
+                    pruneFreeList(list) {
+                        list = list.filter(r => r.w > 1 && r.h > 1);
+                        for (let i = list.length - 1; i >= 0; i--) {
+                            for (let j = 0; j < list.length; j++) {
+                                if (i !== j && this.contains(list[j], list[i])) { list.splice(i, 1); break; }
+                            }
+                        }
+                        return list;
+                    }
+
+                    contains(a, b) { return b.x >= a.x && b.y >= a.y && b.x + b.w <= a.x + a.w && b.y + b.h <= a.y + a.h; }
+                }
+
+                // --- UI Components ---
+                const App = () => {
+                    const [view, setView] = useState('optimizer');
+                    const [projectName, setProjectName] = useState(window.odooProjectData?.projectName || 'New Project');
+                    const [board, setBoard] = useState(window.odooProjectData?.board || { name: 'MDF 18mm', width: 244, height: 122, kerf: 0.3, quantity: 1, unit: 'cm' });
+                    const [pieces, setPieces] = useState(window.odooProjectData?.pieces || []);
+                    const [results, setResults] = useState(null);
+                    const [error, setError] = useState(null);
+
+                    const addPiece = () => {
+                        const newPiece = { id: Math.random(), name: `Piece ${pieces.length + 1}`, width: 40, height: 20, quantity: 1, allowRotation: true, completed: false };
+                        setPieces([...pieces, newPiece]);
+                    };
+
+                    const updatePiece = (id, field, value) => {
+                        setPieces(pieces.map(p => p.id === id ? { ...p, [field]: value } : p));
+                    };
+
+                    const calculate = () => {
+                        setError(null);
+                        const boards = [];
+                        let tempRemaining = [];
+                        pieces.forEach(p => { for (let i = 0; i < p.quantity; i++) tempRemaining.push({ ...p, id: `${p.id}-${i}` }); });
+                        tempRemaining.sort((a, b) => (b.width * b.height) - (a.width * a.height));
+
+                        let boardsUsed = 0;
+                        while (tempRemaining.length > 0 && boardsUsed < 20) {
+                            const packer = new MaxRectsPacker(board.width, board.height, board.kerf);
+                            const packed = [];
+                            const nextRemaining = [];
+                            for (const p of tempRemaining) {
+                                const result = packer.pack(p, p.allowRotation);
+                                if (result) packed.push(result); else nextRemaining.push(p);
+                            }
+                            boards.push({ boardIndex: boardsUsed + 1, pieces: packed, usedArea: packed.reduce((s, p) => s + p.w * p.h, 0), totalArea: board.width * board.height });
+                            tempRemaining = nextRemaining;
+                            boardsUsed++;
+                        }
+                        setResults({ boards });
+                    };
+
+                    const finishJob = () => {
+                        const project_id = window.odooProjectData.id;
+                        fetch('/wood_optimizer/save', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                jsonrpc: "2.0",
+                                params: {
+                                    project_id: project_id,
+                                    pieces: pieces
+                                }
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.result?.status === 'success') {
+                                alert("Project saved to Odoo!");
+                            } else {
+                                alert("Error saving: " + (data.result?.message || 'Unknown error'));
+                            }
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            alert("Failed to communicate with Odoo.");
+                        });
+                    };
+
+                    return (
+                        <div className="min-h-screen p-8">
+                            <header className="flex justify-between items-center mb-12">
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-10 h-10 wood-gradient rounded-xl flex items-center justify-center shadow-lg"><Icons.Saw className="text-white w-6 h-6" /></div>
+                                    <h1 className="text-2xl font-black wood-text tracking-tight">WoodCut Pro <span className="text-wood-400 font-light">| Optimizer</span></h1>
+                                </div>
+                            </header>
+
+                            <div className="grid lg:grid-cols-3 gap-8">
+                                <div className="space-y-6">
+                                    <div className="bg-white p-6 rounded-2xl shadow border border-wood-100">
+                                        <h3 className="text-lg font-bold mb-4">Project: {projectName}</h3>
+                                        <div className="grid grid-cols-2 gap-4 mb-4">
+                                            <div><label className="text-xs font-bold text-gray-400">Width</label><input type="number" value={board.width} onChange={e => setBoard({...board, width: e.target.value})} className="w-full border rounded p-2"/></div>
+                                            <div><label className="text-xs font-bold text-gray-400">Height</label><input type="number" value={board.height} onChange={e => setBoard({...board, height: e.target.value})} className="w-full border rounded p-2"/></div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white p-6 rounded-2xl shadow border border-wood-100">
+                                        <div className="flex justify-between items-center mb-4"><h3 className="text-lg font-bold">Pieces</h3><button onClick={addPiece} className="text-wood-600 font-bold">+ Add</button></div>
+                                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                                            {pieces.map(p => (
+                                                <div key={p.id} className="p-3 bg-wood-50 rounded-xl border border-wood-100">
+                                                    <input type="text" value={p.name} onChange={e => updatePiece(p.id, 'name', e.target.value)} className="w-full font-bold bg-transparent border-b mb-2 outline-none"/>
+                                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                                        <input type="number" value={p.width} onChange={e => updatePiece(p.id, 'width', parseFloat(e.target.value))} className="border rounded p-1"/>
+                                                        <input type="number" value={p.height} onChange={e => updatePiece(p.id, 'height', parseFloat(e.target.value))} className="border rounded p-1"/>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <button onClick={calculate} className="w-full mt-6 wood-gradient text-white py-3 rounded-xl font-bold">Calculate Layout</button>
+                                        <button onClick={finishJob} className="w-full mt-2 bg-green-600 text-white py-3 rounded-xl font-bold">Finish Job</button>
+                                    </div>
+                                </div>
+
+                                <div className="lg:col-span-2">
+                                    {results ? (
+                                        <div className="space-y-8">
+                                            {results.boards.map(b => (
+                                                <div key={b.boardIndex} className="bg-white p-6 rounded-2xl shadow border border-wood-100">
+                                                    <h4 className="font-bold mb-4">Board #{b.boardIndex}</h4>
+                                                    <div className="relative border-2 border-wood-900 bg-wood-50" style={{ width: '100%', aspectRatio: `${board.width}/${board.height}` }}>
+                                                        {b.pieces.map((p, i) => (
+                                                            <div key={i} className="absolute border border-wood-900 bg-wood-400 text-[8px] flex items-center justify-center text-white overflow-hidden" 
+                                                                style={{ left: `${(p.x/board.width)*100}%`, top: `${(p.y/board.height)*100}%`, width: `${(p.w/board.width)*100}%`, height: `${(p.h/board.height)*100}%` }}>
+                                                                {p.name}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="bg-white h-full rounded-2xl border-2 border-dashed border-wood-100 flex items-center justify-center text-gray-400">Calculate to see layout</div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                };
+
+                const root = ReactDOM.createRoot(document.getElementById('root'));
+                root.render(<App />);
+            </script>
+        </body>
+        </html>
+    </template></odoo>
