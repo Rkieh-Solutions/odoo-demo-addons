@@ -8,7 +8,7 @@ class WoodProject(models.Model):
     name = fields.Char(string='Project Name', required=True, tracking=True)
     wood_type = fields.Char(string='Wood Type', tracking=True)
     production_id = fields.Many2one('mrp.production', string='Manufacturing Order', tracking=True)
-    student_id = fields.Many2one('school.student', string='Assigned Student', tracking=True)
+
     
     state = fields.Selection([
         ('draft', 'Draft'),
@@ -76,13 +76,7 @@ class MrpProduction(models.Model):
             'wood_type': 'MDF 18mm',
         })
         project.action_pull_from_mo()
-        return {
-            'type': 'ir.actions.act_window',
-            'res_model': 'wood.project',
-            'res_id': project.id,
-            'view_mode': 'form',
-            'target': 'current',
-        }
+        return project.action_open_optimizer()
 
 class WoodPiece(models.Model):
     _name = 'wood.piece'

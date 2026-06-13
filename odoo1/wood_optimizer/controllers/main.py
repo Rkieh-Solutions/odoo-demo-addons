@@ -3,8 +3,17 @@ from odoo.http import request
 import json
 
 class WoodOptimizer(http.Controller):
+
+    @http.route('/wood_optimizer/app', type='http', auth='user')
+    def optimizer_app(self, **kwargs):
+        """Native Odoo rendering using web.layout."""
+        return request.render('wood_optimizer.optimizer_template', {
+            'project_json': json.dumps({})
+        })
+
     @http.route('/wood_optimizer/ui/<int:project_id>', type='http', auth='user')
     def optimizer_ui(self, project_id, **kwargs):
+        """Open the optimizer with a specific wood project pre-loaded."""
         project = request.env['wood.project'].browse(project_id)
         if not project.exists():
             return "Project not found"
@@ -39,7 +48,7 @@ class WoodOptimizer(http.Controller):
             'project_json': json.dumps(project_data)
         })
 
-    @http.route('/wood_optimizer/save', type='json', auth='user', methods=['POST'])
+    @http.route('/wood_optimizer/save', type='jsonrpc', auth='user', methods=['POST'])
     def save_project_data(self, project_id, pieces, **kwargs):
         project = request.env['wood.project'].browse(project_id)
         if not project.exists():
@@ -65,5 +74,5 @@ class WoodOptimizer(http.Controller):
                     'quantity': p_data.get('quantity'),
                     'completed': p_data.get('completed', False),
                 })
-        
+
         return {'status': 'success'}

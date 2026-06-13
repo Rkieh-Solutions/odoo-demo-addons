@@ -1,0 +1,25 @@
+.o_camera_capture {
+    .o_camera_stage {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 240px;
+        max-width: 640px;
+        border: 1px dashed var(--border-color, #ced4da);
+        border-radius: 6px;
+        background-color: #f8f9fa;
+        overflow: hidden;
+    }
+
+    .o_camera_video,
+    .o_camera_preview {
+        max-width: 100%;
+        max-height: 480px;
+        object-fit: contain;
+    }
+
+    .o_camera_placeholder {
+        text-align: center;
+        padding: 2rem;
+    }
+}

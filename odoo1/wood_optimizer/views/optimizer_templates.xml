@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="optimizer_template" name="Wood Optimizer">
+        <t t-call="web.layout">
+            <t t-set="head">
+                <meta charset="UTF-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+                <title>WoodCut Pro | Woodworking Cutting Optimizer</title>
+                <script src="https://cdn.tailwindcss.com"></script>
+                <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+                <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+                <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+                <style>
+                    body { font-family: 'Inter', sans-serif; background-color: #fcfcfb; margin: 0; padding: 0; }
+                    .wood-gradient { background: linear-gradient(135deg, #5d4037 0%, #3e2723 100%); }
+                    .wood-border { border-color: #8d6e63; }
+                    .wood-text { color: #3e2723; }
+                    .wood-bg { background-color: #efebe9; }
+                    .card-shadow { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); }
+                    @media print {
+                        .no-print { display: none; }
+                        .print-only { display: block; }
+                        body { background: white; }
+                    }
+                    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+                    .custom-scrollbar::-webkit-scrollbar-track { background: #efebe9; }
+                    .custom-scrollbar::-webkit-scrollbar-thumb { background: #8d6e63; border-radius: 10px; }
+                </style>
+                <script>
+                    tailwind.config = {
+                        theme: {
+                            extend: {
+                                colors: {
+                                    wood: {
+                                        50: '#efebe9',
+                                        100: '#d7ccc8',
+                                        200: '#bcaaa4',
+                                        300: '#a1887f',
+                                        400: '#8d6e63',
+                                        500: '#795548',
+                                        600: '#6d4c41',
+                                        700: '#5d4037',
+                                        800: '#4e342e',
+                                        900: '#3e2723',
+                                    }
+                                }
+                            }
+                        }
+                    }
+                </script>
+            </t>
+            <div id="root"></div>
+            <script type="text/javascript">
+                window.odooProjectData = <t t-out="project_json or '{}'"/>;
+            </script>
+            <script type="text/babel" src="/wood_optimizer/static/src/optimizer_react.js?v=205"></script>
+        </t>
+    </template>
+</odoo>

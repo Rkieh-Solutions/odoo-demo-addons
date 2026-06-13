@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="n8n_doc_scanner.CameraCapture">
+        <div class="o_camera_capture">
+            <div class="o_camera_toolbar btn-group mb-2" role="group">
+                <button type="button" class="btn btn-primary"
+                        t-if="!state.streaming" t-on-click="startCamera">
+                    <i class="fa fa-video-camera me-1"/> Open Camera
+                </button>
+                <button type="button" class="btn btn-success"
+                        t-if="state.streaming" t-on-click="capture">
+                    <i class="fa fa-camera me-1"/> Capture
+                </button>
+                <button type="button" class="btn btn-secondary"
+                        t-if="state.streaming" t-on-click="stopCamera">
+                    <i class="fa fa-stop me-1"/> Stop
+                </button>
+                <button type="button" class="btn btn-outline-primary"
+                        t-on-click="triggerFileInput">
+                    <i class="fa fa-upload me-1"/> Take / Upload Photo
+                </button>
+                <button type="button" class="btn btn-outline-danger"
+                        t-if="value" t-on-click="clearImage">
+                    <i class="fa fa-trash me-1"/> Clear
+                </button>
+            </div>
+
+            <input type="file" accept="image/*" capture="environment"
+                   class="d-none" t-ref="fileInput" t-on-change="onFileChange"/>
+
+            <div class="o_camera_stage">
+                <video t-ref="video" t-att-class="{ 'd-none': !state.streaming }"
+                       class="o_camera_video" autoplay="autoplay" playsinline="playsinline"/>
+
+                <img t-if="!state.streaming and imageUrl" t-att-src="imageUrl"
+                     class="o_camera_preview" alt="Scanned document"/>
+
+                <div t-if="!state.streaming and !imageUrl"
+                     class="o_camera_placeholder text-muted">
+                    <i class="fa fa-image fa-3x mb-2"/>
+                    <div>No image yet. Open the camera or upload a photo.</div>
+                </div>
+            </div>
+
+            <canvas t-ref="canvas" class="d-none"/>
+        </div>
+    </t>
+
+</templates>

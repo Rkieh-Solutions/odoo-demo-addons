@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_doc_scan_form" model="ir.ui.view">
+        <field name="name">scanner.form</field>
+        <field name="model">scanner</field>
+        <field name="arch" type="xml">
+            <form string="Document Scan">
+                <header>
+                    <button name="action_send_to_n8n" type="object"
+                            string="Send to n8n" class="oe_highlight"
+                            invisible="state == 'done' or not image"
+                            data-hotkey="v"/>
+                    <button name="action_open_result" type="object"
+                            string="Open Document" class="oe_highlight"
+                            invisible="state != 'done'"/>
+                    <button name="action_reset_to_draft" type="object"
+                            string="Reset to Draft"
+                            invisible="state in ('draft',)"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,sent,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="document_type"
+                                   readonly="state == 'done'"/>
+                            <field name="image_filename" invisible="1"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="result_reference" readonly="1"
+                                   invisible="state != 'done'"/>
+                        </group>
+                    </group>
+                    <field name="error_message" class="text-danger"
+                           readonly="1" invisible="not error_message"/>
+                    <notebook>
+                        <page string="Scan" name="scan">
+                            <field name="image" widget="camera_capture"
+                                   options="{'filename': 'image_filename'}"/>
+                        </page>
+                        <page string="n8n Response" name="response"
+                              invisible="not n8n_response">
+                            <field name="n8n_response" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_doc_scan_list" model="ir.ui.view">
+        <field name="name">scanner.list</field>
+        <field name="model">scanner</field>
+        <field name="arch" type="xml">
+            <list string="Document Scans"
+                  decoration-danger="state == 'error'"
+                  decoration-success="state == 'done'"
+                  decoration-muted="state == 'draft'">
+                <field name="name"/>
+                <field name="document_type"/>
+                <field name="result_reference" optional="show"/>
+                <field name="create_date"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'done'"
+                       decoration-danger="state == 'error'"
+                       decoration-info="state == 'sent'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_doc_scan_search" model="ir.ui.view">
+        <field name="name">scanner.search</field>
+        <field name="model">scanner</field>
+        <field name="arch" type="xml">
+            <search string="Document Scans">
+                <field name="name"/>
+                <filter name="filter_draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="filter_done" string="Created" domain="[('state', '=', 'done')]"/>
+                <filter name="filter_error" string="Error" domain="[('state', '=', 'error')]"/>
+                <separator/>
+                <filter name="group_type" string="Document Type"
+                        context="{'group_by': 'document_type'}"/>
+                <filter name="group_state" string="Status"
+                        context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_doc_scan" model="ir.actions.act_window">
+        <field name="name">Document Scans</field>
+        <field name="res_model">scanner</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_filter_draft': 0}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Scan your first document
+            </p>
+            <p>
+                Create a scan, take a photo of a Sales Quotation, Purchase Order,
+                Receipt or Vendor Bill, and send it to n8n to create the document
+                automatically.
+            </p>
+        </field>
+    </record>
+
+</odoo>

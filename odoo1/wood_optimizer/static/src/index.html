@@ -279,19 +279,28 @@
         // --- Components ---
 
         const Header = ({ currentView, setView }) => (
-            <header className="bg-wood-900 text-white py-6 px-4 sticky top-0 z-[60] shadow-xl no-print">
-                <div className="container mx-auto flex justify-between items-center">
-                    <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setView('home')}>
-                        <div className="bg-white p-2 rounded-xl shadow-inner">
-                            <Icons.Saw className="text-wood-900 w-6 h-6" />
+            <header className="bg-[#714B67] text-white h-[46px] flex items-center px-4 sticky top-0 z-[60] shadow-md no-print border-b border-white/10">
+                <div className="flex items-center w-full">
+                    <div className="flex items-center space-x-2 mr-6 cursor-pointer" onClick={() => setView('home')}>
+                        <div className="bg-white/10 p-1.5 rounded-lg">
+                            <Icons.Saw className="text-white w-4 h-4" />
                         </div>
-                        <h1 className="text-2xl font-black tracking-tighter uppercase">WoodCut Pro</h1>
+                        <span className="text-sm font-bold tracking-tight">Wood Optimizer</span>
                     </div>
-                    <nav className="hidden md:flex items-center space-x-8 text-xs font-black uppercase tracking-widest">
-                        <button onClick={() => setView('home')} className={`hover:text-wood-300 transition ${currentView === 'home' ? 'text-wood-300' : 'opacity-60'}`}>Home</button>
-                        <button onClick={() => setView('optimizer')} className={`hover:text-wood-300 transition ${currentView === 'optimizer' ? 'text-wood-300' : 'opacity-60'}`}>Optimizer</button>
-                        <button onClick={() => setView('history')} className={`hover:text-wood-300 transition ${currentView === 'history' ? 'text-wood-300' : 'opacity-60'}`}>History</button>
+                    <nav className="flex items-center space-x-1 h-full">
+                        <button onClick={() => setView('home')} className={`px-4 h-[46px] text-[13px] hover:bg-white/10 transition flex items-center ${currentView === 'home' ? 'bg-white/10 font-bold' : 'opacity-80'}`}>Overview</button>
+                        <button onClick={() => setView('optimizer')} className={`px-4 h-[46px] text-[13px] hover:bg-white/10 transition flex items-center ${currentView === 'optimizer' ? 'bg-white/10 font-bold' : 'opacity-80'}`}>Optimizer</button>
+                        <button onClick={() => setView('history')} className={`px-4 h-[46px] text-[13px] hover:bg-white/10 transition flex items-center ${currentView === 'history' ? 'bg-white/10 font-bold' : 'opacity-80'}`}>History</button>
                     </nav>
+                    <div className="ml-auto flex items-center space-x-4">
+                        <div className="flex flex-col items-end mr-2">
+                            <span className="text-[10px] opacity-60 leading-none">Database</span>
+                            <span className="text-[11px] font-bold leading-none">school_db</span>
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center border border-white/20">
+                            <span className="text-[10px] font-bold">AD</span>
+                        </div>
+                    </div>
                 </div>
             </header>
         );
@@ -690,7 +699,7 @@
                                                     </div>
                                                     <div className="flex items-center space-x-2">
                                                         <span className="text-wood-300 font-bold">{log?.boards || 0}B</span>
-                                                        <button onClick={(e) => { e.stopPropagation(); if(confirm('Delete?')) setCustomTemplates(prev => (Array.isArray(prev) ? prev : []).filter(item => item.id !== log.id)); }} className="opacity-0 group-hover:opacity-100 p-1 text-red-400 hover:text-red-600 transition" title="Delete">×</button>
+                                                        <button onClick={(e) => { e.stopPropagation(); if(confirm('Delete?')) setCustomTemplates(prev => (Array.isArray(prev) ? prev : []).filter(item => item.id !== log.id)); }} className="opacity-0 group-hover:opacity-100 p-1 text-red-400 hover:text-red-600 transition" title="Delete">Ã—</button>
                                                         <Icons.ArrowRight className="w-3 h-3 text-white/20" />
                                                     </div>
                                                 </div>
@@ -851,7 +860,7 @@
                                                         <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse flex-shrink-0"></div>
                                                         <span className="text-[10px] font-black uppercase tracking-widest truncate">{projectName}</span>
                                                     </div>
-                                                    <button onClick={() => { setProjectName('New Project'); setTemplateSearch(''); }} className="text-[10px] text-wood-400 hover:text-red-400 font-bold">×</button>
+                                                    <button onClick={() => { setProjectName('New Project'); setTemplateSearch(''); }} className="text-[10px] text-wood-400 hover:text-red-400 font-bold">Ã—</button>
                                                 </div>
                                             )}
 
@@ -894,7 +903,7 @@
                                                                         <span className="text-xs font-bold wood-text truncate">{t?.projectName || t?.name || 'Untitled'}</span>
                                                                     </div>
                                                                     <div className="text-[9px] text-gray-400 uppercase mt-0.5 ml-1">
-                                                                        {t?.materialName || t?.material || 'Custom'} • {t?.dimensions || (t.boardWidth ? `${t.boardWidth}x${t.boardHeight}` : 'N/A')}
+                                                                        {t?.materialName || t?.material || 'Custom'} â€¢ {t?.dimensions || (t.boardWidth ? `${t.boardWidth}x${t.boardHeight}` : 'N/A')}
                                                                     </div>
                                                                 </button>
                                                             );
@@ -981,8 +990,8 @@
                                                         <h3 className="text-xl font-bold wood-text">Board #{b.boardIndex}: <span className="text-wood-600 uppercase">{board.name}</span></h3>
                                                         <span className="text-gray-400 font-normal text-sm block">Dimensions: {board.width} x {board.height} {board.unit}</span>
                                                         <div className="flex flex-wrap gap-4 mt-2 text-[10px] font-black uppercase">
-                                                            <span className="bg-green-50 text-green-700 px-2 py-1 rounded">Used: {b.usedArea.toFixed(0)} {board.unit}²</span>
-                                                            <span className="bg-amber-50 text-amber-700 px-2 py-1 rounded">Left: {(b.totalArea - b.usedArea).toFixed(0)} {board.unit}²</span>
+                                                            <span className="bg-green-50 text-green-700 px-2 py-1 rounded">Used: {b.usedArea.toFixed(0)} {board.unit}Â²</span>
+                                                            <span className="bg-amber-50 text-amber-700 px-2 py-1 rounded">Left: {(b.totalArea - b.usedArea).toFixed(0)} {board.unit}Â²</span>
                                                             <span className="bg-wood-50 text-wood-500 px-2 py-1 rounded">Unused L: {b.unusedStripW} {board.unit}</span>
                                                             <span className="bg-wood-50 text-wood-500 px-2 py-1 rounded">Unused W: {b.unusedStripH} {board.unit}</span>
                                                         </div>
@@ -1278,14 +1287,19 @@
                         />
                     )}
                     
-                    <footer className="bg-wood-900 text-wood-400 py-12 no-print border-t border-wood-800">
-                        <div className="container mx-auto px-4 text-center">
-                            <div className="flex items-center justify-center space-x-2 mb-4"><Icons.Saw className="text-white w-6 h-6" /><h3 className="text-xl font-black text-white tracking-tighter uppercase">WoodCut Pro</h3></div>
-                            <p className="text-xs opacity-50 mb-8 max-w-xs mx-auto leading-relaxed">Precision cutting optimization for the modern carpenter. Built for performance, designed for the workshop.</p>
-                            <div className="flex justify-center space-x-8 text-[10px] font-black uppercase tracking-widest text-wood-500">
-                                <a href="#" className="hover:text-white transition">Privacy</a>
-                                <a href="#" className="hover:text-white transition">Terms</a>
-                                <button onClick={() => { if(confirm('This will delete ALL your saved projects and materials. Continue?')) { localStorage.clear(); window.location.reload(); } }} className="text-red-900/40 hover:text-red-500 transition">Reset Workshop Data</button>
+                    <footer className="bg-gray-100 py-6 no-print border-t border-gray-200">
+                        <div className="container mx-auto px-4">
+                            <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                                <div className="flex items-center space-x-2">
+                                    <Icons.Saw className="text-[#714B67] w-4 h-4" />
+                                    <span className="text-sm font-bold text-gray-700">Wood Optimizer</span>
+                                </div>
+                                <div className="text-[11px] text-gray-400">
+                                    &copy; 2026 Integrated with Odoo ERP
+                                </div>
+                                <div className="flex space-x-6 text-[11px] font-bold text-[#714B67]">
+                                    <button onClick={() => { if(confirm('This will delete ALL your saved projects and materials. Continue?')) { localStorage.clear(); window.location.reload(); } }} className="hover:text-red-600 transition">Reset Workshop Data</button>
+                                </div>
                             </div>
                         </div>
                     </footer>

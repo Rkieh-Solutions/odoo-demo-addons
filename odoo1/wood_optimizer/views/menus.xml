@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_wood_root"
+              name="Wood Optimizer"
+              action="action_wood_optimizer_url"
+              sequence="10"/>
+</odoo>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- URL action: clicking the Wood Optimizer icon opens the website directly -->
+    <record id="action_wood_optimizer_url" model="ir.actions.act_url">
+        <field name="name">Wood Optimizer</field>
+        <field name="url">/wood_optimizer/app</field>
+        <field name="target">self</field>
+    </record>
+</odoo>

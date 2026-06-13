@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.n8n.doc.scanner</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="n8n Document Scanner" string="n8n Document Scanner"
+                     name="n8n_doc_scanner" logo="/n8n_doc_scanner/static/description/icon.png">
+                    <block title="n8n Webhooks"
+                           help="Paste the production webhook URL of each n8n workflow.">
+                        <setting string="Sales Quotation" help="n8n workflow that reads sales quotations.">
+                            <field name="n8n_url_sale_quotation" placeholder="https://n8n.nashidify.com/webhook/..."/>
+                        </setting>
+                        <setting string="Purchase Order" help="n8n workflow that reads purchase orders.">
+                            <field name="n8n_url_purchase_order" placeholder="https://n8n.nashidify.com/webhook/..."/>
+                        </setting>
+                        <setting string="Receipt" help="n8n workflow that reads receipts.">
+                            <field name="n8n_url_receipt" placeholder="https://n8n.nashidify.com/webhook/..."/>
+                        </setting>
+                        <setting string="Vendor Bill" help="n8n workflow that reads vendor bills.">
+                            <field name="n8n_url_vendor_bill" placeholder="https://n8n.nashidify.com/webhook/..."/>
+                        </setting>
+                    </block>
+                    <block title="Authentication"
+                           help="Optional. Used both to authenticate Odoo to n8n and n8n's callback to Odoo.">
+                        <setting string="Auth Header Name" help="e.g. Authorization or X-API-KEY. Leave blank for none.">
+                            <field name="n8n_auth_header_name" placeholder="X-API-KEY"/>
+                        </setting>
+                        <setting string="Auth Token" help="Value sent in the header above.">
+                            <field name="n8n_auth_token" password="True" placeholder="Bearer ..."/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_n8n_doc_scanner_settings" model="ir.actions.act_window">
+        <field name="name">Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="context">{'module': 'n8n_doc_scanner'}</field>
+    </record>
+
+</odoo>

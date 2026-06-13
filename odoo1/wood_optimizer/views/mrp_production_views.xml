@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Remove the Cutting Plan button from Manufacturing - no xpath needed, simply don't inherit -->
+</odoo>
