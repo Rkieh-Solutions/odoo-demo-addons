@@ -54,8 +54,8 @@ jobs:
 
             if [ -n "$RESTART" ]; then
               for s in $RESTART; do
-                systemctl restart "$s"
-                systemctl is-active "$s"
+                sudo systemctl restart "$s"
+                sudo systemctl is-active "$s"
               done
             else
               echo "No instance folder changes; skipping restart."
